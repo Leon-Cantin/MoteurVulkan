@@ -4,24 +4,17 @@
 
 #include <vector>
 
-struct BufferDescriptor
+struct DescriptorWrite
 {
 	VkDescriptorBufferInfo bufferInfo;
-	uint32_t binding;
-};
-
-struct ImageDescriptor
-{
 	VkDescriptorImageInfo imageInfo;
+	VkDescriptorType type;
 	uint32_t binding;
 };
 
 struct DescriptorSet
 {
-	std::vector<BufferDescriptor> bufferDescriptors;
-	std::vector<BufferDescriptor> dynamicBufferDescriptors;
-	std::vector<ImageDescriptor> imageSamplerDescriptors;
-	std::vector<ImageDescriptor> storageImageDescriptors;
+	std::vector<DescriptorWrite> descriptors;
 
 	VkDescriptorSetLayout layout;
 

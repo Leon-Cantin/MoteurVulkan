@@ -34,16 +34,14 @@ void createSkyboxDescriptorSetLayout()
 
 void CreateSkyboxDescriptorSet(VkDescriptorPool descriptorPool, VkImageView skyboxImageView, VkSampler trilinearSampler)
 {
-	std::vector<DescriptorSet> descriptorSets;
+	std::array<DescriptorSet, SIMULTANEOUS_FRAMES> descriptorSets;
 	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
 	{
-		BufferDescriptor skyboxCommonMatricesBufferDesc = { {skyboxUniformBuffer.buffers[i], 0, VK_WHOLE_SIZE}, 0 };
-		ImageDescriptor skyboxTextureDesc = { {trilinearSampler, skyboxImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}, 1 };
-		DescriptorSet skyboxDescriptorSet;
-		skyboxDescriptorSet.bufferDescriptors.push_back(skyboxCommonMatricesBufferDesc);
-		skyboxDescriptorSet.imageSamplerDescriptors.push_back(skyboxTextureDesc);
-		skyboxDescriptorSet.layout = skyboxDescriptorSetLayout;
-		descriptorSets.push_back(skyboxDescriptorSet);
+		DescriptorSet& descriptorSet = descriptorSets[i] = {};
+		descriptorSet.descriptors.resize(2);
+		descriptorSet.descriptors[0] = { {skyboxUniformBuffer.buffers[i], 0, VK_WHOLE_SIZE}, {}, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0 };
+		descriptorSet.descriptors[1] = { {}, {trilinearSampler, skyboxImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 };
+		descriptorSet.layout = skyboxDescriptorSetLayout;
 
 	}
 	createDescriptorSets(descriptorPool, descriptorSets.size(), descriptorSets.data());

@@ -284,19 +284,18 @@ void createGeometryRenderPass(VkFormat colorFormat)
 void CreateGeometryDescriptorSet(VkDescriptorPool descriptorPool, VkBuffer* sceneUniformBuffers, VkBuffer* instanceUniformBuffers, VkBuffer* lightBuffers, VkImageView textureView,
 	VkImageView normalTextureView, VkSampler sampler, VkImageView shadowTextureView, VkSampler shadowSampler)
 {
-	std::vector<DescriptorSet> descriptorSets;
-	descriptorSets.resize(SIMULTANEOUS_FRAMES);
+	std::array<DescriptorSet, SIMULTANEOUS_FRAMES> descriptorSets;
 
 	//Per render pass descriptor est
 	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
 	{
-		DescriptorSet& geoDescriptorSet = descriptorSets[i];
-		geoDescriptorSet = {};
-		geoDescriptorSet.bufferDescriptors.push_back({ {sceneUniformBuffers[i], 0, VK_WHOLE_SIZE}, 0 });
-		geoDescriptorSet.bufferDescriptors.push_back({ {lightBuffers[i], 0, VK_WHOLE_SIZE}, 1 });
-		geoDescriptorSet.imageSamplerDescriptors.push_back({ { sampler, textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }, 2 });
-		geoDescriptorSet.imageSamplerDescriptors.push_back({ { sampler, normalTextureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }, 3 });
-		geoDescriptorSet.imageSamplerDescriptors.push_back({ { shadowSampler, shadowTextureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }, 4 });
+		DescriptorSet& geoDescriptorSet = descriptorSets[i] = {};
+		geoDescriptorSet.descriptors.resize(5);
+		geoDescriptorSet.descriptors[0] = { {sceneUniformBuffers[i], 0, VK_WHOLE_SIZE}, {}, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0 };
+		geoDescriptorSet.descriptors[1] = { {lightBuffers[i], 0, VK_WHOLE_SIZE}, {}, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 };
+		geoDescriptorSet.descriptors[2] = { {},  { sampler, textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2 };
+		geoDescriptorSet.descriptors[3] = { {},  { sampler, normalTextureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3 };
+		geoDescriptorSet.descriptors[4] = { {},  { shadowSampler, shadowTextureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4 };
 		geoDescriptorSet.layout = geoDescriptorSetLayout;
 	}
 	createDescriptorSets(descriptorPool, descriptorSets.size(), descriptorSets.data());
@@ -307,9 +306,9 @@ void CreateGeometryDescriptorSet(VkDescriptorPool descriptorPool, VkBuffer* scen
 	//Per instance descriptor set
 	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
 	{
-		DescriptorSet& geoDescriptorSet = descriptorSets[i];
-		geoDescriptorSet = {};
-		geoDescriptorSet.dynamicBufferDescriptors.push_back({ {instanceUniformBuffers[i], 0, VK_WHOLE_SIZE}, 0 });
+		DescriptorSet& geoDescriptorSet = descriptorSets[i] = {};
+		geoDescriptorSet.descriptors.resize(1);
+		geoDescriptorSet.descriptors[0] = { {instanceUniformBuffers[i], 0, VK_WHOLE_SIZE}, {}, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 0 };
 		geoDescriptorSet.layout = geoInstanceDescriptorSetLayout;
 	}
 	createDescriptorSets(descriptorPool, descriptorSets.size(), descriptorSets.data());
@@ -320,7 +319,6 @@ void CreateGeometryDescriptorSet(VkDescriptorPool descriptorPool, VkBuffer* scen
 
 void createGeoDescriptorSetLayout()
 {
-	//TODO: can make a single create descriptorSetlayout
 	const VkDescriptorSetLayoutBinding uboLayoutBinding = { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER , 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };
 	const VkDescriptorSetLayoutBinding lightLayoutBinding = { 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };
 	const VkDescriptorSetLayoutBinding samplerLayoutBinding = { 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };	

@@ -307,14 +307,13 @@ void CreateShadowRenderPass()
 
 void CreateShadowDescriptorSet(VkDescriptorPool descriptorPool, const VkBuffer*instanceUniformBuffer)
 {
-	std::vector<DescriptorSet> descriptorSets;
-	descriptorSets.resize(SIMULTANEOUS_FRAMES);
+	std::array<DescriptorSet, SIMULTANEOUS_FRAMES> descriptorSets;
 
 	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
 	{
-		DescriptorSet& geoDescriptorSet = descriptorSets[i];
-		geoDescriptorSet = {};
-		geoDescriptorSet.bufferDescriptors.push_back({ {shadowSceneUniformBuffer.buffers[i], 0, VK_WHOLE_SIZE}, 0 });
+		DescriptorSet& geoDescriptorSet = descriptorSets[i] = {};
+		geoDescriptorSet.descriptors.resize(1);
+		geoDescriptorSet.descriptors[0] = { {shadowSceneUniformBuffer.buffers[i], 0, VK_WHOLE_SIZE}, {}, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0 };
 		geoDescriptorSet.layout = shadowDescriptorSetLayout;
 	}
 	createDescriptorSets(descriptorPool, descriptorSets.size(), descriptorSets.data());
@@ -323,9 +322,9 @@ void CreateShadowDescriptorSet(VkDescriptorPool descriptorPool, const VkBuffer*i
 
 	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
 	{
-		DescriptorSet& geoDescriptorSet = descriptorSets[i];
-		geoDescriptorSet = {};
-		geoDescriptorSet.dynamicBufferDescriptors.push_back({ {instanceUniformBuffer[i], 0, VK_WHOLE_SIZE}, 0 });
+		DescriptorSet& geoDescriptorSet = descriptorSets[i] = {};
+		geoDescriptorSet.descriptors.resize(1);
+		geoDescriptorSet.descriptors[0] = { {instanceUniformBuffer[i], 0, VK_WHOLE_SIZE}, {}, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 0 };
 		geoDescriptorSet.layout = shadowInstanceDescriptorSetLayout;
 	}
 	createDescriptorSets(descriptorPool, descriptorSets.size(), descriptorSets.data());

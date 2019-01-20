@@ -40,8 +40,9 @@ void CreateTextDescriptorSetLayout()
 
 void CreateTextDescriptorSet(VkDescriptorPool descriptorPool, VkSampler trilinearSampler)
 {
-	DescriptorSet descriptorSet;
-	descriptorSet.imageSamplerDescriptors.push_back({{ trilinearSampler, g_fontImage.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}, 0});
+	DescriptorSet descriptorSet = {};
+	descriptorSet.descriptors.resize(1);
+	descriptorSet.descriptors[0] = { {}, { trilinearSampler, g_fontImage.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0 };
 	descriptorSet.layout = textDescriptorSetLayout;
 	createDescriptorSets(descriptorPool, 1, &descriptorSet);
 

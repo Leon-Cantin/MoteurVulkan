@@ -47,7 +47,6 @@ void createDescriptorSets(VkDescriptorPool descriptorPool, size_t count, Descrip
 		throw std::runtime_error("failed to allocate descriptor sets!");
 
 	//TODO: seperate the creation of sets and the update, could copy what's already on the GPU
-	//TODO: simplify this to only generate one type of write, all based on the incomming structure if possible
 	//Put descriptors into output struct and update it
 	std::vector<VkWriteDescriptorSet> descriptorWrites;
 	for (size_t i = 0; i < count; ++i)
@@ -57,68 +56,28 @@ void createDescriptorSets(VkDescriptorPool descriptorPool, size_t count, Descrip
 		descriptorSet.parentPool = descriptorPool;
 
 		//Buffers
-		for (size_t j = 0; j < descriptorSet.bufferDescriptors.size(); ++j) {
-			BufferDescriptor& bufferDescriptor = descriptorSet.bufferDescriptors[j];
+		for (size_t j = 0; j < descriptorSet.descriptors.size(); ++j) {
+			DescriptorWrite& descriptor = descriptorSet.descriptors[j];
 
 			VkWriteDescriptorSet writeDescriptorSet = {};
 			writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			writeDescriptorSet.dstSet = descriptorSet.set;
-			writeDescriptorSet.dstBinding = bufferDescriptor.binding;
+			writeDescriptorSet.dstBinding = descriptor.binding;
 			writeDescriptorSet.dstArrayElement = 0;
-			writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			writeDescriptorSet.descriptorType = descriptor.type;
 			writeDescriptorSet.descriptorCount = 1;
-			writeDescriptorSet.pBufferInfo = &bufferDescriptor.bufferInfo;
-			writeDescriptorSet.pImageInfo = nullptr; // Optional
+			if (descriptor.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER || descriptor.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC)
+			{
+				writeDescriptorSet.pBufferInfo = &descriptor.bufferInfo;
+				writeDescriptorSet.pImageInfo = nullptr;
+			}
+			else if (descriptor.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || descriptor.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+			{
+				writeDescriptorSet.pBufferInfo = nullptr;
+				writeDescriptorSet.pImageInfo = &descriptor.imageInfo;
+			}
 			writeDescriptorSet.pTexelBufferView = nullptr; // Optional
-			descriptorWrites.push_back(writeDescriptorSet);
-		}
 
-		//Buffers dynamic
-		for (size_t j = 0; j < descriptorSet.dynamicBufferDescriptors.size(); ++j) {
-			BufferDescriptor& dynamicDufferDescriptor = descriptorSet.dynamicBufferDescriptors[j];
-
-			VkWriteDescriptorSet writeDescriptorSet = {};
-			writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSet.dstSet = descriptorSet.set;
-			writeDescriptorSet.dstBinding = dynamicDufferDescriptor.binding;
-			writeDescriptorSet.dstArrayElement = 0;
-			writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-			writeDescriptorSet.descriptorCount = 1;
-			writeDescriptorSet.pBufferInfo = &dynamicDufferDescriptor.bufferInfo;
-			writeDescriptorSet.pImageInfo = nullptr; // Optional
-			writeDescriptorSet.pTexelBufferView = nullptr; // Optional
-			descriptorWrites.push_back(writeDescriptorSet);
-		}
-
-		//Combined image sampler
-		for (size_t j = 0; j < descriptorSet.imageSamplerDescriptors.size(); ++j) {
-			ImageDescriptor& cisDescriptor = descriptorSet.imageSamplerDescriptors[j];
-
-			VkWriteDescriptorSet writeDescriptorSet = {};
-			writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSet.dstSet = descriptorSet.set;
-			writeDescriptorSet.dstBinding = cisDescriptor.binding;
-			writeDescriptorSet.dstArrayElement = 0;
-			writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			writeDescriptorSet.descriptorCount = 1;
-			writeDescriptorSet.pImageInfo = &cisDescriptor.imageInfo;
-			writeDescriptorSet.pBufferInfo = nullptr; // Optional
-			descriptorWrites.push_back(writeDescriptorSet);
-		}
-
-		//storage image
-		for (size_t j = 0; j < descriptorSet.storageImageDescriptors.size(); ++j) {
-			ImageDescriptor& siDescriptor = descriptorSet.storageImageDescriptors[j];
-
-			VkWriteDescriptorSet writeDescriptorSet = {};
-			writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSet.dstSet = descriptorSet.set;
-			writeDescriptorSet.dstBinding = siDescriptor.binding;
-			writeDescriptorSet.dstArrayElement = 0;
-			writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-			writeDescriptorSet.descriptorCount = 1;
-			writeDescriptorSet.pImageInfo = &siDescriptor.imageInfo;
-			writeDescriptorSet.pBufferInfo = nullptr;
 			descriptorWrites.push_back(writeDescriptorSet);
 		}
 	}
