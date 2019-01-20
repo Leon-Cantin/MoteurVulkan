@@ -325,10 +325,6 @@ void Init()
 void cleanup() {
 	CleanupScene();
 
-	DestroyPerFrameBuffer(&wandererSceneInstanceDescriptorSet.instanceUniformBuffer);
-	DestroyPerFrameBuffer(&planeSceneInstanceDescriptorSet.instanceUniformBuffer);
-	DestroyPerFrameBuffer(&cubeSceneInstanceDescriptorSet.instanceUniformBuffer);
-
 	DestroyImage(skyboxImage);
 	DestroyImage(modelTextureImage);
 	DestroyImage(modelNormalTextureImage);

@@ -20,13 +20,13 @@ std::array<VkDescriptorSet, SIMULTANEOUS_FRAMES> geoInstanceDescriptorSet;
 
 PerFrameBuffer instanceMatricesBuffer;
 
-void CreateInstanceMatricesBuffers()
+void CreateInstanceMatricesBuffersHACK()
 {
 	uint32_t modelsCount = 3;
 	CreatePerFrameBuffer(sizeof(InstanceMatrices)*modelsCount, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &instanceMatricesBuffer);
 }
 
-const PerFrameBuffer& GetInstanceMatricesBuffer()
+const PerFrameBuffer& GetInstanceMatricesBufferHACK()
 {
 	return instanceMatricesBuffer;
 }

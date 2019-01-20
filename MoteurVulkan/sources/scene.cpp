@@ -128,6 +128,8 @@ void CreateGeometryRenderpassDescriptorSet(const GfxImage* albedoImage, const Gf
 
 	CreateGeometryDescriptorSet(descriptorPool, sceneUniformBuffer.buffers.data(), lightUniformBuffer.buffers.data(), albedoImage->imageView, normalImage->imageView, trilinearSampler,
 		shadowImages->imageView, shadowSampler);
+
+	CreateShadowDescriptorSet(descriptorPool, GetInstanceMatricesBufferHACK().buffers.data());
 }
 
 void CreateGeometryInstanceDescriptorSet( SceneInstanceSet* sceneInstanceDescriptorSet, uint32_t hackIndex)
@@ -136,8 +138,6 @@ void CreateGeometryInstanceDescriptorSet( SceneInstanceSet* sceneInstanceDescrip
 	const GfxImage *shadowImages = GetShadowDepthImage();
 
 	CreateSceneInstanceDescriptorSet( sceneInstanceDescriptorSet, hackIndex);
-
-	CreateShadowDescriptorSet(descriptorPool, sceneInstanceDescriptorSet->instanceUniformBuffer.buffers.data(), sceneInstanceDescriptorSet->shadowDescriptorSets.data());
 }
 
 VkFormat findDepthFormat() {
@@ -222,7 +222,7 @@ void InitScene()
 	createGeoDescriptorSetLayout();
 	createGeometryRenderPass(g_swapchain.surfaceFormat.format);
 	createGeoGraphicPipeline(g_swapchain.extent);
-	CreateInstanceMatricesBuffers();
+	CreateInstanceMatricesBuffersHACK();
 
 	QueueFamilyIndices queue_family_indices = find_queue_families(g_vk.physicalDevice);
 	CreateCommandPool(queue_family_indices.graphics_family.value(), &g_vk.graphicsCommandPool);
@@ -237,25 +237,28 @@ void InitScene()
 	createShadowSampler(&shadowSampler);
 
 	CreateGeometryUniformBuffer();
-	const uint32_t geometryDescriptorSets = 2;
-	const uint32_t modelBuffersCount = SIMULTANEOUS_FRAMES * 3;
-	const uint32_t modelImageCount = SIMULTANEOUS_FRAMES * 3;
+	const uint32_t geometryDescriptorSets = 2 * SIMULTANEOUS_FRAMES;
+	const uint32_t geometryBuffersCount =  2 * SIMULTANEOUS_FRAMES;
+	const uint32_t geometryImageCount = 3 * SIMULTANEOUS_FRAMES;
+	const uint32_t geomtryDynamicBuffersCount = 1 * SIMULTANEOUS_FRAMES;
 
-	const uint32_t shadowCastingModelCount = 3;
-	const uint32_t shadowBuffersCount = SIMULTANEOUS_FRAMES * shadowCastingModelCount * 2;
+	const uint32_t shadowDescriptorSets = 2 * SIMULTANEOUS_FRAMES;
+	const uint32_t shadowBuffersCount = 2 * SIMULTANEOUS_FRAMES;
+	const uint32_t shadowDynamicBuffersCount = 1 * SIMULTANEOUS_FRAMES;
 
-	const uint32_t skyboxBuffersCount = SIMULTANEOUS_FRAMES * 1;
-	const uint32_t skyboxImageCount = SIMULTANEOUS_FRAMES * 1;
+	const uint32_t skyboxDescriptorSetsCount = 1 * SIMULTANEOUS_FRAMES;
+	const uint32_t skyboxBuffersCount = 1 * SIMULTANEOUS_FRAMES;
+	const uint32_t skyboxImageCount = 1 * SIMULTANEOUS_FRAMES;
 
-	const uint32_t textImageCount = SIMULTANEOUS_FRAMES * 1; //Does not need to be duplicated for each frame
+	const uint32_t textDescriptorSetsCount = 1;
+	const uint32_t textImageCount = 1;
 
-	const uint32_t uniformBuffersCount = modelBuffersCount + shadowBuffersCount + skyboxBuffersCount;
-	const uint32_t imageSamplersCount = modelImageCount + skyboxImageCount + textImageCount;
+	const uint32_t uniformBuffersCount = geometryBuffersCount + shadowBuffersCount + skyboxBuffersCount;
+	const uint32_t imageSamplersCount = geometryImageCount + skyboxImageCount + textImageCount;
 	const uint32_t storageImageCount = 1;
+	const uint32_t uniformBuffersDynamicCount = geomtryDynamicBuffersCount + shadowDynamicBuffersCount;
 
-	const uint32_t uniformBuffersDynamicCount = 2;
-
-	const uint32_t maxSets = (geometryDescriptorSets + shadowCastingModelCount + 1 + 1)* SIMULTANEOUS_FRAMES;
+	const uint32_t maxSets = (geometryDescriptorSets + shadowDescriptorSets + skyboxDescriptorSetsCount + textDescriptorSetsCount);
 	createDescriptorPool(uniformBuffersCount, uniformBuffersDynamicCount, imageSamplersCount, storageImageCount, maxSets, &descriptorPool);
 
 	CreateShadowPass();
@@ -283,9 +286,8 @@ void UpdateGeometryUniformBuffer(const SceneInstance* sceneInstance, const Scene
 {
 	InstanceMatrices instanceMatrices = {};
 	instanceMatrices.model = ComputeSceneInstanceModelMatrix(*sceneInstance);
-	UpdatePerFrameBuffer( &(sceneInstanceDescriptorSet->instanceUniformBuffer), &instanceMatrices, sizeof(instanceMatrices), currentFrame);
 
-	const PerFrameBuffer& instanceMatricesBuffer = GetInstanceMatricesBuffer();
+	const PerFrameBuffer& instanceMatricesBuffer = GetInstanceMatricesBufferHACK();
 	VkDeviceSize frameMemoryOffset = GetMemoryOffsetForFrame(&instanceMatricesBuffer, currentFrame);
 	void* data;
 	vkMapMemory(g_vk.device, instanceMatricesBuffer.memory, sceneInstanceDescriptorSet->geometryBufferOffsets[currentFrame] + frameMemoryOffset, sizeof(InstanceMatrices), 0, &data);
@@ -329,7 +331,7 @@ void RecordCommandBuffer(uint32_t currentFrame, const SceneFrameData* frameData)
 	for (size_t i = 0; i < frameData->renderableAssets.size(); ++i)
 	{
 		const SceneRenderableAsset* renderable = frameData->renderableAssets[i];
-		CmdDrawShadowPass(graphicsCommandBuffer, renderable->modelAsset, renderable->descriptorSet->shadowDescriptorSets[currentFrame]);
+		CmdDrawShadowPass(graphicsCommandBuffer, renderable->descriptorSet, renderable->modelAsset, currentFrame);
 	}
 	CmdEndShadowPass(graphicsCommandBuffer);
 

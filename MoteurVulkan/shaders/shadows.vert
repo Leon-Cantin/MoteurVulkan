@@ -1,11 +1,12 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
+#include "shadersCommon.h"
 
-layout(binding = 0) uniform SceneMatrices {
+layout(set = RENDERPASS_SET, binding = 0) uniform SceneMatrices {
     mat4 view;
     mat4 proj;
 } sceneMatrices;
-layout(binding = 1) uniform InstanceMatrices {
+layout(set = INSTANCE_SET, binding = 1) uniform InstanceMatrices {
     mat4 model;
 } instanceMat;
 

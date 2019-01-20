@@ -21,8 +21,6 @@ glm::mat4 ComputeCameraSceneInstanceViewMatrix(const SceneInstance& sceneInstanc
 
 void CreateSceneInstanceDescriptorSet( SceneInstanceSet * o_set, uint32_t hackIndex )
 {
-	CreatePerFrameBuffer(sizeof(InstanceMatrices), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &o_set->instanceUniformBuffer);
-
 	for(size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
 		o_set->geometryBufferOffsets[i] = sizeof(InstanceMatrices) * hackIndex;
 }

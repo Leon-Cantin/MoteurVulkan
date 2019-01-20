@@ -10,11 +10,13 @@
 #include "vk_framework.h"
 #include "vk_buffer.h"
 #include "scene_instance.h"
+#include "..\shaders\shadersCommon.h"
 
 #include <vector>
 #include <array>
 
 VkDescriptorSetLayout shadowDescriptorSetLayout;
+VkDescriptorSetLayout shadowInstanceDescriptorSetLayout;
 RenderPass shadowRenderPass;
 GfxImage shadowDepthImage;
 FrameBuffer shadowFrameBuffer;
@@ -22,6 +24,9 @@ const VkFormat shadowDepthFormat = VK_FORMAT_D32_SFLOAT;
 const VkExtent2D shadowFrameBufferExtent = { 1024, 1024 };
 VkPipelineLayout shadowPipelineLayout;
 VkPipeline shadowPipeline;
+
+std::array<VkDescriptorSet, SIMULTANEOUS_FRAMES> shadowDescriptorSets;
+std::array<VkDescriptorSet, SIMULTANEOUS_FRAMES> shadowInstanceDescriptorSet;
 
 PerFrameBuffer shadowSceneUniformBuffer;
 
@@ -63,11 +68,13 @@ void CmdBeginShadowPass(VkCommandBuffer commandBuffer, size_t currentFrame)
 	CmdBeginVkLabel(commandBuffer, "Shadow Renderpass", glm::vec4(0.5f, 0.2f, 0.4f, 1.0f));
 	BeginRenderPass(commandBuffer, shadowRenderPass, shadowFrameBuffer.frameBuffer, shadowFrameBuffer.extent);
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowPipeline);
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowPipelineLayout, RENDERPASS_SET, 1, &shadowDescriptorSets[currentFrame], 0, nullptr);
 }
 
-void CmdDrawShadowPass(VkCommandBuffer commandBuffer, const ModelAsset* modelAsset, VkDescriptorSet shadowDescriptorSet)
+void CmdDrawShadowPass(VkCommandBuffer commandBuffer, const SceneInstanceSet* instanceSet, const ModelAsset* modelAsset, uint32_t currentFrame)
 {
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowPipelineLayout, 0, 1, &shadowDescriptorSet, 0, nullptr);
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowPipelineLayout, INSTANCE_SET, 1,
+		&shadowInstanceDescriptorSet[currentFrame], 1, &instanceSet->geometryBufferOffsets[currentFrame]);
 	CmdDrawIndexed(commandBuffer, *modelAsset);
 }
 
@@ -79,8 +86,22 @@ void CmdEndShadowPass(VkCommandBuffer commandBuffer)
 
 static void CreateShadowGraphicsPipeline(const VkVertexInputBindingDescription * vibDescription, const VkVertexInputAttributeDescription* visDescriptions, uint32_t visDescriptionsCount,
 	std::vector<char>& vertShaderCode, std::vector<char>& fragShaderCode, VkExtent2D framebufferExtent, VkRenderPass renderPass,
-	VkDescriptorSetLayout descriptorSetLayout, VkPipelineLayout* o_pipelineLayout, VkPipeline* o_pipeline)
+	VkPipelineLayout* o_pipelineLayout, VkPipeline* o_pipeline)
 {
+	//Pipeline layout
+	//Describe complete set of resources available (image, sampler, ubo, constants, ...)
+	VkDescriptorSetLayout descriptorSetLayouts [] = { shadowDescriptorSetLayout, shadowInstanceDescriptorSetLayout };
+	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
+	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipeline_layout_info.setLayoutCount = 2; // Optional
+	pipeline_layout_info.pSetLayouts = descriptorSetLayouts; // Optional
+	pipeline_layout_info.pushConstantRangeCount = 0; // Optional
+	pipeline_layout_info.pPushConstantRanges = nullptr; // Optional
+
+	if (vkCreatePipelineLayout(g_vk.device, &pipeline_layout_info, nullptr, o_pipelineLayout) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create pipeline layout!");
+	}
+
 	VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
 	vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertex_input_info.vertexBindingDescriptionCount = 1;
@@ -181,19 +202,6 @@ static void CreateShadowGraphicsPipeline(const VkVertexInputBindingDescription *
 	viewport_state_info.scissorCount = 1;
 	viewport_state_info.pScissors = &scissor;
 
-	//Pipeline layout
-	//Describe complete set of resources available (image, sampler, ubo, constants, ...)
-	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
-	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipeline_layout_info.setLayoutCount = 1; // Optional
-	pipeline_layout_info.pSetLayouts = &descriptorSetLayout; // Optional
-	pipeline_layout_info.pushConstantRangeCount = 0; // Optional
-	pipeline_layout_info.pPushConstantRanges = nullptr; // Optional
-
-	if (vkCreatePipelineLayout(g_vk.device, &pipeline_layout_info, nullptr, o_pipelineLayout) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create pipeline layout!");
-	}
-
 	//Pipeline
 	VkGraphicsPipelineCreateInfo pipeline_info = {};
 	pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -238,7 +246,7 @@ void CreateShadowGraphicPipeline()
 	std::vector<char> fragShaderCode = readFile("shaders/shadows.frag.spv");
 
 	CreateShadowGraphicsPipeline(&bindingDescription, attributeDescriptions.data(), static_cast<uint32_t>(attributeDescriptions.size()), vertShaderCode, fragShaderCode,
-		shadowFrameBufferExtent, shadowRenderPass.vk_renderpass, shadowDescriptorSetLayout, &shadowPipelineLayout, &shadowPipeline);
+		shadowFrameBufferExtent, shadowRenderPass.vk_renderpass, &shadowPipelineLayout, &shadowPipeline);
 }
 
 static void CreateShadowRenderPass( const VkFormat depthFormat, RenderPass * o_renderPass)
@@ -297,32 +305,44 @@ void CreateShadowRenderPass()
 	MarkVkObject((uint64_t)shadowRenderPass.vk_renderpass, VK_OBJECT_TYPE_RENDER_PASS, "Shadow Renderpass");
 }
 
-void CreateShadowDescriptorSet(VkDescriptorPool descriptorPool, VkBuffer*instanceUniformBuffer, VkDescriptorSet* o_shadowDescriptorSets)
+void CreateShadowDescriptorSet(VkDescriptorPool descriptorPool, const VkBuffer*instanceUniformBuffer)
 {
 	std::vector<DescriptorSet> descriptorSets;
-	descriptorSets.reserve(SIMULTANEOUS_FRAMES);
+	descriptorSets.resize(SIMULTANEOUS_FRAMES);
 
 	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
 	{
-		DescriptorSet geoDescriptorSet;
+		DescriptorSet& geoDescriptorSet = descriptorSets[i];
+		geoDescriptorSet = {};
 		geoDescriptorSet.bufferDescriptors.push_back({ {shadowSceneUniformBuffer.buffers[i], 0, VK_WHOLE_SIZE}, 0 });
-		geoDescriptorSet.bufferDescriptors.push_back({ {instanceUniformBuffer[i], 0, VK_WHOLE_SIZE}, 1 });
 		geoDescriptorSet.layout = shadowDescriptorSetLayout;
-		descriptorSets.push_back(geoDescriptorSet);
 	}
 	createDescriptorSets(descriptorPool, descriptorSets.size(), descriptorSets.data());
+	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
+		shadowDescriptorSets[i] = descriptorSets[i].set;
 
-	for(size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
-		o_shadowDescriptorSets[i] = descriptorSets[i].set;
+	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
+	{
+		DescriptorSet& geoDescriptorSet = descriptorSets[i];
+		geoDescriptorSet = {};
+		geoDescriptorSet.dynamicBufferDescriptors.push_back({ {instanceUniformBuffer[i], 0, VK_WHOLE_SIZE}, 1 });
+		geoDescriptorSet.layout = shadowInstanceDescriptorSetLayout;
+	}
+	createDescriptorSets(descriptorPool, descriptorSets.size(), descriptorSets.data());
+	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
+		shadowInstanceDescriptorSet[i] = descriptorSets[i].set;
 }
 
 void CreateShadowDescriptorSetLayout()
 {
 	const VkDescriptorSetLayoutBinding sceneLayoutBinding = { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER , 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr };
-	const VkDescriptorSetLayoutBinding instanceLayoutBinding = { 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr };
 
-	const std::array<VkDescriptorSetLayoutBinding, 2> bindings = { sceneLayoutBinding, instanceLayoutBinding };
+	const std::array<VkDescriptorSetLayoutBinding, 1> bindings = { sceneLayoutBinding };
 	CreateDesciptorSetLayout(bindings.data(), static_cast<uint32_t>(bindings.size()), &shadowDescriptorSetLayout);
+
+	const VkDescriptorSetLayoutBinding instanceLayoutBinding = { 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr };
+	const std::array<VkDescriptorSetLayoutBinding, 1> instanceBindings = { instanceLayoutBinding };
+	CreateDesciptorSetLayout(instanceBindings.data(), static_cast<uint32_t>(instanceBindings.size()), &shadowInstanceDescriptorSetLayout);
 }
 
 void CreateShadowPass()
@@ -342,6 +362,7 @@ void CleanupShadowPass()
 	vkDestroyPipelineLayout(g_vk.device, shadowPipelineLayout, nullptr);
 	vkDestroyRenderPass(g_vk.device, shadowRenderPass.vk_renderpass, nullptr);
 	vkDestroyDescriptorSetLayout(g_vk.device, shadowDescriptorSetLayout, nullptr);
+	vkDestroyDescriptorSetLayout(g_vk.device, shadowInstanceDescriptorSetLayout, nullptr);
 
 	DestroyPerFrameBuffer(&shadowSceneUniformBuffer);
 	vkDestroyFramebuffer(g_vk.device, shadowFrameBuffer.frameBuffer, nullptr);		

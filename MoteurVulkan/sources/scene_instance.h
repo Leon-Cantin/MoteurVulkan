@@ -8,9 +8,7 @@
 
 struct SceneInstanceSet
 {
-	std::array<VkDescriptorSet, SIMULTANEOUS_FRAMES> shadowDescriptorSets;
 	std::array<uint32_t, SIMULTANEOUS_FRAMES> geometryBufferOffsets;
-	PerFrameBuffer instanceUniformBuffer;
 };
 
 struct SceneInstance

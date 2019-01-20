@@ -11,9 +11,9 @@ void CleanupShadowPass();
 
 void UpdateShadowUniformBuffers(size_t currentFrame, const SceneMatricesUniform* sceneMatrices);
 void CmdBeginShadowPass(VkCommandBuffer commandBuffer, size_t currentFrame);
-void CmdDrawShadowPass(VkCommandBuffer commandBuffer, const ModelAsset* modelAsset, VkDescriptorSet shadowDescriptorSet);
+void CmdDrawShadowPass(VkCommandBuffer commandBuffer, const SceneInstanceSet* instanceSet, const ModelAsset* modelAsset, uint32_t currentFrame);
 void CmdEndShadowPass(VkCommandBuffer commandBuffer);
-void CreateShadowDescriptorSet(VkDescriptorPool descriptorPool, VkBuffer*instanceUniformBuffer, VkDescriptorSet* o_shadowDescriptorSets);
+void CreateShadowDescriptorSet(VkDescriptorPool descriptorPool, const VkBuffer*instanceUniformBuffer);
 void computeShadowMatrix(const glm::vec3& light_location, glm::mat4* view, glm::mat4* projection);
 
 const GfxImage* GetShadowDepthImage();
