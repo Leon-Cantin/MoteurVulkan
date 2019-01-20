@@ -6,16 +6,17 @@ layout(set = RENDERPASS_SET, binding = 0) uniform UniformBufferObject {
     mat4 view;
     mat4 proj;
 } sceneMat;
-layout(set = RENDERPASS_SET, binding = 1) uniform sampler2D albedoSampler;
-layout(set = RENDERPASS_SET, binding = 3) uniform sampler2D normalSampler;
-layout(set = RENDERPASS_SET, binding = 5) uniform sampler2DShadow shadowSampler;
-layout(set = RENDERPASS_SET, binding = 2) uniform Light
+layout(set = RENDERPASS_SET, binding = 1) uniform Light
 {	
 	mat4 shadowMatrix;
 	vec3 location;
 	float intensity;
 }light;
-layout(set = INSTANCE_SET, binding = 4) uniform InstanceMatrices {
+layout(set = RENDERPASS_SET, binding = 2) uniform sampler2D albedoSampler;
+layout(set = RENDERPASS_SET, binding = 3) uniform sampler2D normalSampler;
+layout(set = RENDERPASS_SET, binding = 4) uniform sampler2DShadow shadowSampler;
+
+layout(set = INSTANCE_SET, binding = 0) uniform InstanceMatrices {
     mat4 model;
 } instanceMat;
 

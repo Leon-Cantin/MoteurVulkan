@@ -46,6 +46,14 @@ PerFrameBuffer lightUniformBuffer;
 VkSampler trilinearSampler;
 VkSampler shadowSampler;
 
+PerFrameBuffer instanceMatricesBuffer;
+
+void CreateInstanceMatricesBuffers()
+{
+	uint32_t modelsCount = 3;
+	CreatePerFrameBuffer(sizeof(InstanceMatrices)*modelsCount, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &instanceMatricesBuffer);
+}
+
 void createOutputFrameBuffer()
 {
 	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i) {
@@ -126,17 +134,14 @@ void CreateGeometryRenderpassDescriptorSet(const GfxImage* albedoImage, const Gf
 	//TODO review how to pass shadowmaps
 	const GfxImage *shadowImages = GetShadowDepthImage();
 
-	CreateGeometryDescriptorSet(descriptorPool, sceneUniformBuffer.buffers.data(), lightUniformBuffer.buffers.data(), albedoImage->imageView, normalImage->imageView, trilinearSampler,
+	CreateGeometryDescriptorSet(descriptorPool, sceneUniformBuffer.buffers.data(), instanceMatricesBuffer.buffers.data(), lightUniformBuffer.buffers.data(), albedoImage->imageView, normalImage->imageView, trilinearSampler,
 		shadowImages->imageView, shadowSampler);
 
-	CreateShadowDescriptorSet(descriptorPool, GetInstanceMatricesBufferHACK().buffers.data());
+	CreateShadowDescriptorSet(descriptorPool, instanceMatricesBuffer.buffers.data());
 }
 
 void CreateGeometryInstanceDescriptorSet( SceneInstanceSet* sceneInstanceDescriptorSet, uint32_t hackIndex)
 {
-	//TODO review how to pass shadowmaps
-	const GfxImage *shadowImages = GetShadowDepthImage();
-
 	CreateSceneInstanceDescriptorSet( sceneInstanceDescriptorSet, hackIndex);
 }
 
@@ -222,7 +227,7 @@ void InitScene()
 	createGeoDescriptorSetLayout();
 	createGeometryRenderPass(g_swapchain.surfaceFormat.format);
 	createGeoGraphicPipeline(g_swapchain.extent);
-	CreateInstanceMatricesBuffersHACK();
+	CreateInstanceMatricesBuffers();
 
 	QueueFamilyIndices queue_family_indices = find_queue_families(g_vk.physicalDevice);
 	CreateCommandPool(queue_family_indices.graphics_family.value(), &g_vk.graphicsCommandPool);
@@ -287,7 +292,6 @@ void UpdateGeometryUniformBuffer(const SceneInstance* sceneInstance, const Scene
 	InstanceMatrices instanceMatrices = {};
 	instanceMatrices.model = ComputeSceneInstanceModelMatrix(*sceneInstance);
 
-	const PerFrameBuffer& instanceMatricesBuffer = GetInstanceMatricesBufferHACK();
 	VkDeviceSize frameMemoryOffset = GetMemoryOffsetForFrame(&instanceMatricesBuffer, currentFrame);
 	void* data;
 	vkMapMemory(g_vk.device, instanceMatricesBuffer.memory, sceneInstanceDescriptorSet->geometryBufferOffsets[currentFrame] + frameMemoryOffset, sizeof(InstanceMatrices), 0, &data);
@@ -430,6 +434,7 @@ void CleanupScene() {
 
 	DestroyPerFrameBuffer(&lightUniformBuffer);
 	DestroyPerFrameBuffer(&sceneUniformBuffer);
+	DestroyPerFrameBuffer(&instanceMatricesBuffer);
 
 	CleanupSkybox();
 

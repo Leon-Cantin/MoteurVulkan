@@ -18,19 +18,6 @@ VkPipeline geoGraphicsPipeline;
 std::array<VkDescriptorSet, SIMULTANEOUS_FRAMES> geoDescriptorSets;
 std::array<VkDescriptorSet, SIMULTANEOUS_FRAMES> geoInstanceDescriptorSet;
 
-PerFrameBuffer instanceMatricesBuffer;
-
-void CreateInstanceMatricesBuffersHACK()
-{
-	uint32_t modelsCount = 3;
-	CreatePerFrameBuffer(sizeof(InstanceMatrices)*modelsCount, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &instanceMatricesBuffer);
-}
-
-const PerFrameBuffer& GetInstanceMatricesBufferHACK()
-{
-	return instanceMatricesBuffer;
-}
-
 static void createGeoGraphicsPipeline(const VkVertexInputBindingDescription * vibDescription, const VkVertexInputAttributeDescription* visDescriptions, uint32_t visDescriptionsCount, std::vector<char>& vertShaderCode, std::vector<char>& fragShaderCode, VkExtent2D framebufferExtent, VkRenderPass renderPass,
 	VkPipelineLayout pipelineLayout, VkPipeline* o_pipeline)
 {
@@ -294,7 +281,7 @@ void createGeometryRenderPass(VkFormat colorFormat)
 	MarkVkObject((uint64_t)geometryRenderPass.vk_renderpass, VK_OBJECT_TYPE_RENDER_PASS, "Geometry Renderpass");
 }
 
-void CreateGeometryDescriptorSet(VkDescriptorPool descriptorPool, VkBuffer* sceneUniformBuffers, VkBuffer* lightBuffers, VkImageView textureView,
+void CreateGeometryDescriptorSet(VkDescriptorPool descriptorPool, VkBuffer* sceneUniformBuffers, VkBuffer* instanceUniformBuffers, VkBuffer* lightBuffers, VkImageView textureView,
 	VkImageView normalTextureView, VkSampler sampler, VkImageView shadowTextureView, VkSampler shadowSampler)
 {
 	std::vector<DescriptorSet> descriptorSets;
@@ -306,10 +293,10 @@ void CreateGeometryDescriptorSet(VkDescriptorPool descriptorPool, VkBuffer* scen
 		DescriptorSet& geoDescriptorSet = descriptorSets[i];
 		geoDescriptorSet = {};
 		geoDescriptorSet.bufferDescriptors.push_back({ {sceneUniformBuffers[i], 0, VK_WHOLE_SIZE}, 0 });
-		geoDescriptorSet.bufferDescriptors.push_back({ {lightBuffers[i], 0, VK_WHOLE_SIZE}, 2 });
-		geoDescriptorSet.imageSamplerDescriptors.push_back({ { sampler, textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }, 1 });
+		geoDescriptorSet.bufferDescriptors.push_back({ {lightBuffers[i], 0, VK_WHOLE_SIZE}, 1 });
+		geoDescriptorSet.imageSamplerDescriptors.push_back({ { sampler, textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }, 2 });
 		geoDescriptorSet.imageSamplerDescriptors.push_back({ { sampler, normalTextureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }, 3 });
-		geoDescriptorSet.imageSamplerDescriptors.push_back({ { shadowSampler, shadowTextureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }, 5 });
+		geoDescriptorSet.imageSamplerDescriptors.push_back({ { shadowSampler, shadowTextureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }, 4 });
 		geoDescriptorSet.layout = geoDescriptorSetLayout;
 	}
 	createDescriptorSets(descriptorPool, descriptorSets.size(), descriptorSets.data());
@@ -322,7 +309,7 @@ void CreateGeometryDescriptorSet(VkDescriptorPool descriptorPool, VkBuffer* scen
 	{
 		DescriptorSet& geoDescriptorSet = descriptorSets[i];
 		geoDescriptorSet = {};
-		geoDescriptorSet.dynamicBufferDescriptors.push_back({ {instanceMatricesBuffer.buffers[i], 0, VK_WHOLE_SIZE}, 4 });
+		geoDescriptorSet.dynamicBufferDescriptors.push_back({ {instanceUniformBuffers[i], 0, VK_WHOLE_SIZE}, 0 });
 		geoDescriptorSet.layout = geoInstanceDescriptorSetLayout;
 	}
 	createDescriptorSets(descriptorPool, descriptorSets.size(), descriptorSets.data());
@@ -335,15 +322,15 @@ void createGeoDescriptorSetLayout()
 {
 	//TODO: can make a single create descriptorSetlayout
 	const VkDescriptorSetLayoutBinding uboLayoutBinding = { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER , 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };
-	const VkDescriptorSetLayoutBinding samplerLayoutBinding = { 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };
-	const VkDescriptorSetLayoutBinding lightLayoutBinding = { 2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };
+	const VkDescriptorSetLayoutBinding lightLayoutBinding = { 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };
+	const VkDescriptorSetLayoutBinding samplerLayoutBinding = { 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };	
 	const VkDescriptorSetLayoutBinding normalSamplerLayoutBinding = { 3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };
-	const VkDescriptorSetLayoutBinding shadowSamplerLayoutBinding = { 5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };
+	const VkDescriptorSetLayoutBinding shadowSamplerLayoutBinding = { 4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };
 
 	const std::array<VkDescriptorSetLayoutBinding, 5> bindings = { uboLayoutBinding, samplerLayoutBinding, lightLayoutBinding, normalSamplerLayoutBinding, shadowSamplerLayoutBinding };
 	CreateDesciptorSetLayout(bindings.data(), static_cast<uint32_t>(bindings.size()), &geoDescriptorSetLayout);
 
-	const VkDescriptorSetLayoutBinding instanceUboLayoutBinding = { 4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC , 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };
+	const VkDescriptorSetLayoutBinding instanceUboLayoutBinding = { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC , 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };
 	const std::array<VkDescriptorSetLayoutBinding, 1> bindings2 = { instanceUboLayoutBinding };
 	CreateDesciptorSetLayout(bindings2.data(), static_cast<uint32_t>(bindings2.size()), &geoInstanceDescriptorSetLayout);
 }
@@ -386,7 +373,6 @@ void CleanupGeometryRenderpass()
 {
 	vkDestroyDescriptorSetLayout(g_vk.device, geoDescriptorSetLayout, nullptr);
 	vkDestroyDescriptorSetLayout(g_vk.device, geoInstanceDescriptorSetLayout, nullptr);
-	DestroyPerFrameBuffer(&instanceMatricesBuffer);
 }
 
 VkRenderPass GetGeometryRenderPass()

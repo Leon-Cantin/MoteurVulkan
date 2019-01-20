@@ -6,7 +6,7 @@ layout(set = RENDERPASS_SET, binding = 0) uniform SceneMatrices {
     mat4 view;
     mat4 proj;
 } sceneMatrices;
-layout(set = INSTANCE_SET, binding = 1) uniform InstanceMatrices {
+layout(set = INSTANCE_SET, binding = 0) uniform InstanceMatrices {
     mat4 model;
 } instanceMat;
 

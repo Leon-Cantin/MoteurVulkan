@@ -325,7 +325,7 @@ void CreateShadowDescriptorSet(VkDescriptorPool descriptorPool, const VkBuffer*i
 	{
 		DescriptorSet& geoDescriptorSet = descriptorSets[i];
 		geoDescriptorSet = {};
-		geoDescriptorSet.dynamicBufferDescriptors.push_back({ {instanceUniformBuffer[i], 0, VK_WHOLE_SIZE}, 1 });
+		geoDescriptorSet.dynamicBufferDescriptors.push_back({ {instanceUniformBuffer[i], 0, VK_WHOLE_SIZE}, 0 });
 		geoDescriptorSet.layout = shadowInstanceDescriptorSetLayout;
 	}
 	createDescriptorSets(descriptorPool, descriptorSets.size(), descriptorSets.data());
@@ -340,7 +340,7 @@ void CreateShadowDescriptorSetLayout()
 	const std::array<VkDescriptorSetLayoutBinding, 1> bindings = { sceneLayoutBinding };
 	CreateDesciptorSetLayout(bindings.data(), static_cast<uint32_t>(bindings.size()), &shadowDescriptorSetLayout);
 
-	const VkDescriptorSetLayoutBinding instanceLayoutBinding = { 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr };
+	const VkDescriptorSetLayoutBinding instanceLayoutBinding = { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr };
 	const std::array<VkDescriptorSetLayoutBinding, 1> instanceBindings = { instanceLayoutBinding };
 	CreateDesciptorSetLayout(instanceBindings.data(), static_cast<uint32_t>(instanceBindings.size()), &shadowInstanceDescriptorSetLayout);
 }

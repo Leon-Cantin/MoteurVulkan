@@ -9,17 +9,12 @@
 #include "scene_instance.h"
 
 void createGeoDescriptorSetLayout();
-void CreateInstanceMatricesBuffersHACK();
 void CleanupGeometryRenderpassAfterSwapchain();
 void CleanupGeometryRenderpass();
 void createGeoGraphicPipeline(VkExtent2D extent);
 void createGeometryRenderPass(VkFormat colorFormat);
-void CreateGeometryDescriptorSet(VkDescriptorPool descriptorPool, VkBuffer* sceneUniformBuffers, VkBuffer* lightBuffers, VkImageView textureView,
+void CreateGeometryDescriptorSet(VkDescriptorPool descriptorPool, VkBuffer* sceneUniformBuffers, VkBuffer* instanceUniformBuffers, VkBuffer* lightBuffers, VkImageView textureView,
 	VkImageView normalTextureView, VkSampler sampler, VkImageView shadowTextureView, VkSampler shadowSampler);
-
-//TODO get rid of this function, it is not specific to this renderpass
-const PerFrameBuffer& GetInstanceMatricesBufferHACK();
-
 
 void CmdBeginGeometryRenderPass(VkCommandBuffer commandBuffer, VkFramebuffer frameBuffer, VkExtent2D extent, uint32_t currentFrame);
 void CmdEndGeometryRenderPass(VkCommandBuffer vkCommandBuffer);
