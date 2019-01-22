@@ -43,9 +43,6 @@ std::array<VkFence, SIMULTANEOUS_FRAMES> inFlightFences;
 PerFrameBuffer sceneUniformBuffer;
 PerFrameBuffer lightUniformBuffer;
 
-VkSampler trilinearSampler;
-VkSampler shadowSampler;
-
 PerFrameBuffer instanceMatricesBuffer;
 
 void CreateInstanceMatricesBuffers()
@@ -134,8 +131,8 @@ void CreateGeometryRenderpassDescriptorSet(const GfxImage* albedoImage, const Gf
 	//TODO review how to pass shadowmaps
 	const GfxImage *shadowImages = GetShadowDepthImage();
 
-	CreateGeometryDescriptorSet(descriptorPool, sceneUniformBuffer.buffers.data(), instanceMatricesBuffer.buffers.data(), lightUniformBuffer.buffers.data(), albedoImage->imageView, normalImage->imageView, trilinearSampler,
-		shadowImages->imageView, shadowSampler);
+	CreateGeometryDescriptorSet(descriptorPool, sceneUniformBuffer.buffers.data(), instanceMatricesBuffer.buffers.data(), lightUniformBuffer.buffers.data(), albedoImage->imageView, normalImage->imageView, GetSampler(Samplers::Trilinear),
+		shadowImages->imageView, GetSampler(Samplers::Shadow));
 
 	CreateShadowDescriptorSet(descriptorPool, instanceMatricesBuffer.buffers.data());
 }
@@ -213,7 +210,7 @@ void InitSkybox(const GfxImage* skyboxImage)
 {
 	createSkyboxDescriptorSetLayout();
 	createSkyboxUniformBuffers();
-	CreateSkyboxDescriptorSet(descriptorPool, skyboxImage->imageView, trilinearSampler);
+	CreateSkyboxDescriptorSet(descriptorPool, skyboxImage->imageView, GetSampler(Samplers::Trilinear));
 	create_skybox_render_pass(g_swapchain.surfaceFormat.format);
 	create_skybox_graphics_pipeline(g_swapchain.extent);
 }
@@ -238,8 +235,7 @@ void InitScene()
 	createDepthResources();
 	createOutputFrameBuffer();
 
-	createTriLinearSampler(&trilinearSampler);
-	createShadowSampler(&shadowSampler);
+	InitSamplers();
 
 	CreateGeometryUniformBuffer();
 	const uint32_t geometryDescriptorSets = 2 * SIMULTANEOUS_FRAMES;
@@ -271,7 +267,7 @@ void InitScene()
 	LoadFontTexture();
 	InitTextRenderPass(g_swapchain);
 	CreateTextVertexBuffer(256);
-	CreateTextDescriptorSet(descriptorPool, trilinearSampler);
+	CreateTextDescriptorSet(descriptorPool, GetSampler(Samplers::Trilinear));
 
 	CreateCommandBuffer();
 	create_sync_objects();
@@ -438,8 +434,7 @@ void CleanupScene() {
 
 	CleanupSkybox();
 
-	vkDestroySampler(g_vk.device, trilinearSampler, nullptr);
-	vkDestroySampler(g_vk.device, shadowSampler, nullptr);
+	DestroySamplers();
 
 	CleanupTextRenderPass();
 

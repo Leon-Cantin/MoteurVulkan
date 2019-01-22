@@ -104,7 +104,7 @@ void CreateLastRenderPass(const std::vector<VkFormat>& colorFormats, const VkFor
 		color_attachement.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		color_attachement.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		color_attachement.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		color_attachement.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; //TODO; make some kind of chain that automatically compute the right layout
+		color_attachement.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; //TODO make frame graph
 
 		VkAttachmentReference& color_attachement_ref = color_attachement_refs[i];
 		color_attachement_ref = {};

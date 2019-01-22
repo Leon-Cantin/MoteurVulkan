@@ -15,6 +15,13 @@ struct GfxImage {
 	uint32_t mipLevels;
 };
 
+enum class Samplers
+{
+	Trilinear = 0,
+	Shadow,
+	Count
+};
+
 void Load3DTexture(const char* filename, GfxImage& o_image);
 void Load2DTextureFromFile(const char* filename, GfxImage& o_image);
 void Load2DTexture(void * data, uint32_t width, uint32_t height, uint32_t miplevels, uint32_t pixelByteSize, VkFormat format, GfxImage& o_image);
@@ -27,8 +34,9 @@ VkImageView createCubeImageView(VkImage image, VkFormat format, VkImageAspectFla
 VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
 
 //TODO: create an enum with all sampler types to index inside of an array of samplers : sampler getSampler(enumSampler)
-void createTriLinearSampler(VkSampler* o_sampler);
-void createShadowSampler(VkSampler* o_sampler);
+void InitSamplers();
+void DestroySamplers();
+VkSampler GetSampler(Samplers samplerId);
 
 void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount);
 void copyImageToDeviceLocalMemory(void* pixels, VkDeviceSize imageSize, uint32_t texWidth, uint32_t texHeight, uint32_t layerCount, uint32_t mipLevel, VkFormat format, VkImage image);
