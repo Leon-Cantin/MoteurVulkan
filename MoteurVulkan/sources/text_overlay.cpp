@@ -376,10 +376,30 @@ void UpdateText( const TextZone * textZones, size_t textZonesCount, VkExtent2D s
 	}
 
 	VkDeviceSize bufferSize = sizeof(text_vertices[0]) * text_vertices.size();
-	copyDataToDeviceLocalMemory( textVertexBuffer, text_vertices.data(), bufferSize);
+	UpdateBuffer( textVertexBufferMemory, text_vertices.data(), bufferSize);
+	//copyDataToDeviceLocalMemory( textVertexBuffer, text_vertices.data(), bufferSize);
+	/*VkMappedMemoryRange vertexMemoryRange = {};
+	vertexMemoryRange.memory = textVertexBufferMemory;
+	vertexMemoryRange.offset = 0;
+	vertexMemoryRange.size = bufferSize;
+	vertexMemoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+	void* vdata;
+	vkMapMemory(g_vk.device, textVertexBufferMemory, 0, bufferSize, 0, &vdata);
+	memcpy(vdata, text_vertices.data(), bufferSize);
+	vkFlushMappedMemoryRanges(g_vk.device, 1, &vertexMemoryRange);*/
 
 	bufferSize = sizeof(text_indices[0]) * text_indices.size();
-	copyDataToDeviceLocalMemory( textIndexBuffer, text_indices.data(), bufferSize);
+	UpdateBuffer(textIndexBufferMemory, text_indices.data(), bufferSize);
+	//copyDataToDeviceLocalMemory( textIndexBuffer, text_indices.data(), bufferSize);
+	/*VkMappedMemoryRange indexMemoryRange = {};
+	indexMemoryRange.memory = textIndexBufferMemory;
+	indexMemoryRange.offset = 0;
+	indexMemoryRange.size = bufferSize;
+	indexMemoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+	void* idata;
+	vkMapMemory(g_vk.device, textIndexBufferMemory, 0, bufferSize, 0, &idata);
+	memcpy(idata, text_indices.data(), bufferSize);
+	vkFlushMappedMemoryRanges(g_vk.device, 1, &indexMemoryRange);*/
 }
 
 void CreateTextVertexBuffer(size_t maxCharCount)
@@ -387,11 +407,13 @@ void CreateTextVertexBuffer(size_t maxCharCount)
 	maxTextCharCount = static_cast<uint32_t>(maxCharCount);
 
 	
-	VkDeviceSize bufferSize = sizeof(TextVertex) * maxCharCount * verticesPerChar;	
-	createBufferToDeviceLocalMemory( bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &textVertexBuffer, &textVertexBufferMemory);
+	VkDeviceSize bufferSize = sizeof(TextVertex) * maxCharCount * verticesPerChar;
+	create_buffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, textVertexBuffer, textVertexBufferMemory);
+	//createBufferToDeviceLocalMemory( bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &textVertexBuffer, &textVertexBufferMemory);
 
 	bufferSize = sizeof(Index_t) * maxCharCount * indexesPerChar;
-	createBufferToDeviceLocalMemory( bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, &textIndexBuffer, &textIndexBufferMemory);
+	create_buffer(bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, textIndexBuffer, textIndexBufferMemory);
+	//createBufferToDeviceLocalMemory( bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, &textIndexBuffer, &textIndexBufferMemory);
 }
 
 void LoadFontTexture()

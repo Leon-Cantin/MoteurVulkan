@@ -1,6 +1,7 @@
 /.vs/
 /MoteurVulkan/Intermediate
 /output
+!/output/assets
 /*.txt
 /*.pdf
 /*.cap

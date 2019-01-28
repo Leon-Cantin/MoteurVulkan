@@ -207,6 +207,7 @@
   <ItemGroup>
     <ClInclude Include="sources\camera_orbit.h" />
     <ClInclude Include="sources\console_command.h" />
+    <ClInclude Include="sources\defines_global.h" />
     <ClInclude Include="sources\descriptors.h" />
     <ClInclude Include="sources\framebuffer.h" />
     <ClInclude Include="sources\input.h" />

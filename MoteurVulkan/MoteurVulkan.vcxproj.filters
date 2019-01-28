@@ -184,5 +184,8 @@
     <ClInclude Include="sources\tick_system.h">
       <Filter>sources</Filter>
     </ClInclude>
+    <ClInclude Include="sources\defines_global.h">
+      <Filter>sources</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
