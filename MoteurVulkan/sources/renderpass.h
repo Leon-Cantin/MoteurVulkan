@@ -9,9 +9,6 @@ struct RenderPass {
 	VkFormat depthFormat;
 };
 
-void CreateRenderPass(const std::vector<VkFormat>& colorFormats, const VkFormat depthFormat, RenderPass * o_renderPass);
-void CreateLastRenderPass(const std::vector<VkFormat>& colorFormats, const VkFormat depthFormat, RenderPass * o_renderPass);
-
 void BeginRenderPass(VkCommandBuffer commandBuffer, const RenderPass& renderpass, VkFramebuffer framebuffer, VkExtent2D extent);
 void EndRenderPass(VkCommandBuffer commandBuffer);
 

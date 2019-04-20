@@ -217,12 +217,9 @@ void create_skybox_graphics_pipeline(VkExtent2D extent)
 		skyboxDescriptorSetLayout, &skyboxPipelineLayout, &skyboxGraphicsPipeline);
 }
 
-
-void create_skybox_render_pass(VkFormat colorFormat)
+void AddSkyboxRenderPass(const RenderPass& _skyboxRenderPass)
 {
-	std::vector<VkFormat> colorImages = { colorFormat };
-	CreateLastRenderPass(colorImages, VK_FORMAT_D32_SFLOAT, &skyboxRenderPass);
-	MarkVkObject((uint64_t)skyboxRenderPass.vk_renderpass, VK_OBJECT_TYPE_RENDER_PASS, "Skybox Renderpass");
+	skyboxRenderPass = _skyboxRenderPass;
 }
 
 void createSkyboxUniformBuffers()
@@ -257,11 +254,13 @@ void CleanupSkyboxAfterSwapchain()
 {
 	vkDestroyPipeline(g_vk.device, skyboxGraphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(g_vk.device, skyboxPipelineLayout, nullptr);
-	vkDestroyRenderPass(g_vk.device, skyboxRenderPass.vk_renderpass, nullptr);
+	//TODO: must destroy renderpass since it's dependant on the format of the swapchain. should recreate afterward
+	//vkDestroyRenderPass(g_vk.device, skyboxRenderPass.vk_renderpass, nullptr);
 }
 
 void CleanupSkybox()
 {
+	vkDestroyRenderPass(g_vk.device, skyboxRenderPass.vk_renderpass, nullptr);
 	vkDestroyDescriptorSetLayout(g_vk.device, skyboxDescriptorSetLayout, nullptr);
 	DestroyPerFrameBuffer(&skyboxUniformBuffer);
 }

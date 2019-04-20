@@ -15,6 +15,7 @@
 #include "vk_framework.h"
 #include "console_command.h"
 #include "gpu_synchronization.h"
+#include "frame_graph.h"
 
 #include <array>
 #include <iostream>
@@ -192,10 +193,8 @@ void recreate_swap_chain()
 	glfwGetFramebufferSize(g_window, &width, &height);
 	createSwapChain(g_windowSurface, width, height, g_swapchain);
 
-	create_skybox_render_pass(g_swapchain.surfaceFormat.format);
 	create_skybox_graphics_pipeline(g_swapchain.extent);
 
-	createGeometryRenderPass(g_swapchain.surfaceFormat.format);
 	createGeoGraphicPipeline(g_swapchain.extent);//Could be avoided with dynamic state, we only need to redo scissor and viewport
 
 	RecreateTextRenderPass(g_swapchain);
@@ -211,7 +210,6 @@ void InitSkybox(const GfxImage* skyboxImage)
 	createSkyboxDescriptorSetLayout();
 	createSkyboxUniformBuffers();
 	CreateSkyboxDescriptorSet(descriptorPool, skyboxImage->imageView, GetSampler(Samplers::Trilinear));
-	create_skybox_render_pass(g_swapchain.surfaceFormat.format);
 	create_skybox_graphics_pipeline(g_swapchain.extent);
 }
 
@@ -221,10 +219,15 @@ void InitScene()
 	glfwGetFramebufferSize(g_window, &width, &height);
 	createSwapChain(g_windowSurface, width, height, g_swapchain);
 
+	std::vector<RenderPass> renderPasses;
+	CreateGraph(g_swapchain.surfaceFormat.format, &renderPasses);
+
 	createGeoDescriptorSetLayout();
-	createGeometryRenderPass(g_swapchain.surfaceFormat.format);
+	AddGeometryRenderPass(renderPasses[1]);
 	createGeoGraphicPipeline(g_swapchain.extent);
 	CreateInstanceMatricesBuffers();
+
+	AddSkyboxRenderPass(renderPasses[2]);
 
 	QueueFamilyIndices queue_family_indices = find_queue_families(g_vk.physicalDevice);
 	CreateCommandPool(queue_family_indices.graphics_family.value(), &g_vk.graphicsCommandPool);
@@ -262,9 +265,11 @@ void InitScene()
 	const uint32_t maxSets = (geometryDescriptorSets + shadowDescriptorSets + skyboxDescriptorSetsCount + textDescriptorSetsCount);
 	createDescriptorPool(uniformBuffersCount, uniformBuffersDynamicCount, imageSamplersCount, storageImageCount, maxSets, &descriptorPool);
 
+	AddShadowRenderPass(renderPasses[0]);
 	CreateShadowPass();
 
 	LoadFontTexture();
+	AddTextRenderPass(renderPasses[3]);
 	InitTextRenderPass(g_swapchain);
 	CreateTextVertexBuffer(256);
 	CreateTextDescriptorSet(descriptorPool, GetSampler(Samplers::Trilinear));

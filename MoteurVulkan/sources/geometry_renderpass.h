@@ -12,7 +12,7 @@ void createGeoDescriptorSetLayout();
 void CleanupGeometryRenderpassAfterSwapchain();
 void CleanupGeometryRenderpass();
 void createGeoGraphicPipeline(VkExtent2D extent);
-void createGeometryRenderPass(VkFormat colorFormat);
+void AddGeometryRenderPass(const RenderPass& renderpass);
 void CreateGeometryDescriptorSet(VkDescriptorPool descriptorPool, VkBuffer* sceneUniformBuffers, VkBuffer* instanceUniformBuffers, VkBuffer* lightBuffers, VkImageView textureView,
 	VkImageView normalTextureView, VkSampler sampler, VkImageView shadowTextureView, VkSampler shadowSampler);
 

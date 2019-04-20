@@ -6,8 +6,8 @@
 
 #include "glm/mat4x4.hpp"
 
+void AddSkyboxRenderPass(const RenderPass& skyboxRenderPass);
 void create_skybox_graphics_pipeline(VkExtent2D extent);
-void create_skybox_render_pass(VkFormat colorFormat);
 void createSkyboxUniformBuffers();
 void UpdateSkyboxUniformBuffers(size_t currentFrame, const glm::mat4& world_view_matrix);
 void CreateSkyboxDescriptorSet(VkDescriptorPool descriptorPool, VkImageView skyboxImageView, VkSampler trilinearSampler);

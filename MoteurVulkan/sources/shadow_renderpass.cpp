@@ -249,62 +249,6 @@ void CreateShadowGraphicPipeline()
 		shadowFrameBufferExtent, shadowRenderPass.vk_renderpass, &shadowPipelineLayout, &shadowPipeline);
 }
 
-static void CreateShadowRenderPass( const VkFormat depthFormat, RenderPass * o_renderPass)
-{
-	//Attachements
-	VkSubpassDescription subpass = {};
-	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	subpass.colorAttachmentCount = 0;
-	subpass.pColorAttachments = nullptr;
-
-	VkAttachmentDescription depthAttachment = {};
-	depthAttachment.format = depthFormat;
-	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	depthAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-	VkAttachmentReference depthAttachmentRef = {};
-	depthAttachmentRef.attachment = 0; //Take the last spot
-	depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-	subpass.pDepthStencilAttachment = &depthAttachmentRef;
-
-	VkSubpassDependency dependency = {};
-	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-	dependency.dstSubpass = 0;
-	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	dependency.srcAccessMask = 0;
-	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-	VkRenderPassCreateInfo render_pass_info = {};
-	render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	render_pass_info.attachmentCount = 1;
-	render_pass_info.pAttachments = &depthAttachment;
-	render_pass_info.subpassCount = 1;
-	render_pass_info.pSubpasses = &subpass;
-	render_pass_info.dependencyCount = 1;
-	render_pass_info.pDependencies = &dependency;
-
-	/*A render pass represents a collection of attachments, subpasses, and dependencies between the subpasses,
-	and describes how the attachments are used over the course of the subpasses.*/
-	if (vkCreateRenderPass(g_vk.device, &render_pass_info, nullptr, &o_renderPass->vk_renderpass) != VK_SUCCESS)
-		throw std::runtime_error("failed to create render pass!");
-
-	o_renderPass->colorFormats = std::vector<VkFormat>();
-	o_renderPass->depthFormat = depthFormat;
-}
-
-void CreateShadowRenderPass()
-{
-	CreateShadowRenderPass(shadowDepthFormat, &shadowRenderPass);
-	MarkVkObject((uint64_t)shadowRenderPass.vk_renderpass, VK_OBJECT_TYPE_RENDER_PASS, "Shadow Renderpass");
-}
-
 void CreateShadowDescriptorSet(VkDescriptorPool descriptorPool, const VkBuffer*instanceUniformBuffer)
 {
 	std::array<DescriptorSet, SIMULTANEOUS_FRAMES> descriptorSets;
@@ -344,10 +288,14 @@ void CreateShadowDescriptorSetLayout()
 	CreateDesciptorSetLayout(instanceBindings.data(), static_cast<uint32_t>(instanceBindings.size()), &shadowInstanceDescriptorSetLayout);
 }
 
+void AddShadowRenderPass(const RenderPass& renderPass)
+{
+	shadowRenderPass = renderPass;
+}
+
 void CreateShadowPass()
 {
 	CreateShadowDescriptorSetLayout();
-	CreateShadowRenderPass();
 	CreateShadowGraphicPipeline();
 	CreateShadowFrameBuffer();
 
