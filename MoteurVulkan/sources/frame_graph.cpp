@@ -76,13 +76,6 @@ void TransitionToReadOnly(FG_Pass_Resource& resource)
 	resource.descriptions[resource.attachmentCount - 1].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 }
 
-void TransitionToPresent(FG_Pass_Resource& resource)
-{
-	assert(resource.attachmentCount > 0);
-
-	resource.descriptions[resource.attachmentCount - 1].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-}
-
 void ReadResource(FG_Pass_Resource& resource, eRenderTarget render_target)
 {
 	assert(resource.read_targets_count < MAX_READ_TARGETS);
@@ -165,6 +158,12 @@ void ComposeGraph( std::vector<FG_Pass_Resource>& passes)
 			}
 		}
 	}
+
+	//Transition the last pass with RT_SCENE to present
+	auto it_found = lastPass.find(RT_SCENE_COLOR);
+	FG_Pass_Resource* lastPassWithResource = it_found->second;
+	int32_t otherPassReferenceIndex = FindResourceIndex(*lastPassWithResource, RT_SCENE_COLOR);
+	lastPassWithResource->descriptions[otherPassReferenceIndex].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 }
 
 void CreateRenderPass(const FG_Pass_Resource& pass_resource, const char* name, RenderPass* o_renderPass)
@@ -232,8 +231,6 @@ void CreateGraph(VkFormat swapchainFormat, std::vector<RenderPass>* o_renderPass
 
 	FG_Pass_Resource textPass;
 	CreateColor(textPass, swapchainFormat, RT_SCENE_COLOR);
-	//TODO: something better, don't explicitly transition
-	TransitionToPresent(textPass);
 	//TODO currently using the depth just for the renderpass to be compatible with the rest. should remove that
 	CreateDepth(textPass, VK_FORMAT_D32_SFLOAT, RT_SCENE_DEPTH);
 	passes.push_back(textPass);
