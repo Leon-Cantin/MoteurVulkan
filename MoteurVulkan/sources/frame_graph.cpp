@@ -52,31 +52,6 @@ void CreateRTCommon(FG_Pass_Resource& resource, VkFormat format, eRenderTarget r
 	++resource.attachmentCount;
 }
 
-void AddReadResource(FG_Pass_Resource& resource, VkFormat format, eRenderTarget render_target)
-{
-	assert(resource.attachmentCount < MAX_ATTACHMENTS_COUNT);
-
-	const uint32_t attachement_id = resource.attachmentCount;
-	VkAttachmentDescription& description = resource.descriptions[attachement_id];
-	description.format = format;
-	description.flags = 0;
-	description.samples = VK_SAMPLE_COUNT_1_BIT;
-	description.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD; //important
-	description.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	description.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	description.initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	description.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;//important
-
-	VkAttachmentReference& reference = resource.references[attachement_id];
-	reference.attachment = attachement_id;
-	reference.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;//important
-
-	resource.e_render_targets[attachement_id] = render_target;
-
-	++resource.attachmentCount;
-}
-
 void CreateColor( FG_Pass_Resource& resource, VkFormat format, eRenderTarget render_target)
 {	
 	CreateRTCommon(resource, format, render_target, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -151,7 +126,7 @@ void ComposeGraph( std::vector<FG_Pass_Resource>& passes)
 				int32_t otherPassReferenceIndex = FindResourceIndex(*lastPassWithResource, render_target);
 				//The last pass will have to transition into this pass' layout
 				lastPassWithResource->descriptions[otherPassReferenceIndex].finalLayout = reference.layout;
-				//This pass' initial layout should be this one's
+				//This pass' initial layout should be this one's layout
 				description.initialLayout = reference.layout;
 				//We should load since the other pass wrote into this
 				description.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
@@ -160,7 +135,11 @@ void ComposeGraph( std::vector<FG_Pass_Resource>& passes)
 			}
 		}
 
-		//read resources
+		/*
+		read resources
+		Look at read resources and change the the final layout of the last appearence to be used
+		as shader resource
+		*/
 		for (uint32_t resource_index = 0; resource_index < pass.read_targets_count; ++resource_index)
 		{
 			eRenderTarget render_target = pass.read_targets[resource_index];
@@ -169,10 +148,15 @@ void ComposeGraph( std::vector<FG_Pass_Resource>& passes)
 			{
 				FG_Pass_Resource* lastPassWithResource = it_found->second;
 				int32_t otherPassReferenceIndex = FindResourceIndex(*lastPassWithResource, render_target);
-				//Last pass should transition to read resource at the end
-				lastPassWithResource->descriptions[otherPassReferenceIndex].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-				//Add an attachment as read only
-				AddReadResource(pass, lastPassWithResource->descriptions[otherPassReferenceIndex].format, render_target);
+				if (otherPassReferenceIndex >= 0)
+				{
+					//Last pass should transition to read resource at the end
+					lastPassWithResource->descriptions[otherPassReferenceIndex].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				}
+				else
+				{
+					//We are already in a read state
+				}
 				lastPass[render_target] = &pass;
 			}
 			else
@@ -186,8 +170,8 @@ void ComposeGraph( std::vector<FG_Pass_Resource>& passes)
 void CreateRenderPass(const FG_Pass_Resource& pass_resource, const char* name, RenderPass* o_renderPass)
 {
 	assert(pass_resource.attachmentCount > 0);
-	bool containsDepth = pass_resource.references[pass_resource.attachmentCount - 1 - pass_resource.read_targets_count].layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-	uint32_t colorCount = pass_resource.attachmentCount - (containsDepth ? 1 : 0) - pass_resource.read_targets_count;
+	bool containsDepth = pass_resource.references[pass_resource.attachmentCount - 1].layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+	uint32_t colorCount = pass_resource.attachmentCount - (containsDepth ? 1 : 0);
 
 	VkSubpassDescription subpass = {};
 	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
@@ -232,15 +216,13 @@ void CreateGraph(VkFormat swapchainFormat, std::vector<RenderPass>* o_renderPass
 	FG_Pass_Resource shadowPass;
 	CreateDepth(shadowPass, VK_FORMAT_D32_SFLOAT, RT_SHADOW_MAP);
 	ClearLast(shadowPass);
-	//TODO: something better, mark the next one as reading this RT instead.
-	TransitionToReadOnly(shadowPass);
 	passes.push_back(shadowPass);
 
 	FG_Pass_Resource geoPass;
 	CreateColor(geoPass, swapchainFormat, RT_SCENE_COLOR);
 	CreateDepth(geoPass, VK_FORMAT_D32_SFLOAT, RT_SCENE_DEPTH);
 	ClearLast(geoPass);
-	//ReadResource(geoPass, RT_SHADOW_MAP);
+	ReadResource(geoPass, RT_SHADOW_MAP);
 	passes.push_back(geoPass);
 
 	FG_Pass_Resource skyPass;
@@ -252,7 +234,7 @@ void CreateGraph(VkFormat swapchainFormat, std::vector<RenderPass>* o_renderPass
 	CreateColor(textPass, swapchainFormat, RT_SCENE_COLOR);
 	//TODO: something better, don't explicitly transition
 	TransitionToPresent(textPass);
-	//TODO currently using the depth just to be compatible with the rest. should remove that
+	//TODO currently using the depth just for the renderpass to be compatible with the rest. should remove that
 	CreateDepth(textPass, VK_FORMAT_D32_SFLOAT, RT_SCENE_DEPTH);
 	passes.push_back(textPass);
 
