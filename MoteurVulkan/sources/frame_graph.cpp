@@ -1,21 +1,26 @@
 #include "frame_graph.h"
 
+#include "framebuffer.h"
+#include "vk_image.h"
 #include "vk_framework.h"
 #include "vk_debug.h"
 
 #include <vector>
 #include <map>
 
-enum eRenderTarget
+GfxImage render_targets[RT_COUNT];
+
+constexpr VkFormat RT_FORMAT_SHADOW_DEPTH = VK_FORMAT_D32_SFLOAT;
+constexpr VkExtent2D RT_EXTENT_SHADOW = { 1024, 1024 };
+
+const GfxImage* GetRenderTarget(eRenderTarget render_target_id)
 {
-	RT_SCENE_COLOR,
-	RT_SCENE_DEPTH,
-	RT_SHADOW_MAP
-};
+	return &render_targets[render_target_id];
+}
 
 constexpr uint32_t MAX_ATTACHMENTS_COUNT = 8;
 constexpr uint32_t MAX_READ_TARGETS = 4;
-//TODO: ajouter une liste de noms string ou enum
+
 struct FG_Pass_Resource
 {	
 	eRenderTarget e_render_targets[MAX_ATTACHMENTS_COUNT];
@@ -26,6 +31,26 @@ struct FG_Pass_Resource
 	eRenderTarget read_targets[MAX_READ_TARGETS];
 	uint32_t read_targets_count = 0;
 };
+
+struct FG_RT_Resources
+{
+	eRenderTarget id;
+	VkFormat format;
+	VkExtent2D extent;
+	VkImageUsageFlagBits usage_flags;
+	VkImageAspectFlagBits aspect_flags;
+	VkImageLayout image_layout;
+	bool skipImageCreation = false;
+};
+
+void CreateImage(VkFormat format, VkExtent2D extent, GfxImage* image, VkImageUsageFlagBits usage_flags, VkImageAspectFlagBits aspect_flags, VkImageLayout image_layout)
+{
+	image->extent = extent;
+	image->format = format;
+	create_image(extent.width, extent.height, 1, format, usage_flags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image->image, image->memory);
+	image->imageView = createImageView(image->image, format, aspect_flags, 1);
+	transitionImageLayout( image->image, format, VK_IMAGE_LAYOUT_UNDEFINED, image_layout, 1, 1);
+}
 
 void CreateRTCommon(FG_Pass_Resource& resource, VkFormat format, eRenderTarget render_target, VkImageLayout optimalLayout)
 {
@@ -93,7 +118,7 @@ static int32_t FindResourceIndex(const FG_Pass_Resource& pass, eRenderTarget ren
 	return -1;
 }
 
-void ComposeGraph( std::vector<FG_Pass_Resource>& passes)
+void ComposeGraph( std::vector<FG_Pass_Resource>& passes, FG_RT_Resources* rt_resources)
 {
 	std::map< eRenderTarget, FG_Pass_Resource*> lastPass;
 
@@ -112,6 +137,14 @@ void ComposeGraph( std::vector<FG_Pass_Resource>& passes)
 			if (it_found == lastPass.end())
 			{
 				lastPass[render_target] = &pass;
+				
+				//Create a new image when we encounter it for the first time.
+				FG_RT_Resources* rt_resource = &rt_resources[render_target];
+				if (!rt_resource->skipImageCreation)
+				{
+					GfxImage* rt_image = &render_targets[render_target];					
+					CreateImage(rt_resource->format, rt_resource->extent, rt_image, rt_resource->usage_flags, rt_resource->aspect_flags, rt_resource->image_layout);
+				}
 			}
 			else
 			{				
@@ -206,11 +239,22 @@ void CreateRenderPass(const FG_Pass_Resource& pass_resource, const char* name, R
 	o_renderPass->depthFormat = containsDepth ? pass_resource.descriptions[colorCount].format : VK_FORMAT_UNDEFINED;
 
 	MarkVkObject((uint64_t)o_renderPass->vk_renderpass, VK_OBJECT_TYPE_RENDER_PASS, name);
+
+	//TODO: SO FAR WE ONLY DO THIS FOR THE SHADOW PASS. PLEASE DO THIS FOR EVERYTHING
+	if (pass_resource.attachmentCount == 1)
+	{
+		GfxImage* depthImage = &render_targets[pass_resource.e_render_targets[0]];
+		createFrameBuffer(nullptr, 0, depthImage, RT_EXTENT_SHADOW, o_renderPass->vk_renderpass, &o_renderPass->frameBuffer);
+	}
 }
 
 void CreateGraph(VkFormat swapchainFormat, std::vector<RenderPass>* o_renderPasses)
 {
 	std::vector<FG_Pass_Resource> passes;
+	FG_RT_Resources rt_resources[RT_COUNT];
+	rt_resources[RT_SCENE_COLOR].skipImageCreation = true;
+	rt_resources[RT_SCENE_DEPTH].skipImageCreation = true;
+	rt_resources[RT_SHADOW_MAP] = { RT_SHADOW_MAP, RT_FORMAT_SHADOW_DEPTH , RT_EXTENT_SHADOW, (VkImageUsageFlagBits)(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT), VK_IMAGE_ASPECT_DEPTH_BIT,  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
 
 	FG_Pass_Resource shadowPass;
 	CreateDepth(shadowPass, VK_FORMAT_D32_SFLOAT, RT_SHADOW_MAP);
@@ -235,7 +279,7 @@ void CreateGraph(VkFormat swapchainFormat, std::vector<RenderPass>* o_renderPass
 	CreateDepth(textPass, VK_FORMAT_D32_SFLOAT, RT_SCENE_DEPTH);
 	passes.push_back(textPass);
 
-	ComposeGraph(passes);
+	ComposeGraph(passes, rt_resources);
 
 	RenderPass shadowPassF;
 	RenderPass geoPassF;
@@ -250,4 +294,13 @@ void CreateGraph(VkFormat swapchainFormat, std::vector<RenderPass>* o_renderPass
 	o_renderPasses->push_back(geoPassF);
 	o_renderPasses->push_back(skyPassF);
 	o_renderPasses->push_back(textPassF);
+}
+
+void FG_CleanupResources()
+{
+	for (GfxImage& image : render_targets)
+	{
+		if (image.image)
+			DestroyImage(image);
+	}
 }

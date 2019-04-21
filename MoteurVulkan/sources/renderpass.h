@@ -1,12 +1,15 @@
 #pragma once
 #include "vk_globals.h"
 
+#include "framebuffer.h"
+
 #include <vector>
 
 struct RenderPass {
 	VkRenderPass vk_renderpass;
 	std::vector<VkFormat> colorFormats;
 	VkFormat depthFormat;
+	FrameBuffer frameBuffer;
 };
 
 void BeginRenderPass(VkCommandBuffer commandBuffer, const RenderPass& renderpass, VkFramebuffer framebuffer, VkExtent2D extent);

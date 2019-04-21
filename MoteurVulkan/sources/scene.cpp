@@ -130,7 +130,7 @@ void CreateGeometryUniformBuffer()
 void CreateGeometryRenderpassDescriptorSet(const GfxImage* albedoImage, const GfxImage* normalImage)
 {
 	//TODO review how to pass shadowmaps
-	const GfxImage *shadowImages = GetShadowDepthImage();
+	const GfxImage *shadowImages = GetRenderTarget(RT_SHADOW_MAP);
 
 	CreateGeometryDescriptorSet(descriptorPool, sceneUniformBuffer.buffers.data(), instanceMatricesBuffer.buffers.data(), lightUniformBuffer.buffers.data(), albedoImage->imageView, normalImage->imageView, GetSampler(Samplers::Trilinear),
 		shadowImages->imageView, GetSampler(Samplers::Shadow));
@@ -219,24 +219,11 @@ void InitScene()
 	glfwGetFramebufferSize(g_window, &width, &height);
 	createSwapChain(g_windowSurface, width, height, g_swapchain);
 
-	std::vector<RenderPass> renderPasses;
-	CreateGraph(g_swapchain.surfaceFormat.format, &renderPasses);
-
-	createGeoDescriptorSetLayout();
-	AddGeometryRenderPass(renderPasses[1]);
-	createGeoGraphicPipeline(g_swapchain.extent);
-	CreateInstanceMatricesBuffers();
-
-	AddSkyboxRenderPass(renderPasses[2]);
-
 	QueueFamilyIndices queue_family_indices = find_queue_families(g_vk.physicalDevice);
 	CreateCommandPool(queue_family_indices.graphics_family.value(), &g_vk.graphicsCommandPool);
 	CreateCommandPool(queue_family_indices.transfer_family.value(), &g_vk.transferCommandPool);
 	CreateSingleUseCommandPool(queue_family_indices.graphics_family.value(), &g_vk.graphicsSingleUseCommandPool);
 	CreateSingleUseCommandPool(queue_family_indices.compute_family.value(), &g_vk.computeCommandPool);
-
-	createDepthResources();
-	createOutputFrameBuffer();
 
 	InitSamplers();
 
@@ -265,8 +252,23 @@ void InitScene()
 	const uint32_t maxSets = (geometryDescriptorSets + shadowDescriptorSets + skyboxDescriptorSetsCount + textDescriptorSetsCount);
 	createDescriptorPool(uniformBuffersCount, uniformBuffersDynamicCount, imageSamplersCount, storageImageCount, maxSets, &descriptorPool);
 
+	std::vector<RenderPass> renderPasses;
+	CreateGraph(g_swapchain.surfaceFormat.format, &renderPasses);
+
 	AddShadowRenderPass(renderPasses[0]);
 	CreateShadowPass();
+
+	createGeoDescriptorSetLayout();
+	AddGeometryRenderPass(renderPasses[1]);
+	createGeoGraphicPipeline(g_swapchain.extent);
+	CreateInstanceMatricesBuffers();
+
+	createDepthResources();
+	//TODO having just one frame buffer object shared with everyone is kind of stupid. It needs a renderpass to be created,
+	// it takes it from the geometry
+	createOutputFrameBuffer();
+
+	AddSkyboxRenderPass(renderPasses[2]);
 
 	LoadFontTexture();
 	AddTextRenderPass(renderPasses[3]);
@@ -444,6 +446,8 @@ void CleanupScene() {
 	CleanupTextRenderPass();
 
 	CleanupShadowPass();
+
+	FG_CleanupResources();
 
 	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
 	{
