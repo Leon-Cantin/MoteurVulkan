@@ -50,7 +50,7 @@ struct FG_RenderTargetCreationData
 	VkImageUsageFlagBits usage_flags;
 	VkImageAspectFlagBits aspect_flags;
 	VkImageLayout image_layout;
-	bool skipImageCreation = false;
+	bool swapChainSized = false;
 };
 
 FG_RenderTargetCreationData _rtCreationData[RT_COUNT];
@@ -131,38 +131,38 @@ static int32_t FindResourceIndex(const FG_RenderPassCreationData& pass, eRenderT
 	return -1;
 }
 
-void ComposeGraph( std::vector<FG_RenderPassCreationData>& passes, FG_RenderTargetCreationData* rt_resources)
+void ComposeGraph( std::vector<FG_RenderPassCreationData>& passesCreationData, FG_RenderTargetCreationData* rtCreationDatas)
 {
 	std::map< eRenderTarget, FG_RenderPassCreationData*> lastPass;
 
-	for(uint32_t i = 0; i < passes.size(); ++i)
+	for(uint32_t i = 0; i < passesCreationData.size(); ++i)
 	{
-		FG_RenderPassCreationData& pass = passes[i];
+		FG_RenderPassCreationData& pass = passesCreationData[i];
 
 		//RenderTargets
 		for (uint32_t resource_index = 0; resource_index < pass.attachmentCount; ++resource_index)
 		{
-			eRenderTarget render_target = pass.e_render_targets[resource_index];
+			eRenderTarget renderTargetId = pass.e_render_targets[resource_index];
 			VkAttachmentDescription& description = pass.descriptions[resource_index];
 			VkAttachmentReference& reference = pass.references[resource_index];
 			
-			auto it_found = lastPass.find(render_target);
+			auto it_found = lastPass.find(renderTargetId);
 			if (it_found == lastPass.end())
 			{
-				lastPass[render_target] = &pass;
+				lastPass[renderTargetId] = &pass;
 				
 				//Create a new image when we encounter it for the first time.
-				FG_RenderTargetCreationData* rt_resource = &rt_resources[render_target];
-				if (!rt_resource->skipImageCreation)
+				FG_RenderTargetCreationData* rtCreationData = &rtCreationDatas[renderTargetId];
+				if (renderTargetId != RT_OUTPUT_TARGET)
 				{
-					GfxImage* rt_image = &_render_targets[render_target];					
-					CreateImage(rt_resource->format, rt_resource->extent, rt_image, rt_resource->usage_flags, rt_resource->aspect_flags, rt_resource->image_layout);
+					GfxImage* rt_image = &_render_targets[renderTargetId];					
+					CreateImage(rtCreationData->format, rtCreationData->extent, rt_image, rtCreationData->usage_flags, rtCreationData->aspect_flags, rtCreationData->image_layout);
 				}
 			}
 			else
 			{				
 				FG_RenderPassCreationData* lastPassWithResource = it_found->second;
-				int32_t otherPassReferenceIndex = FindResourceIndex(*lastPassWithResource, render_target);
+				int32_t otherPassReferenceIndex = FindResourceIndex(*lastPassWithResource, renderTargetId);
 				//The last pass will have to transition into this pass' layout
 				lastPassWithResource->descriptions[otherPassReferenceIndex].finalLayout = reference.layout;
 				//This pass' initial layout should be this one's layout
@@ -170,7 +170,7 @@ void ComposeGraph( std::vector<FG_RenderPassCreationData>& passes, FG_RenderTarg
 				//We should load since the other pass wrote into this
 				description.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 
-				lastPass[render_target] = &pass;
+				lastPass[renderTargetId] = &pass;
 			}
 		}
 
@@ -205,7 +205,7 @@ void ComposeGraph( std::vector<FG_RenderPassCreationData>& passes, FG_RenderTarg
 		}
 	}
 
-	//Transition the last pass with RT_SCENE_COLOR to present
+	//Transition the last pass with RT_OUTPUT_TARGET to present
 	auto it_found = lastPass.find(RT_OUTPUT_TARGET);
 	FG_RenderPassCreationData* lastPassWithResource = it_found->second;
 	int32_t otherPassReferenceIndex = FindResourceIndex(*lastPassWithResource, RT_OUTPUT_TARGET);
@@ -291,7 +291,7 @@ static void CreateResourceCreationData(const Swapchain* swapchain)
 
 	//Setup resources
 	_rtCreationData[RT_SCENE_COLOR] = { RT_SCENE_COLOR, swapchainFormat , swapchainExtent, (VkImageUsageFlagBits)(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT), VK_IMAGE_ASPECT_COLOR_BIT,  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, true };
-	_rtCreationData[RT_SCENE_DEPTH] = { RT_SCENE_DEPTH, VK_FORMAT_D32_SFLOAT , swapchainExtent, (VkImageUsageFlagBits)(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT), VK_IMAGE_ASPECT_DEPTH_BIT,  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
+	_rtCreationData[RT_SCENE_DEPTH] = { RT_SCENE_DEPTH, VK_FORMAT_D32_SFLOAT , swapchainExtent, (VkImageUsageFlagBits)(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT), VK_IMAGE_ASPECT_DEPTH_BIT,  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, true };
 	_rtCreationData[RT_SHADOW_MAP] = { RT_SHADOW_MAP, RT_FORMAT_SHADOW_DEPTH , RT_EXTENT_SHADOW, (VkImageUsageFlagBits)(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT), VK_IMAGE_ASPECT_DEPTH_BIT,  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
 }
 
@@ -334,11 +334,17 @@ void FG_RecreateAfterSwapchain(const Swapchain* swapchain)
 {
 	CreateResourceCreationData(swapchain);
 
-	//HACK TODO: probably just create everything
-	GfxImage* rt_image = &_render_targets[RT_SCENE_DEPTH];
-	FG_RenderTargetCreationData* rtCreationData = &_rtCreationData[RT_SCENE_DEPTH];
-	CreateImage(rtCreationData->format, rtCreationData->extent, rt_image, rtCreationData->usage_flags, rtCreationData->aspect_flags, rtCreationData->image_layout);
+	//Recreate those are not the frame buffer nor sampled
+	for (uint32_t i = 0; i < RT_COUNT; ++i)
+	{
+		if ((eRenderTarget)(i) != RT_OUTPUT_TARGET && _rtCreationData[i].swapChainSized)
+		{
+			FG_RenderTargetCreationData* rtCreationData = &_rtCreationData[i];
+			CreateImage(rtCreationData->format, rtCreationData->extent, &_render_targets[i], rtCreationData->usage_flags, rtCreationData->aspect_flags, rtCreationData->image_layout);
+		}
+	}
 
+	//Recreate the frame buffers
 	for (uint32_t i = 0; i < _render_passes_count; ++i)
 	{
 		FG_RenderPassCreationData& passCreationData = _rpCreationData[i];
@@ -369,8 +375,12 @@ void FG_CleanupAfterSwapchain()
 		}
 	}
 
-	//HACK TODO: destroy all images that are not the frame buffer or sampled (to avoid recreating descriptor sets)
-	DestroyImage(_render_targets[RT_SCENE_DEPTH]);
+	//destroy all images that are not the frame buffer or sampled (to avoid recreating descriptor sets)
+	for (uint32_t i = 0; i < RT_COUNT; ++i)
+	{
+		if( (eRenderTarget)(i) != RT_OUTPUT_TARGET && _rtCreationData[i].swapChainSized )
+			DestroyImage(_render_targets[RT_SCENE_DEPTH]);
+	}
 }
 
 void FG_CleanupResources()
