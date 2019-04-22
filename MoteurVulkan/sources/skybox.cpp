@@ -11,7 +11,7 @@
 
 VkDescriptorSetLayout skyboxDescriptorSetLayout;
 VkPipelineLayout skyboxPipelineLayout;
-RenderPass skyboxRenderPass;
+const RenderPass* skyboxRenderPass;
 VkPipeline skyboxGraphicsPipeline;
 std::array<VkDescriptorSet, SIMULTANEOUS_FRAMES> skyboxDescriptorSets;
 PerFrameBuffer skyboxUniformBuffer;
@@ -213,11 +213,11 @@ void create_skybox_graphics_pipeline(VkExtent2D extent)
 {
 	std::vector<char> vertShaderCode = readFile("shaders/skybox.vert.spv");
 	std::vector<char> fragShaderCode = readFile("shaders/skybox.frag.spv");
-	createSkyboxGraphicsPipeline(vertShaderCode, fragShaderCode, extent, skyboxRenderPass.vk_renderpass,
+	createSkyboxGraphicsPipeline(vertShaderCode, fragShaderCode, extent, skyboxRenderPass->vk_renderpass,
 		skyboxDescriptorSetLayout, &skyboxPipelineLayout, &skyboxGraphicsPipeline);
 }
 
-void AddSkyboxRenderPass(const RenderPass& _skyboxRenderPass)
+void AddSkyboxRenderPass(const RenderPass* _skyboxRenderPass)
 {
 	skyboxRenderPass = _skyboxRenderPass;
 }
@@ -240,7 +240,7 @@ void UpdateSkyboxUniformBuffers(size_t currentFrame, const glm::mat4& world_view
 void CmdDrawSkybox(VkCommandBuffer commandBuffer, VkExtent2D extent, size_t currentFrame)
 {
 	CmdBeginVkLabel(commandBuffer, "Skybox Renderpass", glm::vec4(0.2f, 0.2f, 0.9f, 1.0f));
-	BeginRenderPass(commandBuffer, skyboxRenderPass, skyboxRenderPass.outputFrameBuffer[currentFrame].frameBuffer, extent);
+	BeginRenderPass(commandBuffer, *skyboxRenderPass, skyboxRenderPass->outputFrameBuffer[currentFrame].frameBuffer, extent);
 
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, skyboxGraphicsPipeline);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, skyboxPipelineLayout, 0, 1, &skyboxDescriptorSets[currentFrame], 0, nullptr);
@@ -254,13 +254,12 @@ void CleanupSkyboxAfterSwapchain()
 {
 	vkDestroyPipeline(g_vk.device, skyboxGraphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(g_vk.device, skyboxPipelineLayout, nullptr);
+
 	//TODO: must destroy renderpass since it's dependant on the format of the swapchain. should recreate afterward
-	//vkDestroyRenderPass(g_vk.device, skyboxRenderPass.vk_renderpass, nullptr);
 }
 
 void CleanupSkybox()
 {
-	vkDestroyRenderPass(g_vk.device, skyboxRenderPass.vk_renderpass, nullptr);
 	vkDestroyDescriptorSetLayout(g_vk.device, skyboxDescriptorSetLayout, nullptr);
 	DestroyPerFrameBuffer(&skyboxUniformBuffer);
 }

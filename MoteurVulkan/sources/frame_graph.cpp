@@ -9,7 +9,7 @@
 #include <map>
 
 GfxImage _output_buffers[SIMULTANEOUS_FRAMES];
-GfxImage render_targets[RT_COUNT];
+GfxImage _render_targets[RT_COUNT];
 
 constexpr VkFormat RT_FORMAT_SHADOW_DEPTH = VK_FORMAT_D32_SFLOAT;
 constexpr VkExtent2D RT_EXTENT_SHADOW = { 1024, 1024 };
@@ -17,13 +17,21 @@ constexpr eRenderTarget RT_OUTPUT_TARGET = RT_SCENE_COLOR;
 
 const GfxImage* GetRenderTarget(eRenderTarget render_target_id)
 {
-	return &render_targets[render_target_id];
+	return &_render_targets[render_target_id];
 }
 
 constexpr uint32_t MAX_ATTACHMENTS_COUNT = 8;
 constexpr uint32_t MAX_READ_TARGETS = 4;
 
-struct FG_Pass_Resource
+std::array<RenderPass, 8> _render_passes;
+uint32_t _render_passes_count = 0;
+
+const RenderPass* GetRenderPass(uint32_t id)
+{
+	return &_render_passes[id];
+}
+
+struct FG_RenderPassCreationData
 {	
 	eRenderTarget e_render_targets[MAX_ATTACHMENTS_COUNT];
 	VkAttachmentDescription descriptions [MAX_ATTACHMENTS_COUNT];
@@ -34,7 +42,7 @@ struct FG_Pass_Resource
 	uint32_t read_targets_count = 0;
 };
 
-struct FG_RT_Resources
+struct FG_RenderTargetCreationData
 {
 	eRenderTarget id;
 	VkFormat format;
@@ -45,6 +53,9 @@ struct FG_RT_Resources
 	bool skipImageCreation = false;
 };
 
+FG_RenderTargetCreationData _rtCreationData[RT_COUNT];
+std::vector<FG_RenderPassCreationData> _rpCreationData;
+
 void CreateImage(VkFormat format, VkExtent2D extent, GfxImage* image, VkImageUsageFlagBits usage_flags, VkImageAspectFlagBits aspect_flags, VkImageLayout image_layout)
 {
 	image->extent = extent;
@@ -54,7 +65,7 @@ void CreateImage(VkFormat format, VkExtent2D extent, GfxImage* image, VkImageUsa
 	transitionImageLayout( image->image, format, VK_IMAGE_LAYOUT_UNDEFINED, image_layout, 1, 1);
 }
 
-void CreateRTCommon(FG_Pass_Resource& resource, VkFormat format, eRenderTarget render_target, VkImageLayout optimalLayout)
+void CreateRTCommon(FG_RenderPassCreationData& resource, VkFormat format, eRenderTarget render_target, VkImageLayout optimalLayout)
 {
 	assert(resource.attachmentCount < MAX_ATTACHMENTS_COUNT);
 
@@ -79,37 +90,37 @@ void CreateRTCommon(FG_Pass_Resource& resource, VkFormat format, eRenderTarget r
 	++resource.attachmentCount;
 }
 
-void CreateColor( FG_Pass_Resource& resource, VkFormat format, eRenderTarget render_target)
+void CreateColor( FG_RenderPassCreationData& resource, VkFormat format, eRenderTarget render_target)
 {	
 	CreateRTCommon(resource, format, render_target, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 }
 
-void CreateDepth(FG_Pass_Resource& resource, VkFormat format, eRenderTarget render_target)
+void CreateDepth(FG_RenderPassCreationData& resource, VkFormat format, eRenderTarget render_target)
 {
 	CreateRTCommon(resource, format, render_target, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 
-void ClearLast( FG_Pass_Resource& resource)
+void ClearLast( FG_RenderPassCreationData& resource)
 {
 	assert(resource.attachmentCount > 0);
 
 	resource.descriptions[resource.attachmentCount-1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 }
 
-void TransitionToReadOnly(FG_Pass_Resource& resource)
+void TransitionToReadOnly(FG_RenderPassCreationData& resource)
 {
 	assert(resource.attachmentCount > 0);
 
 	resource.descriptions[resource.attachmentCount - 1].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 }
 
-void ReadResource(FG_Pass_Resource& resource, eRenderTarget render_target)
+void ReadResource(FG_RenderPassCreationData& resource, eRenderTarget render_target)
 {
 	assert(resource.read_targets_count < MAX_READ_TARGETS);
 	resource.read_targets[resource.read_targets_count++] = render_target;
 }
 
-static int32_t FindResourceIndex(const FG_Pass_Resource& pass, eRenderTarget render_target)
+static int32_t FindResourceIndex(const FG_RenderPassCreationData& pass, eRenderTarget render_target)
 {
 	for (int32_t i = 0; i < pass.attachmentCount; ++i)
 	{
@@ -120,13 +131,13 @@ static int32_t FindResourceIndex(const FG_Pass_Resource& pass, eRenderTarget ren
 	return -1;
 }
 
-void ComposeGraph( std::vector<FG_Pass_Resource>& passes, FG_RT_Resources* rt_resources)
+void ComposeGraph( std::vector<FG_RenderPassCreationData>& passes, FG_RenderTargetCreationData* rt_resources)
 {
-	std::map< eRenderTarget, FG_Pass_Resource*> lastPass;
+	std::map< eRenderTarget, FG_RenderPassCreationData*> lastPass;
 
 	for(uint32_t i = 0; i < passes.size(); ++i)
 	{
-		FG_Pass_Resource& pass = passes[i];
+		FG_RenderPassCreationData& pass = passes[i];
 
 		//RenderTargets
 		for (uint32_t resource_index = 0; resource_index < pass.attachmentCount; ++resource_index)
@@ -141,16 +152,16 @@ void ComposeGraph( std::vector<FG_Pass_Resource>& passes, FG_RT_Resources* rt_re
 				lastPass[render_target] = &pass;
 				
 				//Create a new image when we encounter it for the first time.
-				FG_RT_Resources* rt_resource = &rt_resources[render_target];
+				FG_RenderTargetCreationData* rt_resource = &rt_resources[render_target];
 				if (!rt_resource->skipImageCreation)
 				{
-					GfxImage* rt_image = &render_targets[render_target];					
+					GfxImage* rt_image = &_render_targets[render_target];					
 					CreateImage(rt_resource->format, rt_resource->extent, rt_image, rt_resource->usage_flags, rt_resource->aspect_flags, rt_resource->image_layout);
 				}
 			}
 			else
 			{				
-				FG_Pass_Resource* lastPassWithResource = it_found->second;
+				FG_RenderPassCreationData* lastPassWithResource = it_found->second;
 				int32_t otherPassReferenceIndex = FindResourceIndex(*lastPassWithResource, render_target);
 				//The last pass will have to transition into this pass' layout
 				lastPassWithResource->descriptions[otherPassReferenceIndex].finalLayout = reference.layout;
@@ -174,7 +185,7 @@ void ComposeGraph( std::vector<FG_Pass_Resource>& passes, FG_RT_Resources* rt_re
 			auto it_found = lastPass.find(render_target);
 			if (it_found != lastPass.end())
 			{
-				FG_Pass_Resource* lastPassWithResource = it_found->second;
+				FG_RenderPassCreationData* lastPassWithResource = it_found->second;
 				int32_t otherPassReferenceIndex = FindResourceIndex(*lastPassWithResource, render_target);
 				if (otherPassReferenceIndex >= 0)
 				{
@@ -196,22 +207,45 @@ void ComposeGraph( std::vector<FG_Pass_Resource>& passes, FG_RT_Resources* rt_re
 
 	//Transition the last pass with RT_SCENE_COLOR to present
 	auto it_found = lastPass.find(RT_OUTPUT_TARGET);
-	FG_Pass_Resource* lastPassWithResource = it_found->second;
+	FG_RenderPassCreationData* lastPassWithResource = it_found->second;
 	int32_t otherPassReferenceIndex = FindResourceIndex(*lastPassWithResource, RT_OUTPUT_TARGET);
 	lastPassWithResource->descriptions[otherPassReferenceIndex].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 }
 
-void CreateRenderPass(const FG_Pass_Resource& pass_resource, const char* name, RenderPass* o_renderPass)
+static void CreateFrameBuffer(RenderPass* renderpass, const FG_RenderPassCreationData& passCreationData, uint32_t colorCount, bool containsDepth)
 {
-	assert(pass_resource.attachmentCount > 0);
-	bool containsDepth = pass_resource.references[pass_resource.attachmentCount - 1].layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-	uint32_t colorCount = pass_resource.attachmentCount - (containsDepth ? 1 : 0);
+	int32_t outputBufferIndex = FindResourceIndex(passCreationData, RT_OUTPUT_TARGET);
+	VkExtent2D extent = _render_targets[passCreationData.e_render_targets[0]].extent;
+	GfxImage colorImages[MAX_ATTACHMENTS_COUNT];
+	for (uint32_t i = 0; i < colorCount; ++i)
+		colorImages[i] = _render_targets[passCreationData.e_render_targets[i]];
+	GfxImage* depthImage = containsDepth ? &_render_targets[passCreationData.e_render_targets[colorCount]] : nullptr;
+
+	if (outputBufferIndex < 0)
+	{
+		createFrameBuffer(colorImages, colorCount, depthImage, extent, renderpass->vk_renderpass, &renderpass->frameBuffer);
+	}
+	else //If we use the output buffer create one frame buffer per possible image
+	{		
+		for (uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
+		{
+			colorImages[outputBufferIndex] = _output_buffers[i];
+			createFrameBuffer(colorImages, colorCount, depthImage, extent, renderpass->vk_renderpass, &renderpass->outputFrameBuffer[i]);
+		}
+	}
+}
+
+void CreateRenderPass(const FG_RenderPassCreationData& passCreationData, const char* name, RenderPass* o_renderPass)
+{
+	assert(passCreationData.attachmentCount > 0);
+	bool containsDepth = passCreationData.references[passCreationData.attachmentCount - 1].layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+	uint32_t colorCount = passCreationData.attachmentCount - (containsDepth ? 1 : 0);
 
 	VkSubpassDescription subpass = {};
 	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpass.colorAttachmentCount = colorCount;
-	subpass.pColorAttachments = pass_resource.references;
-	subpass.pDepthStencilAttachment = containsDepth ? &pass_resource.references[colorCount] : VK_NULL_HANDLE;
+	subpass.pColorAttachments = passCreationData.references;
+	subpass.pDepthStencilAttachment = containsDepth ? &passCreationData.references[colorCount] : VK_NULL_HANDLE;
 
 	VkSubpassDependency dependency = {};
 	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -223,8 +257,8 @@ void CreateRenderPass(const FG_Pass_Resource& pass_resource, const char* name, R
 
 	VkRenderPassCreateInfo render_pass_info = {};
 	render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	render_pass_info.attachmentCount = pass_resource.attachmentCount;
-	render_pass_info.pAttachments = pass_resource.descriptions;
+	render_pass_info.attachmentCount = passCreationData.attachmentCount;
+	render_pass_info.pAttachments = passCreationData.descriptions;
 	render_pass_info.subpassCount = 1;
 	render_pass_info.pSubpasses = &subpass;
 	render_pass_info.dependencyCount = 1;
@@ -237,96 +271,131 @@ void CreateRenderPass(const FG_Pass_Resource& pass_resource, const char* name, R
 
 	o_renderPass->colorFormats.resize(colorCount);
 	for (uint32_t i = 0; i < colorCount; ++i)
-		o_renderPass->colorFormats[i] = pass_resource.descriptions[i].format;
-	o_renderPass->depthFormat = containsDepth ? pass_resource.descriptions[colorCount].format : VK_FORMAT_UNDEFINED;
+		o_renderPass->colorFormats[i] = passCreationData.descriptions[i].format;
+	o_renderPass->depthFormat = containsDepth ? passCreationData.descriptions[colorCount].format : VK_FORMAT_UNDEFINED;
 
 	MarkVkObject((uint64_t)o_renderPass->vk_renderpass, VK_OBJECT_TYPE_RENDER_PASS, name);
-
-	int32_t outputBufferIndex = FindResourceIndex(pass_resource, RT_OUTPUT_TARGET);
-	VkExtent2D extent = render_targets[pass_resource.e_render_targets[0]].extent;
-	GfxImage colorImages[MAX_ATTACHMENTS_COUNT];
-	for (uint32_t i = 0; i < colorCount; ++i)
-		colorImages[i] = render_targets[pass_resource.e_render_targets[i]];
-	GfxImage* depthImage = containsDepth ? &render_targets[pass_resource.e_render_targets[colorCount]] : nullptr;
-
-	if(outputBufferIndex < 0)
-	{
-		createFrameBuffer(colorImages, colorCount, depthImage, extent, o_renderPass->vk_renderpass, &o_renderPass->frameBuffer);
-	}
-	else
-	{
-		for (uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
-		{
-			colorImages[outputBufferIndex] = _output_buffers[i];
-			createFrameBuffer(colorImages, colorCount, depthImage, extent, o_renderPass->vk_renderpass, &o_renderPass->outputFrameBuffer[i]);
-		}
-	}
+	
+	//Create the frame buffer of the render pass
+	CreateFrameBuffer(o_renderPass, passCreationData, colorCount, containsDepth);
 }
 
-void CreateGraph(GfxImage* output_buffer, std::vector<RenderPass>* o_renderPasses)
+static void CreateResourceCreationData(const Swapchain* swapchain)
 {
 	//setup hacks for outside resources
-	VkFormat swapchainFormat = output_buffer->format;
-	VkExtent2D swapchainExtent = output_buffer->extent;
-	render_targets[RT_SCENE_COLOR] = output_buffer[0];
+	VkFormat swapchainFormat = swapchain->surfaceFormat.format;
+	VkExtent2D swapchainExtent = swapchain->extent;
+	_render_targets[RT_SCENE_COLOR] = swapchain->images[0];
 	for (uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
-		_output_buffers[i] = output_buffer[i];
+		_output_buffers[i] = swapchain->images[i];
 
 	//Setup resources
-	FG_RT_Resources rt_resources[RT_COUNT];
-	rt_resources[RT_SCENE_COLOR] = { RT_SCENE_COLOR, swapchainFormat , swapchainExtent, (VkImageUsageFlagBits)(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT), VK_IMAGE_ASPECT_DEPTH_BIT,  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, true };
-	rt_resources[RT_SCENE_DEPTH] = { RT_SCENE_DEPTH, VK_FORMAT_D32_SFLOAT , swapchainExtent, (VkImageUsageFlagBits)(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT), VK_IMAGE_ASPECT_DEPTH_BIT,  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
-	rt_resources[RT_SHADOW_MAP] = { RT_SHADOW_MAP, RT_FORMAT_SHADOW_DEPTH , RT_EXTENT_SHADOW, (VkImageUsageFlagBits)(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT), VK_IMAGE_ASPECT_DEPTH_BIT,  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
+	_rtCreationData[RT_SCENE_COLOR] = { RT_SCENE_COLOR, swapchainFormat , swapchainExtent, (VkImageUsageFlagBits)(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT), VK_IMAGE_ASPECT_COLOR_BIT,  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, true };
+	_rtCreationData[RT_SCENE_DEPTH] = { RT_SCENE_DEPTH, VK_FORMAT_D32_SFLOAT , swapchainExtent, (VkImageUsageFlagBits)(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT), VK_IMAGE_ASPECT_DEPTH_BIT,  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
+	_rtCreationData[RT_SHADOW_MAP] = { RT_SHADOW_MAP, RT_FORMAT_SHADOW_DEPTH , RT_EXTENT_SHADOW, (VkImageUsageFlagBits)(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT), VK_IMAGE_ASPECT_DEPTH_BIT,  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
+}
 
-	//Setup passes
-	std::vector<FG_Pass_Resource> passes;
-	
-	FG_Pass_Resource shadowPass;
+void CreateGraph(const Swapchain* swapchain)
+{
+	VkFormat swapchainFormat = swapchain->surfaceFormat.format;
+	CreateResourceCreationData(swapchain);
+
+	//Setup passes	
+	FG_RenderPassCreationData shadowPass;
 	CreateDepth(shadowPass, VK_FORMAT_D32_SFLOAT, RT_SHADOW_MAP);
 	ClearLast(shadowPass);
-	passes.push_back(shadowPass);
+	_rpCreationData.push_back(shadowPass);
 
-	FG_Pass_Resource geoPass;
+	FG_RenderPassCreationData geoPass;
 	CreateColor(geoPass, swapchainFormat, RT_SCENE_COLOR);
 	CreateDepth(geoPass, VK_FORMAT_D32_SFLOAT, RT_SCENE_DEPTH);
 	ClearLast(geoPass);
 	ReadResource(geoPass, RT_SHADOW_MAP);
-	passes.push_back(geoPass);
+	_rpCreationData.push_back(geoPass);
 
-	FG_Pass_Resource skyPass;
+	FG_RenderPassCreationData skyPass;
 	CreateColor(skyPass, swapchainFormat, RT_SCENE_COLOR);
 	CreateDepth(skyPass, VK_FORMAT_D32_SFLOAT, RT_SCENE_DEPTH);
-	passes.push_back(skyPass);
+	_rpCreationData.push_back(skyPass);
 
-	FG_Pass_Resource textPass;
+	FG_RenderPassCreationData textPass;
 	CreateColor(textPass, swapchainFormat, RT_SCENE_COLOR);
-	//TODO currently using the depth just for the renderpass to be compatible with the rest. should remove that
-	CreateDepth(textPass, VK_FORMAT_D32_SFLOAT, RT_SCENE_DEPTH);
-	passes.push_back(textPass);
+	_rpCreationData.push_back(textPass);
 
-	ComposeGraph(passes, rt_resources);
+	ComposeGraph(_rpCreationData, _rtCreationData);
 
-	RenderPass shadowPassF;
-	RenderPass geoPassF;
-	RenderPass skyPassF;
-	RenderPass textPassF;
-	CreateRenderPass(passes[0], "shadow_pass", &shadowPassF);
-	CreateRenderPass(passes[1], "geometry_pass", &geoPassF);
-	CreateRenderPass(passes[2], "skybox_pass", &skyPassF);
-	CreateRenderPass(passes[3], "text_pass", &textPassF);
+	CreateRenderPass(_rpCreationData[0], "shadow_pass", &_render_passes[_render_passes_count++]);
+	CreateRenderPass(_rpCreationData[1], "geometry_pass", &_render_passes[_render_passes_count++]);
+	CreateRenderPass(_rpCreationData[2], "skybox_pass", &_render_passes[_render_passes_count++]);
+	CreateRenderPass(_rpCreationData[3], "text_pass", &_render_passes[_render_passes_count++]);
+}
 
-	o_renderPasses->push_back(shadowPassF);
-	o_renderPasses->push_back(geoPassF);
-	o_renderPasses->push_back(skyPassF);
-	o_renderPasses->push_back(textPassF);
+void FG_RecreateAfterSwapchain(const Swapchain* swapchain)
+{
+	CreateResourceCreationData(swapchain);
+
+	//HACK TODO: probably just create everything
+	GfxImage* rt_image = &_render_targets[RT_SCENE_DEPTH];
+	FG_RenderTargetCreationData* rtCreationData = &_rtCreationData[RT_SCENE_DEPTH];
+	CreateImage(rtCreationData->format, rtCreationData->extent, rt_image, rtCreationData->usage_flags, rtCreationData->aspect_flags, rtCreationData->image_layout);
+
+	for (uint32_t i = 0; i < _render_passes_count; ++i)
+	{
+		FG_RenderPassCreationData& passCreationData = _rpCreationData[i];
+		RenderPass& renderpass = _render_passes[i];
+
+		assert(passCreationData.attachmentCount > 0);
+		bool containsDepth = passCreationData.references[passCreationData.attachmentCount - 1].layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		uint32_t colorCount = passCreationData.attachmentCount - (containsDepth ? 1 : 0);
+
+		CreateFrameBuffer(&renderpass, passCreationData, colorCount, containsDepth);
+	}
+}
+
+void FG_CleanupAfterSwapchain()
+{
+	for (uint32_t i = 0; i < _render_passes_count; ++i)
+	{
+		RenderPass& renderpass = _render_passes[i];
+		if (renderpass.frameBuffer.frameBuffer)
+		{
+			vkDestroyFramebuffer(g_vk.device, renderpass.frameBuffer.frameBuffer, nullptr);
+			renderpass.frameBuffer.frameBuffer = VK_NULL_HANDLE;
+		}
+		for (uint32_t fb_index = 0; fb_index < SIMULTANEOUS_FRAMES; ++fb_index)
+		{
+			vkDestroyFramebuffer(g_vk.device, renderpass.outputFrameBuffer[fb_index].frameBuffer, nullptr);
+			renderpass.outputFrameBuffer[fb_index].frameBuffer = VK_NULL_HANDLE;
+		}
+	}
+
+	//HACK TODO: destroy all images that are not the frame buffer or sampled (to avoid recreating descriptor sets)
+	DestroyImage(_render_targets[RT_SCENE_DEPTH]);
 }
 
 void FG_CleanupResources()
 {
 	for (uint32_t i = 0; i < RT_COUNT; ++i)
 	{
-		GfxImage& image = render_targets[i];
+		GfxImage& image = _render_targets[i];
 		if (image.image && i != RT_OUTPUT_TARGET)
 			DestroyImage(image);
+	}
+
+	for (uint32_t i = 0; i < _render_passes_count; ++i)
+	{
+		RenderPass& renderpass = _render_passes[i];
+		if (renderpass.frameBuffer.frameBuffer)
+		{
+			vkDestroyFramebuffer(g_vk.device, renderpass.frameBuffer.frameBuffer, nullptr);
+			renderpass.frameBuffer.frameBuffer = VK_NULL_HANDLE;
+		}
+		for (uint32_t fb_index = 0; fb_index < SIMULTANEOUS_FRAMES; ++fb_index)
+		{
+			vkDestroyFramebuffer(g_vk.device, renderpass.outputFrameBuffer[fb_index].frameBuffer, nullptr);
+			renderpass.outputFrameBuffer[fb_index].frameBuffer = VK_NULL_HANDLE;
+		}
+		vkDestroyRenderPass(g_vk.device, renderpass.vk_renderpass, nullptr);
+		renderpass.vk_renderpass = VK_NULL_HANDLE;
 	}
 }

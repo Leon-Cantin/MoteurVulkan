@@ -457,6 +457,9 @@ void DestroyImage(GfxImage& image)
 	vkDestroyImageView(g_vk.device, image.imageView, nullptr);
 	vkDestroyImage(g_vk.device, image.image, nullptr);
 	vkFreeMemory(g_vk.device, image.memory, nullptr);
+	image.imageView = VK_NULL_HANDLE;
+	image.image = VK_NULL_HANDLE;
+	image.memory = VK_NULL_HANDLE;
 }
 
 void CreateSolidColodImage(glm::vec4 color, GfxImage* o_image)

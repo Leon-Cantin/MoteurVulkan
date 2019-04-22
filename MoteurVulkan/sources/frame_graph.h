@@ -1,6 +1,7 @@
 #pragma once
 #include "vk_globals.h"
 #include "renderpass.h"
+#include "swapchain.h"
 
 enum eRenderTarget
 {
@@ -11,6 +12,9 @@ enum eRenderTarget
 };
 
 
-void CreateGraph(GfxImage* output_buffer, std::vector<RenderPass>* o_renderPasses);
+void CreateGraph(const Swapchain* swapchain);
+const RenderPass* GetRenderPass(uint32_t id);
 const GfxImage* GetRenderTarget(eRenderTarget render_target_id);
+void FG_RecreateAfterSwapchain(const Swapchain* swapchain);
+void FG_CleanupAfterSwapchain();
 void FG_CleanupResources();

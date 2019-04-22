@@ -12,7 +12,7 @@
 VkDescriptorSetLayout geoDescriptorSetLayout;
 VkDescriptorSetLayout geoInstanceDescriptorSetLayout;
 VkPipelineLayout geoPipelineLayout;
-RenderPass geometryRenderPass;
+const RenderPass* geometryRenderPass;
 VkPipeline geoGraphicsPipeline;
 
 std::array<VkDescriptorSet, SIMULTANEOUS_FRAMES> geoDescriptorSets;
@@ -187,10 +187,10 @@ void createGeoGraphicPipeline( VkExtent2D extent )
 	}
 
 	createGeoGraphicsPipeline(&bindingDescription, attributeDescriptions.data(), static_cast<uint32_t>(attributeDescriptions.size()), vertShaderCode, fragShaderCode,
-		extent, geometryRenderPass.vk_renderpass, geoPipelineLayout, &geoGraphicsPipeline);
+		extent, geometryRenderPass->vk_renderpass, geoPipelineLayout, &geoGraphicsPipeline);
 }
 
-void AddGeometryRenderPass(const RenderPass& renderpass)
+void AddGeometryRenderPass(const RenderPass* renderpass)
 {
 	geometryRenderPass = renderpass;
 }
@@ -250,7 +250,7 @@ void createGeoDescriptorSetLayout()
 void CmdBeginGeometryRenderPass(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t currentFrame)
 {
 	CmdBeginVkLabel(commandBuffer, "Geometry renderpass", glm::vec4(0.8f, 0.6f, 0.4f, 1.0f));
-	BeginRenderPass(commandBuffer, geometryRenderPass, geometryRenderPass.outputFrameBuffer[currentFrame].frameBuffer, extent);
+	BeginRenderPass(commandBuffer, *geometryRenderPass, geometryRenderPass->outputFrameBuffer[currentFrame].frameBuffer, extent);
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, geoGraphicsPipeline);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, geoPipelineLayout, RENDERPASS_SET, 1, &geoDescriptorSets[currentFrame], 0, nullptr);
 }
@@ -283,12 +283,6 @@ void CleanupGeometryRenderpassAfterSwapchain()
 
 void CleanupGeometryRenderpass()
 {
-	vkDestroyRenderPass(g_vk.device, geometryRenderPass.vk_renderpass, nullptr);
 	vkDestroyDescriptorSetLayout(g_vk.device, geoDescriptorSetLayout, nullptr);
 	vkDestroyDescriptorSetLayout(g_vk.device, geoInstanceDescriptorSetLayout, nullptr);
-}
-
-VkRenderPass GetGeometryRenderPass()
-{
-	return geometryRenderPass.vk_renderpass;
 }

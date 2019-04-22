@@ -16,4 +16,4 @@ void CmdDrawShadowPass(VkCommandBuffer commandBuffer, const SceneInstanceSet* in
 void CmdEndShadowPass(VkCommandBuffer commandBuffer);
 void CreateShadowDescriptorSet(VkDescriptorPool descriptorPool, const VkBuffer*instanceUniformBuffer);
 void computeShadowMatrix(const glm::vec3& light_location, glm::mat4* view, glm::mat4* projection);
-void AddShadowRenderPass(const RenderPass& renderPass);
+void AddShadowRenderPass(const RenderPass* renderPass);

@@ -17,7 +17,7 @@
 
 VkDescriptorSetLayout shadowDescriptorSetLayout;
 VkDescriptorSetLayout shadowInstanceDescriptorSetLayout;
-RenderPass shadowRenderPass;
+const RenderPass* shadowRenderPass;
 VkPipelineLayout shadowPipelineLayout;
 VkPipeline shadowPipeline;
 
@@ -50,7 +50,7 @@ void UpdateShadowUniformBuffers(size_t currentFrame, const SceneMatricesUniform*
 void CmdBeginShadowPass(VkCommandBuffer commandBuffer, size_t currentFrame)
 {
 	CmdBeginVkLabel(commandBuffer, "Shadow Renderpass", glm::vec4(0.5f, 0.2f, 0.4f, 1.0f));
-	BeginRenderPass(commandBuffer, shadowRenderPass, shadowRenderPass.frameBuffer.frameBuffer, shadowRenderPass.frameBuffer.extent);
+	BeginRenderPass(commandBuffer, *shadowRenderPass, shadowRenderPass->frameBuffer.frameBuffer, shadowRenderPass->frameBuffer.extent);
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowPipeline);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowPipelineLayout, RENDERPASS_SET, 1, &shadowDescriptorSets[currentFrame], 0, nullptr);
 }
@@ -230,7 +230,7 @@ void CreateShadowGraphicPipeline()
 	std::vector<char> fragShaderCode = readFile("shaders/shadows.frag.spv");
 
 	CreateShadowGraphicsPipeline(&bindingDescription, attributeDescriptions.data(), static_cast<uint32_t>(attributeDescriptions.size()), vertShaderCode, fragShaderCode,
-		RT_EXTENT_SHADOW, shadowRenderPass.vk_renderpass, &shadowPipelineLayout, &shadowPipeline);
+		RT_EXTENT_SHADOW, shadowRenderPass->vk_renderpass, &shadowPipelineLayout, &shadowPipeline);
 }
 
 void CreateShadowDescriptorSet(VkDescriptorPool descriptorPool, const VkBuffer*instanceUniformBuffer)
@@ -272,7 +272,7 @@ void CreateShadowDescriptorSetLayout()
 	CreateDesciptorSetLayout(instanceBindings.data(), static_cast<uint32_t>(instanceBindings.size()), &shadowInstanceDescriptorSetLayout);
 }
 
-void AddShadowRenderPass(const RenderPass& renderPass)
+void AddShadowRenderPass(const RenderPass* renderPass)
 {
 	shadowRenderPass = renderPass;
 }
@@ -290,12 +290,8 @@ void CleanupShadowPass()
 {
 	vkDestroyPipeline(g_vk.device, shadowPipeline, nullptr);
 	vkDestroyPipelineLayout(g_vk.device, shadowPipelineLayout, nullptr);
-	vkDestroyRenderPass(g_vk.device, shadowRenderPass.vk_renderpass, nullptr);
 	vkDestroyDescriptorSetLayout(g_vk.device, shadowDescriptorSetLayout, nullptr);
 	vkDestroyDescriptorSetLayout(g_vk.device, shadowInstanceDescriptorSetLayout, nullptr);
 
 	DestroyPerFrameBuffer(&shadowSceneUniformBuffer);
-	//TODO: clean up in FG
-	vkDestroyFramebuffer(g_vk.device, shadowRenderPass.frameBuffer.frameBuffer, nullptr);
-	//DestroyImage(shadowDepthImage);
 }

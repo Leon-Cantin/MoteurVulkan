@@ -12,7 +12,7 @@
 
 VkDescriptorSetLayout textDescriptorSetLayout = VK_NULL_HANDLE;
 VkPipelineLayout textPipelineLayout = VK_NULL_HANDLE;
-RenderPass textRenderPass;
+const RenderPass* textRenderPass;
 VkPipeline textGraphicsPipeline = VK_NULL_HANDLE;
 VkDescriptorSet textDescriptorSet;
 VkBuffer textVertexBuffer = VK_NULL_HANDLE;
@@ -58,7 +58,7 @@ void CreateTextGraphicsPipeline( VkExtent2D extent)
 	std::vector<char> fragShaderCode = readFile("shaders/text.frag.spv");
 
 	createTextGraphicsPipeline(&bindingDescription, attributeDescriptions.data(), static_cast<uint32_t>(attributeDescriptions.size()), vertShaderCode, fragShaderCode,
-		extent, textRenderPass.vk_renderpass, textDescriptorSetLayout, &textPipelineLayout, &textGraphicsPipeline);
+		extent, textRenderPass->vk_renderpass, textDescriptorSetLayout, &textPipelineLayout, &textGraphicsPipeline);
 }
 
 void createTextGraphicsPipeline(const VkVertexInputBindingDescription * vibDescription, const VkVertexInputAttributeDescription* visDescriptions, uint32_t visDescriptionsCount, std::vector<char>& vertShaderCode, std::vector<char>& fragShaderCode, VkExtent2D framebufferExtent, VkRenderPass renderPass,
@@ -223,7 +223,7 @@ void createTextGraphicsPipeline(const VkVertexInputBindingDescription * vibDescr
 void CmdDrawText( VkCommandBuffer commandBuffer, VkExtent2D extent, size_t frameIndex)
 {
 	CmdBeginVkLabel(commandBuffer, "Text overlay Renderpass", glm::vec4(0.6f, 0.6f, 0.6f, 1.0f));
-	BeginRenderPass(commandBuffer, textRenderPass, textRenderPass.outputFrameBuffer[frameIndex].frameBuffer, extent);
+	BeginRenderPass(commandBuffer, *textRenderPass, textRenderPass->outputFrameBuffer[frameIndex].frameBuffer, extent);
 
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, textGraphicsPipeline);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, textPipelineLayout, 0, 1, &textDescriptorSet, 0, nullptr);
@@ -335,7 +335,7 @@ void LoadFontTexture()
 	Load2DTexture(&font24pixels[0][0], fontWidth, fontHeight, 1, 1, VK_FORMAT_R8_UNORM, g_fontImage);
 }
 
-void AddTextRenderPass(const RenderPass& renderPass)
+void AddTextRenderPass(const RenderPass* renderPass)
 {
 	textRenderPass = renderPass;
 }
@@ -355,12 +355,11 @@ void RecreateTextRenderPass(const Swapchain& swapchain)
 void CleanupTextRenderPassAfterSwapchain()
 {
 	vkDestroyPipeline(g_vk.device, textGraphicsPipeline, nullptr);
-	vkDestroyPipelineLayout(g_vk.device, textPipelineLayout, nullptr);	
+	vkDestroyPipelineLayout(g_vk.device, textPipelineLayout, nullptr);
 }
 
 void CleanupTextRenderPass()
 {
-	vkDestroyRenderPass(g_vk.device, textRenderPass.vk_renderpass, nullptr);
 	DestroyImage(g_fontImage);
 	vkDestroyDescriptorSetLayout(g_vk.device, textDescriptorSetLayout, nullptr);
 	vkDestroyBuffer(g_vk.device, textVertexBuffer, nullptr);

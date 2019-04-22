@@ -138,10 +138,10 @@ void cleanup_swap_chain()
 	vkFreeCommandBuffers(g_vk.device, g_vk.transferCommandPool, static_cast<uint32_t>(g_transferCommandBuffers.size()), g_transferCommandBuffers.data());
 	vkFreeCommandBuffers(g_vk.device, g_vk.computeCommandPool, static_cast<uint32_t>(g_computeCommandBuffers.size()), g_computeCommandBuffers.data());
 
+	FG_CleanupAfterSwapchain();
+
 	CleanupGeometryRenderpassAfterSwapchain();
-
 	CleanupSkyboxAfterSwapchain();
-
 	CleanupTextRenderPassAfterSwapchain();
 
 	for (auto image : g_swapchain.images)
@@ -170,10 +170,10 @@ void recreate_swap_chain()
 	createSwapChain(g_windowSurface, width, height, g_swapchain);
 
 	create_skybox_graphics_pipeline(g_swapchain.extent);
-
 	createGeoGraphicPipeline(g_swapchain.extent);//Could be avoided with dynamic state, we only need to redo scissor and viewport
-
 	RecreateTextRenderPass(g_swapchain);
+
+	FG_RecreateAfterSwapchain(&g_swapchain);
 
 	CreateCommandBuffer();
 	CreateTransferCommandBuffer();
@@ -226,21 +226,20 @@ void InitScene()
 	const uint32_t maxSets = (geometryDescriptorSets + shadowDescriptorSets + skyboxDescriptorSetsCount + textDescriptorSetsCount);
 	createDescriptorPool(uniformBuffersCount, uniformBuffersDynamicCount, imageSamplersCount, storageImageCount, maxSets, &descriptorPool);
 
-	std::vector<RenderPass> renderPasses;
-	CreateGraph( g_swapchain.images.data(), &renderPasses );
+	CreateGraph( &g_swapchain );
 
-	AddShadowRenderPass(renderPasses[0]);
+	AddShadowRenderPass(GetRenderPass(0));
 	CreateShadowPass();
 
 	createGeoDescriptorSetLayout();
-	AddGeometryRenderPass(renderPasses[1]);
+	AddGeometryRenderPass(GetRenderPass(1));
 	createGeoGraphicPipeline(g_swapchain.extent);
 	CreateInstanceMatricesBuffers();
 
-	AddSkyboxRenderPass(renderPasses[2]);
+	AddSkyboxRenderPass(GetRenderPass(2));
 
 	LoadFontTexture();
-	AddTextRenderPass(renderPasses[3]);
+	AddTextRenderPass(GetRenderPass(3));
 	InitTextRenderPass(g_swapchain);
 	CreateTextVertexBuffer(256);
 	CreateTextDescriptorSet(descriptorPool, GetSampler(Samplers::Trilinear));

@@ -12,7 +12,7 @@ void createGeoDescriptorSetLayout();
 void CleanupGeometryRenderpassAfterSwapchain();
 void CleanupGeometryRenderpass();
 void createGeoGraphicPipeline(VkExtent2D extent);
-void AddGeometryRenderPass(const RenderPass& renderpass);
+void AddGeometryRenderPass(const RenderPass* renderpass);
 void CreateGeometryDescriptorSet(VkDescriptorPool descriptorPool, VkBuffer* sceneUniformBuffers, VkBuffer* instanceUniformBuffers, VkBuffer* lightBuffers, VkImageView textureView,
 	VkImageView normalTextureView, VkSampler sampler, VkImageView shadowTextureView, VkSampler shadowSampler);
 
@@ -20,5 +20,4 @@ void CmdBeginGeometryRenderPass(VkCommandBuffer commandBuffer, VkExtent2D extent
 void CmdEndGeometryRenderPass(VkCommandBuffer vkCommandBuffer);
 void CmdDrawModelAsset(VkCommandBuffer commandBuffer, const SceneInstanceSet* instanceSet, const ModelAsset& modelAsset, uint32_t currentFrame);
 
-VkRenderPass GetGeometryRenderPass();
 void ReloadGeometryShaders(VkExtent2D extent);
