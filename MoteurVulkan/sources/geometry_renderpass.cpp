@@ -247,10 +247,10 @@ void createGeoDescriptorSetLayout()
 	CreateDesciptorSetLayout(bindings2.data(), static_cast<uint32_t>(bindings2.size()), &geoInstanceDescriptorSetLayout);
 }
 
-void CmdBeginGeometryRenderPass(VkCommandBuffer commandBuffer, VkFramebuffer frameBuffer, VkExtent2D extent, uint32_t currentFrame)
+void CmdBeginGeometryRenderPass(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t currentFrame)
 {
 	CmdBeginVkLabel(commandBuffer, "Geometry renderpass", glm::vec4(0.8f, 0.6f, 0.4f, 1.0f));
-	BeginRenderPass(commandBuffer, geometryRenderPass, frameBuffer, extent);
+	BeginRenderPass(commandBuffer, geometryRenderPass, geometryRenderPass.outputFrameBuffer[currentFrame].frameBuffer, extent);
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, geoGraphicsPipeline);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, geoPipelineLayout, RENDERPASS_SET, 1, &geoDescriptorSets[currentFrame], 0, nullptr);
 }

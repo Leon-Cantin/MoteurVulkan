@@ -28,11 +28,9 @@
 extern bool framebuffer_resized;
 
 Swapchain g_swapchain;
-std::array<FrameBuffer, SIMULTANEOUS_FRAMES> g_outputFramebuffer;
 std::array<VkCommandBuffer, SIMULTANEOUS_FRAMES> g_graphicsCommandBuffers;
 std::array<VkCommandBuffer, SIMULTANEOUS_FRAMES> g_transferCommandBuffers;
 std::array<VkCommandBuffer, SIMULTANEOUS_FRAMES> g_computeCommandBuffers;
-GfxImage depthImage;
 
 VkDescriptorPool descriptorPool;
 
@@ -50,14 +48,6 @@ void CreateInstanceMatricesBuffers()
 {
 	uint32_t modelsCount = 3;
 	CreatePerFrameBuffer(sizeof(InstanceMatrices)*modelsCount, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &instanceMatricesBuffer);
-}
-
-void createOutputFrameBuffer()
-{
-	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i) {
-		//Pick any renderpass that matches
-		createFrameBuffer(&g_swapchain.images[i], 1, &depthImage, g_swapchain.extent, GetGeometryRenderPass(), &g_outputFramebuffer[i]);
-	}
 }
 
 void CreateCommandBuffer()
@@ -112,15 +102,6 @@ void create_sync_objects()
 	}
 }
 
-void createDepthResources()
-{
-	depthImage.extent = g_swapchain.extent;
-	depthImage.format = VK_FORMAT_D32_SFLOAT;
-	create_image(depthImage.extent.width, depthImage.extent.height, 1, depthImage.format, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage.image, depthImage.memory);
-	depthImage.imageView = createImageView(depthImage.image, depthImage.format, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
-	transitionImageLayout(depthImage.image, depthImage.format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1, 1);
-}
-
 void CreateGeometryUniformBuffer()
 {
 	CreatePerFrameBuffer(sizeof(SceneMatricesUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &sceneUniformBuffer);
@@ -153,11 +134,6 @@ VkFormat findDepthFormat() {
 
 void cleanup_swap_chain()
 {
-	DestroyImage(depthImage);
-
-	for (auto framebuffer : g_outputFramebuffer)
-		vkDestroyFramebuffer(g_vk.device, framebuffer.frameBuffer, nullptr);
-
 	vkFreeCommandBuffers(g_vk.device, g_vk.graphicsCommandPool, static_cast<uint32_t>(g_graphicsCommandBuffers.size()), g_graphicsCommandBuffers.data());
 	vkFreeCommandBuffers(g_vk.device, g_vk.transferCommandPool, static_cast<uint32_t>(g_transferCommandBuffers.size()), g_transferCommandBuffers.data());
 	vkFreeCommandBuffers(g_vk.device, g_vk.computeCommandPool, static_cast<uint32_t>(g_computeCommandBuffers.size()), g_computeCommandBuffers.data());
@@ -199,8 +175,6 @@ void recreate_swap_chain()
 
 	RecreateTextRenderPass(g_swapchain);
 
-	createDepthResources();
-	createOutputFrameBuffer();
 	CreateCommandBuffer();
 	CreateTransferCommandBuffer();
 }
@@ -253,7 +227,7 @@ void InitScene()
 	createDescriptorPool(uniformBuffersCount, uniformBuffersDynamicCount, imageSamplersCount, storageImageCount, maxSets, &descriptorPool);
 
 	std::vector<RenderPass> renderPasses;
-	CreateGraph(g_swapchain.surfaceFormat.format, &renderPasses);
+	CreateGraph( g_swapchain.images.data(), &renderPasses );
 
 	AddShadowRenderPass(renderPasses[0]);
 	CreateShadowPass();
@@ -262,11 +236,6 @@ void InitScene()
 	AddGeometryRenderPass(renderPasses[1]);
 	createGeoGraphicPipeline(g_swapchain.extent);
 	CreateInstanceMatricesBuffers();
-
-	createDepthResources();
-	//TODO having just one frame buffer object shared with everyone is kind of stupid. It needs a renderpass to be created,
-	// it takes it from the geometry
-	createOutputFrameBuffer();
 
 	AddSkyboxRenderPass(renderPasses[2]);
 
@@ -342,7 +311,7 @@ void RecordCommandBuffer(uint32_t currentFrame, const SceneFrameData* frameData)
 	}
 	CmdEndShadowPass(graphicsCommandBuffer);
 
-	CmdBeginGeometryRenderPass(graphicsCommandBuffer, g_outputFramebuffer[currentFrame].frameBuffer, g_swapchain.extent, currentFrame);
+	CmdBeginGeometryRenderPass(graphicsCommandBuffer, g_swapchain.extent, currentFrame);
 	for (size_t i = 0; i < frameData->renderableAssets.size(); ++i)
 	{
 		const SceneRenderableAsset* renderable = frameData->renderableAssets[i];
@@ -350,9 +319,9 @@ void RecordCommandBuffer(uint32_t currentFrame, const SceneFrameData* frameData)
 	}
 	CmdEndGeometryRenderPass(graphicsCommandBuffer);
 
-	CmdDrawSkybox(graphicsCommandBuffer, g_outputFramebuffer[currentFrame].frameBuffer, g_swapchain.extent, currentFrame);
+	CmdDrawSkybox(graphicsCommandBuffer, g_swapchain.extent, currentFrame);
 
-	CmdDrawText(graphicsCommandBuffer, g_outputFramebuffer[currentFrame].frameBuffer, g_swapchain.extent, currentFrame);
+	CmdDrawText(graphicsCommandBuffer, g_swapchain.extent, currentFrame);
 
 	CmdWriteTimestamp(graphicsCommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, Timestamp::COMMAND_BUFFER_END, currentFrame);
 
@@ -362,7 +331,7 @@ void RecordCommandBuffer(uint32_t currentFrame, const SceneFrameData* frameData)
 void ReloadSceneShaders()
 {
 	vkDeviceWaitIdle(g_vk.device);
-	VkExtent2D extent = g_outputFramebuffer[0].extent;
+	VkExtent2D extent = g_swapchain.extent;
 	ReloadSkyboxShaders(extent);
 	ReloadGeometryShaders(extent);
 }

@@ -237,10 +237,10 @@ void UpdateSkyboxUniformBuffers(size_t currentFrame, const glm::mat4& world_view
 	UpdatePerFrameBuffer( &skyboxUniformBuffer, &subo, sizeof(subo), currentFrame);
 }
 
-void CmdDrawSkybox(VkCommandBuffer commandBuffer, VkFramebuffer frameBuffer, VkExtent2D extent, size_t currentFrame)
+void CmdDrawSkybox(VkCommandBuffer commandBuffer, VkExtent2D extent, size_t currentFrame)
 {
 	CmdBeginVkLabel(commandBuffer, "Skybox Renderpass", glm::vec4(0.2f, 0.2f, 0.9f, 1.0f));
-	BeginRenderPass(commandBuffer, skyboxRenderPass, frameBuffer, extent);
+	BeginRenderPass(commandBuffer, skyboxRenderPass, skyboxRenderPass.outputFrameBuffer[currentFrame].frameBuffer, extent);
 
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, skyboxGraphicsPipeline);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, skyboxPipelineLayout, 0, 1, &skyboxDescriptorSets[currentFrame], 0, nullptr);

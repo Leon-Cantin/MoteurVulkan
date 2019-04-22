@@ -18,10 +18,12 @@
 VkDescriptorSetLayout shadowDescriptorSetLayout;
 VkDescriptorSetLayout shadowInstanceDescriptorSetLayout;
 RenderPass shadowRenderPass;
-constexpr VkFormat RT_FORMAT_SHADOW_DEPTH = VK_FORMAT_D32_SFLOAT;
-constexpr VkExtent2D RT_EXTENT_SHADOW = { 1024, 1024 };
 VkPipelineLayout shadowPipelineLayout;
 VkPipeline shadowPipeline;
+
+//TODO: this is redundant, also found in frame graph
+constexpr VkFormat RT_FORMAT_SHADOW_DEPTH = VK_FORMAT_D32_SFLOAT;
+constexpr VkExtent2D RT_EXTENT_SHADOW = { 1024, 1024 };
 
 std::array<VkDescriptorSet, SIMULTANEOUS_FRAMES> shadowDescriptorSets;
 std::array<VkDescriptorSet, SIMULTANEOUS_FRAMES> shadowInstanceDescriptorSet;

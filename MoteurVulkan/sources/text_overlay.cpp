@@ -220,10 +220,10 @@ void createTextGraphicsPipeline(const VkVertexInputBindingDescription * vibDescr
 	vkDestroyShaderModule(g_vk.device, frag_shader_module, nullptr);
 }
 
-void CmdDrawText( VkCommandBuffer commandBuffer, VkFramebuffer framebuffer, VkExtent2D extent, size_t frameIndex)
+void CmdDrawText( VkCommandBuffer commandBuffer, VkExtent2D extent, size_t frameIndex)
 {
 	CmdBeginVkLabel(commandBuffer, "Text overlay Renderpass", glm::vec4(0.6f, 0.6f, 0.6f, 1.0f));
-	BeginRenderPass(commandBuffer, textRenderPass, framebuffer, extent);
+	BeginRenderPass(commandBuffer, textRenderPass, textRenderPass.outputFrameBuffer[frameIndex].frameBuffer, extent);
 
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, textGraphicsPipeline);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, textPipelineLayout, 0, 1, &textDescriptorSet, 0, nullptr);

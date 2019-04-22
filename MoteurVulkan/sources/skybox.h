@@ -12,7 +12,7 @@ void createSkyboxUniformBuffers();
 void UpdateSkyboxUniformBuffers(size_t currentFrame, const glm::mat4& world_view_matrix);
 void CreateSkyboxDescriptorSet(VkDescriptorPool descriptorPool, VkImageView skyboxImageView, VkSampler trilinearSampler);
 void createSkyboxDescriptorSetLayout();
-void CmdDrawSkybox(VkCommandBuffer commandBuffer, VkFramebuffer frameBuffer, VkExtent2D extent, size_t currentFrame);
+void CmdDrawSkybox(VkCommandBuffer commandBuffer, VkExtent2D extent, size_t currentFrame);
 void CleanupSkyboxAfterSwapchain();
 void CleanupSkybox();
 void ReloadSkyboxShaders(VkExtent2D extent);

@@ -11,6 +11,6 @@ enum eRenderTarget
 };
 
 
-void CreateGraph(VkFormat swapchainFormat, std::vector<RenderPass>* o_renderPasses);
+void CreateGraph(GfxImage* output_buffer, std::vector<RenderPass>* o_renderPasses);
 const GfxImage* GetRenderTarget(eRenderTarget render_target_id);
 void FG_CleanupResources();
