@@ -13,11 +13,22 @@ struct RenderPass {
 	FrameBuffer outputFrameBuffer[SIMULTANEOUS_FRAMES];
 };
 
+void CreatePipeline(
+	const VkVertexInputBindingDescription * vibDescription,
+	const VkVertexInputAttributeDescription* visDescriptions,
+	uint32_t visDescriptionsCount,
+	std::vector<char>& vertShaderCode, std::vector<char>& fragShaderCode,
+	VkExtent2D framebufferExtent,
+	VkRenderPass renderPass,
+	VkPipelineLayout pipelineLayout,
+	bool depthBiased,
+	bool depthRead,
+	bool depthWrite,
+	bool blendEnabled,
+	bool backFaceCulling,
+	VkPrimitiveTopology primitiveTopology,
+	VkCompareOp depthCompareOp,
+	VkPipeline* o_pipeline);
+
 void BeginRenderPass(VkCommandBuffer commandBuffer, const RenderPass& renderpass, VkFramebuffer framebuffer, VkExtent2D extent);
 void EndRenderPass(VkCommandBuffer commandBuffer);
-
-struct RenderPassChain {
-	std::vector<VkRenderPass> chain;
-};
-
-extern RenderPassChain renderPassChain;

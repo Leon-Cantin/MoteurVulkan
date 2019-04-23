@@ -65,6 +65,3 @@ void UpdateText( const TextZone * textZones, size_t textZonesCount, VkExtent2D s
 void LoadFontTexture();
 void CreateTextDescriptorSetLayout();
 void CreateTextDescriptorSet(VkDescriptorPool descriptorPool, VkSampler trilinearSampler);
-
-void createTextGraphicsPipeline(const VkVertexInputBindingDescription * vibDescription, const VkVertexInputAttributeDescription* visDescriptions, uint32_t visDescriptionsCount, std::vector<char>& vertShaderCode, std::vector<char>& fragShaderCode, VkExtent2D framebufferExtent, VkRenderPass renderPass,
-	VkDescriptorSetLayout descriptorSetLayout, VkPipelineLayout* o_pipelineLayout, VkPipeline* o_pipeline);
