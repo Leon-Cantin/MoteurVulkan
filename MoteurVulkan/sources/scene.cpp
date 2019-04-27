@@ -110,7 +110,6 @@ void CreateGeometryUniformBuffer()
 
 void CreateGeometryRenderpassDescriptorSet(const GfxImage* albedoImage, const GfxImage* normalImage)
 {
-	//TODO review how to pass shadowmaps
 	const GfxImage *shadowImages = GetRenderTarget(RT_SHADOW_MAP);
 
 	CreateGeometryDescriptorSet(descriptorPool, sceneUniformBuffer.buffers.data(), instanceMatricesBuffer.buffers.data(), lightUniformBuffer.buffers.data(), albedoImage->imageView, normalImage->imageView, GetSampler(Samplers::Trilinear),
@@ -204,7 +203,7 @@ void InitScene()
 	CreateGeometryUniformBuffer();
 	const uint32_t geometryDescriptorSets = 2 * SIMULTANEOUS_FRAMES;
 	const uint32_t geometryBuffersCount =  2 * SIMULTANEOUS_FRAMES;
-	const uint32_t geometryImageCount = 3 * SIMULTANEOUS_FRAMES;
+	const uint32_t geometryImageCount = 20 * SIMULTANEOUS_FRAMES;
 	const uint32_t geomtryDynamicBuffersCount = 1 * SIMULTANEOUS_FRAMES;
 
 	const uint32_t shadowDescriptorSets = 2 * SIMULTANEOUS_FRAMES;

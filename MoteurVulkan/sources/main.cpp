@@ -308,7 +308,7 @@ void Init()
 
 	InitSkybox(&skyboxImage);
 
-	CreateGeometryRenderpassDescriptorSet(&modelTextureImage, &modelNormalTextureImage);//TODO fix this stupid chain
+	CreateGeometryRenderpassDescriptorSet(&modelTextureImage, &modelNormalTextureImage);
 	CreateGeometryInstanceDescriptorSet(&wandererSceneInstanceDescriptorSet, 0);
 	CreateGeometryInstanceDescriptorSet(&planeSceneInstanceDescriptorSet, 1);
 	CreateGeometryInstanceDescriptorSet(&cubeSceneInstanceDescriptorSet, 2);

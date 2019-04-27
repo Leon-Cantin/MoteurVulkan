@@ -25,14 +25,19 @@ void createGeoGraphicPipeline( VkExtent2D extent )
 	std::vector<char> vertShaderCode = readFile("shaders/triangle.vert.spv");
 	std::vector<char> fragShaderCode = readFile("shaders/triangle.frag.spv");
 
+	VkPushConstantRange pushConstantRange = {};
+	pushConstantRange.offset = 0;
+	pushConstantRange.size = sizeof(uint32_t);
+	pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
 	//Pipeline layout
 	std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = { geoDescriptorSetLayout, geoInstanceDescriptorSetLayout };
 	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
 	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipeline_layout_info.setLayoutCount = 2;
 	pipeline_layout_info.pSetLayouts = descriptorSetLayouts.data();
-	pipeline_layout_info.pushConstantRangeCount = 0;
-	pipeline_layout_info.pPushConstantRanges = nullptr;
+	pipeline_layout_info.pushConstantRangeCount = 1;
+	pipeline_layout_info.pPushConstantRanges = &pushConstantRange;
 
 	if (vkCreatePipelineLayout(g_vk.device, &pipeline_layout_info, nullptr, &geoPipelineLayout) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create pipeline layout!");
@@ -63,25 +68,38 @@ void AddGeometryRenderPass(const RenderPass* renderpass)
 void CreateGeometryDescriptorSet(VkDescriptorPool descriptorPool, VkBuffer* sceneUniformBuffers, VkBuffer* instanceUniformBuffers, VkBuffer* lightBuffers, VkImageView textureView,
 	VkImageView normalTextureView, VkSampler sampler, VkImageView shadowTextureView, VkSampler shadowSampler)
 {
-	std::array<DescriptorSet, SIMULTANEOUS_FRAMES> descriptorSets;
+	std::array<DescriptorSet2, SIMULTANEOUS_FRAMES> descriptorSets2;
 
+	//TODO fix this mess
+	VkDescriptorImageInfo albedos[] = { { sampler, textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
+	{ sampler, textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
+	{ sampler, textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
+	{ sampler, textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
+	{ sampler, textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL } };
+
+	VkDescriptorBufferInfo sceneUbos[] = { {sceneUniformBuffers[0], 0, VK_WHOLE_SIZE}, {sceneUniformBuffers[1], 0, VK_WHOLE_SIZE} };
+	VkDescriptorBufferInfo lightUbos[] = { { lightBuffers[0], 0, VK_WHOLE_SIZE }, { lightBuffers[1], 0, VK_WHOLE_SIZE } };
+
+	VkDescriptorImageInfo normalTextures[] = { { sampler, normalTextureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL } };
+	VkDescriptorImageInfo shadowTextures[] = { { shadowSampler, shadowTextureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL } };
 	//Per render pass descriptor est
 	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
 	{
-		DescriptorSet& geoDescriptorSet = descriptorSets[i] = {};
+		DescriptorSet2& geoDescriptorSet = descriptorSets2[i] = {};
 		geoDescriptorSet.descriptors.resize(5);
-		geoDescriptorSet.descriptors[0] = { {sceneUniformBuffers[i], 0, VK_WHOLE_SIZE}, {}, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0 };
-		geoDescriptorSet.descriptors[1] = { {lightBuffers[i], 0, VK_WHOLE_SIZE}, {}, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 };
-		geoDescriptorSet.descriptors[2] = { {},  { sampler, textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2 };
-		geoDescriptorSet.descriptors[3] = { {},  { sampler, normalTextureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3 };
-		geoDescriptorSet.descriptors[4] = { {},  { shadowSampler, shadowTextureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4 };
+		geoDescriptorSet.descriptors[0] = { &sceneUbos[i], {}, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0 };
+		geoDescriptorSet.descriptors[1] = { &lightUbos[i], {}, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 };
+		geoDescriptorSet.descriptors[2] = { {}, albedos, 5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2 };
+		geoDescriptorSet.descriptors[3] = { {}, normalTextures, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3 };
+		geoDescriptorSet.descriptors[4] = { {}, shadowTextures, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4 };
 		geoDescriptorSet.layout = geoDescriptorSetLayout;
 	}
-	createDescriptorSets(descriptorPool, descriptorSets.size(), descriptorSets.data());
+	createDescriptorSets2(descriptorPool, descriptorSets2.size(), descriptorSets2.data());
 
 	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
-		geoDescriptorSets[i] = descriptorSets[i].set;
+		geoDescriptorSets[i] = descriptorSets2[i].set;
 
+	std::array<DescriptorSet, SIMULTANEOUS_FRAMES> descriptorSets;
 	//Per instance descriptor set
 	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
 	{
@@ -100,7 +118,7 @@ void createGeoDescriptorSetLayout()
 {
 	const VkDescriptorSetLayoutBinding uboLayoutBinding = { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER , 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };
 	const VkDescriptorSetLayoutBinding lightLayoutBinding = { 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };
-	const VkDescriptorSetLayoutBinding samplerLayoutBinding = { 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };	
+	const VkDescriptorSetLayoutBinding samplerLayoutBinding = { 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };	
 	const VkDescriptorSetLayoutBinding normalSamplerLayoutBinding = { 3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };
 	const VkDescriptorSetLayoutBinding shadowSamplerLayoutBinding = { 4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };
 
@@ -130,6 +148,8 @@ void CmdDrawModelAsset( VkCommandBuffer commandBuffer, const SceneInstanceSet* i
 {
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, geoPipelineLayout, INSTANCE_SET, 1,
 		&geoInstanceDescriptorSet[currentFrame], 1, &instanceSet->geometryBufferOffsets[currentFrame]);
+	uint32_t textureIndex = 0;
+	vkCmdPushConstants(commandBuffer, geoPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(uint32_t), &textureIndex);
 	CmdDrawIndexed(commandBuffer, modelAsset);	
 }
 

@@ -12,7 +12,7 @@ layout(set = RENDERPASS_SET, binding = 1) uniform Light
 	vec3 location;
 	float intensity;
 }light;
-layout(set = RENDERPASS_SET, binding = 2) uniform sampler2D albedoSampler;
+layout(set = RENDERPASS_SET, binding = 2) uniform sampler2D albedoSampler[5];
 layout(set = RENDERPASS_SET, binding = 3) uniform sampler2D normalSampler;
 layout(set = RENDERPASS_SET, binding = 4) uniform sampler2DShadow shadowSampler;
 
@@ -33,6 +33,10 @@ layout(location = 0) in VS_OUT
 }fs_in;
 
 layout(location = 0) out vec4 outColor;
+
+layout(push_constant) uniform PushConsts {
+	uint index;
+} pushConsts;
 
 float G1(vec3 n, float alpha, vec3 v)
 {
@@ -82,7 +86,7 @@ float roughness = 0.65;
 	vec3 normal_vs = view_tangent_matrix * normal_ts;
 
 	float diffuse_factor = saturate( dot(normal_vs, surface_to_light));
-	vec3 albedo = texture(albedoSampler , fs_in.fragTexCoord).rgb;
+	vec3 albedo = texture(albedoSampler[pushConsts.index] , fs_in.fragTexCoord).rgb;
 	vec3 diffuse = albedo * (diffuse_factor);
 	
 	vec3 viewVector = normalize(fs_in.viewVector);

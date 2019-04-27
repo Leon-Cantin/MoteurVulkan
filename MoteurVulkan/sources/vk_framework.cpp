@@ -341,6 +341,7 @@ bool is_device_suitable(const VkPhysicalDevice device)
 	suitable |= check_device_extension_support(device);
 	suitable |= deviceFeatures.samplerAnisotropy == VK_TRUE;
 	suitable |= deviceFeatures.depthClamp == VK_TRUE;
+	suitable |= deviceFeatures.shaderSampledImageArrayDynamicIndexing == VK_TRUE;
 
 	if (suitable) {
 		SwapChainSupportDetails swapchain_details = query_swap_chain_support(device, g_windowSurface);
@@ -397,6 +398,7 @@ void create_logical_device()
 	VkPhysicalDeviceFeatures device_features = {};
 	device_features.samplerAnisotropy = VK_TRUE;
 	device_features.depthClamp = VK_TRUE;
+	device_features.shaderSampledImageArrayDynamicIndexing = VK_TRUE;
 
 	VkDeviceCreateInfo create_info = {};
 	create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
