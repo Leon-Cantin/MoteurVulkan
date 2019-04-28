@@ -14,11 +14,6 @@ struct LightUniform {
 	float intensity;
 };
 
-struct SceneRenderableAsset{
-	const ModelAsset* modelAsset;
-	const SceneInstanceSet* descriptorSet;
-};
-
 struct SceneFrameData {
 	std::vector<const SceneRenderableAsset *> renderableAssets;
 };

@@ -313,9 +313,9 @@ void Init()
 	CreateGeometryInstanceDescriptorSet(&planeSceneInstanceDescriptorSet, 1);
 	CreateGeometryInstanceDescriptorSet(&cubeSceneInstanceDescriptorSet, 2);
 
-	wandererRenderable = { &wandererModelAsset, &wandererSceneInstanceDescriptorSet };
-	planeRenderable = { &planeModelAsset, &planeSceneInstanceDescriptorSet };
-	cubeRenderable = { &cubeModelAsset, &cubeSceneInstanceDescriptorSet };
+	wandererRenderable = { &wandererModelAsset, &wandererSceneInstanceDescriptorSet, 0, 0 };
+	planeRenderable = { &planeModelAsset, &planeSceneInstanceDescriptorSet, 0, 0 };
+	cubeRenderable = { &cubeModelAsset, &cubeSceneInstanceDescriptorSet, 0, 0 };
 
 	glfwSetCursorPosCallback(g_window, glfw_onMouseMove);
 	glfwSetCharCallback(g_window, character_callback);

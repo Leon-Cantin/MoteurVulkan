@@ -27,6 +27,13 @@ struct SceneMatricesUniform {
 	glm::mat4 proj;
 };
 
+struct SceneRenderableAsset {
+	ModelAsset* modelAsset;
+	SceneInstanceSet* descriptorSet;
+	uint32_t albedoIndex;
+	uint32_t normalIndex;
+};
+
 glm::mat4 ComputeSceneInstanceModelMatrix(const SceneInstance& sceneInstance);
 glm::mat4 ComputeCameraSceneInstanceViewMatrix(const SceneInstance& sceneInstance);
 void CreateSceneInstanceDescriptorSet(SceneInstanceSet * o_set, uint32_t hackIndex);

@@ -18,6 +18,6 @@ void CreateGeometryDescriptorSet(VkDescriptorPool descriptorPool, VkBuffer* scen
 
 void CmdBeginGeometryRenderPass(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t currentFrame);
 void CmdEndGeometryRenderPass(VkCommandBuffer vkCommandBuffer);
-void CmdDrawModelAsset(VkCommandBuffer commandBuffer, const SceneInstanceSet* instanceSet, const ModelAsset& modelAsset, uint32_t currentFrame);
+void CmdDrawModelAsset(VkCommandBuffer commandBuffer, const SceneRenderableAsset* renderableAsset, uint32_t currentFrame);
 
 void ReloadGeometryShaders(VkExtent2D extent);

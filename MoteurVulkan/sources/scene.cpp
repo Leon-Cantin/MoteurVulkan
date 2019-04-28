@@ -313,7 +313,7 @@ void RecordCommandBuffer(uint32_t currentFrame, const SceneFrameData* frameData)
 	for (size_t i = 0; i < frameData->renderableAssets.size(); ++i)
 	{
 		const SceneRenderableAsset* renderable = frameData->renderableAssets[i];
-		CmdDrawModelAsset(graphicsCommandBuffer, renderable->descriptorSet, *renderable->modelAsset, currentFrame);
+		CmdDrawModelAsset(graphicsCommandBuffer, renderable, currentFrame);
 	}
 	CmdEndGeometryRenderPass(graphicsCommandBuffer);
 
