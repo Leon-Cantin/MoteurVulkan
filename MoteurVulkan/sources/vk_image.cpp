@@ -401,7 +401,8 @@ void Load3DTexture(const char* filename, GfxImage& o_image)
 	int texWidth = header.pixelwidth, texHeight = header.pixelheight;
 	VkDeviceSize imageSize = texWidth * texHeight * 4 * layerCount;
 	o_image.mipLevels = 1;
-
+	o_image.extent = { (uint32_t)texWidth, (uint32_t)texHeight };
+	o_image.format = format;
 	//TODO: now it's also a src image because of the generating mip map. Perhaps we could change it back to only dst somehow?
 	create_cube_image(texWidth, texHeight, o_image.mipLevels, format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, o_image.image, o_image.memory);
@@ -462,7 +463,7 @@ void DestroyImage(GfxImage& image)
 	image.memory = VK_NULL_HANDLE;
 }
 
-void CreateSolidColodImage(glm::vec4 color, GfxImage* o_image)
+void CreateSolidColorImage(glm::vec4 color, GfxImage* o_image)
 {
 	const uint32_t width = 4, height = 4;
 	o_image->extent = { width, height };

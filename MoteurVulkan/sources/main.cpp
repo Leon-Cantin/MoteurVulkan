@@ -12,6 +12,7 @@
 #include "text_overlay.h"
 #include "profile.h"
 #include "tick_system.h"
+#include "asset_library.h"
 
 #include "camera_orbit.h"
 #include "model_asset.h"
@@ -28,11 +29,6 @@
 
 #include <assert.h>
 
-GfxImage skyboxImage;
-
-GfxImage modelTextureImage;
-GfxImage modelNormalTextureImage;
-
 Camera_orbit camera(2);
 
 uint32_t current_frame = 0;
@@ -42,17 +38,14 @@ bool g_reloadShaders = false;
 const int WIDTH = 800;
 const int HEIGHT = 600;
 
-ModelAsset wandererModelAsset;
 SceneInstance wandererSceneInstance = { glm::vec3(0.0f, -0.5f, 0.0f), glm::angleAxis(glm::radians(180.0f), glm::vec3{0.0f, 1.0f, 0.0f}), 1.0f };
 SceneInstanceSet wandererSceneInstanceDescriptorSet;
 SceneRenderableAsset wandererRenderable;
 
-ModelAsset planeModelAsset;
 SceneInstance planeSceneInstance = { glm::vec3(0.0f, -0.5f, 0.0f), glm::angleAxis(glm::radians(0.0f), glm::vec3{0.0f, 1.0f, 0.0f}), 10.0f };
 SceneInstanceSet planeSceneInstanceDescriptorSet;
 SceneRenderableAsset planeRenderable;
 
-ModelAsset cubeModelAsset;
 SceneInstance cubeSceneInstance = { glm::vec3(0.0f, 0.0f, 2.0f), glm::angleAxis(glm::radians(0.0f), glm::vec3{0.0f, 1.0f, 0.0f}), 0.5f };
 SceneInstanceSet cubeSceneInstanceDescriptorSet;
 SceneRenderableAsset cubeRenderable;
@@ -297,25 +290,25 @@ void Init()
 	InitScene();
 
 	//LoadAssets
-	Load3DTexture("assets/mountaincube.ktx", skyboxImage);
+	GfxImage* skyboxTexture = AL_LoadCubeTexture("SkyboxTexture", "assets/mountaincube.ktx");
 
-	CreateSolidColodImage(glm::vec4(0.8f, 0.8f, 0.8f, 1.0f), &modelTextureImage);
-	CreateSolidColodImage(glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), &modelNormalTextureImage);
+	GfxImage* albedoTexture = AL_CreateSolidColorTexture("ModelAlbedoTexture", glm::vec4(0.8f, 0.8f, 0.8f, 1.0f));
+	GfxImage* normalTexture = AL_CreateSolidColorTexture("ModelNormalTexture", glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
 
-	LoadGenericModel("assets/wanderer_decimated.obj", wandererModelAsset, 1);
-	LoadGenericModel("assets/plane.obj", planeModelAsset, 0);
-	LoadGenericModel("assets/cube.obj", cubeModelAsset, 0);
+	ModelAsset* wandererModelAsset = AL_Load3DModel("Wanderer", "assets/wanderer_decimated.obj", 1);
+	ModelAsset* planeModelAsset = AL_Load3DModel("Plane", "assets/plane.obj", 0);
+	ModelAsset* cubeModelAsset = AL_Load3DModel("Cube", "assets/cube.obj", 0);
 
-	InitSkybox(&skyboxImage);
+	InitSkybox(skyboxTexture);
 
-	CreateGeometryRenderpassDescriptorSet(&modelTextureImage, &modelNormalTextureImage);
+	CreateGeometryRenderpassDescriptorSet(albedoTexture, normalTexture);
 	CreateGeometryInstanceDescriptorSet(&wandererSceneInstanceDescriptorSet, 0);
 	CreateGeometryInstanceDescriptorSet(&planeSceneInstanceDescriptorSet, 1);
 	CreateGeometryInstanceDescriptorSet(&cubeSceneInstanceDescriptorSet, 2);
 
-	wandererRenderable = { &wandererModelAsset, &wandererSceneInstanceDescriptorSet, 0, 0 };
-	planeRenderable = { &planeModelAsset, &planeSceneInstanceDescriptorSet, 0, 0 };
-	cubeRenderable = { &cubeModelAsset, &cubeSceneInstanceDescriptorSet, 0, 0 };
+	wandererRenderable = { wandererModelAsset, &wandererSceneInstanceDescriptorSet, 0, 0 };
+	planeRenderable = { planeModelAsset, &planeSceneInstanceDescriptorSet, 0, 0 };
+	cubeRenderable = { cubeModelAsset, &cubeSceneInstanceDescriptorSet, 0, 0 };
 
 	glfwSetCursorPosCallback(g_window, glfw_onMouseMove);
 	glfwSetCharCallback(g_window, character_callback);
@@ -325,13 +318,7 @@ void Init()
 void cleanup() {
 	CleanupScene();
 
-	DestroyImage(skyboxImage);
-	DestroyImage(modelTextureImage);
-	DestroyImage(modelNormalTextureImage);
-
-	DestroyModelAsset(wandererModelAsset);
-	DestroyModelAsset(planeModelAsset);
-	DestroyModelAsset(cubeModelAsset);
+	AL_Cleanup();
 }
 
 void run() {

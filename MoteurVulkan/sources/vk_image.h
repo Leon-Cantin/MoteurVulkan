@@ -47,4 +47,4 @@ void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayo
 void transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount);
 VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
-void CreateSolidColodImage(glm::vec4 color, GfxImage* o_image);
+void CreateSolidColorImage(glm::vec4 color, GfxImage* o_image);

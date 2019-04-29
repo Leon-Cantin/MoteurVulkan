@@ -171,6 +171,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="sources\asset_library.cpp" />
     <ClCompile Include="sources\camera_orbit.cpp" />
     <ClCompile Include="sources\console_command.cpp" />
     <ClCompile Include="sources\descriptors.cpp" />
@@ -206,6 +207,7 @@
     <None Include="sources\stb_font_consolas_24_latin1.inl" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="sources\asset_library.h" />
     <ClInclude Include="sources\camera_orbit.h" />
     <ClInclude Include="sources\console_command.h" />
     <ClInclude Include="sources\defines_global.h" />

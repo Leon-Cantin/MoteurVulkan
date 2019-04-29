@@ -93,6 +93,9 @@
     <ClCompile Include="sources\frame_graph.cpp">
       <Filter>sources</Filter>
     </ClCompile>
+    <ClCompile Include="sources\asset_library.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\triangle.frag">
@@ -191,6 +194,9 @@
       <Filter>sources</Filter>
     </ClInclude>
     <ClInclude Include="sources\frame_graph.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\asset_library.h">
       <Filter>sources</Filter>
     </ClInclude>
   </ItemGroup>
