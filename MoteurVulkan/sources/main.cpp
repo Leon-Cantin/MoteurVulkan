@@ -302,9 +302,9 @@ void Init()
 	InitSkybox(skyboxTexture);
 
 	CreateGeometryRenderpassDescriptorSet(albedoTexture, normalTexture);
-	CreateGeometryInstanceDescriptorSet(&wandererSceneInstanceDescriptorSet, 0);
-	CreateGeometryInstanceDescriptorSet(&planeSceneInstanceDescriptorSet, 1);
-	CreateGeometryInstanceDescriptorSet(&cubeSceneInstanceDescriptorSet, 2);
+	CreateGeometryInstanceDescriptorSet(&wandererSceneInstanceDescriptorSet);
+	CreateGeometryInstanceDescriptorSet(&planeSceneInstanceDescriptorSet);
+	CreateGeometryInstanceDescriptorSet(&cubeSceneInstanceDescriptorSet);
 
 	wandererRenderable = { wandererModelAsset, &wandererSceneInstanceDescriptorSet, 0, 0 };
 	planeRenderable = { planeModelAsset, &planeSceneInstanceDescriptorSet, 0, 0 };

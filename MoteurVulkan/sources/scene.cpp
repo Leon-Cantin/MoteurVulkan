@@ -118,9 +118,9 @@ void CreateGeometryRenderpassDescriptorSet(const GfxImage* albedoImage, const Gf
 	CreateShadowDescriptorSet(descriptorPool, instanceMatricesBuffer.buffers.data());
 }
 
-void CreateGeometryInstanceDescriptorSet( SceneInstanceSet* sceneInstanceDescriptorSet, uint32_t hackIndex)
+void CreateGeometryInstanceDescriptorSet( SceneInstanceSet* sceneInstanceDescriptorSet )
 {
-	CreateSceneInstanceDescriptorSet( sceneInstanceDescriptorSet, hackIndex);
+	CreateSceneInstanceDescriptorSet( sceneInstanceDescriptorSet );
 }
 
 VkFormat findDepthFormat() {

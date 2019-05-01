@@ -36,4 +36,4 @@ struct SceneRenderableAsset {
 
 glm::mat4 ComputeSceneInstanceModelMatrix(const SceneInstance& sceneInstance);
 glm::mat4 ComputeCameraSceneInstanceViewMatrix(const SceneInstance& sceneInstance);
-void CreateSceneInstanceDescriptorSet(SceneInstanceSet * o_set, uint32_t hackIndex);
+void CreateSceneInstanceDescriptorSet(SceneInstanceSet * o_set);
