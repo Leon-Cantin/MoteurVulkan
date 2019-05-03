@@ -38,16 +38,16 @@ bool g_reloadShaders = false;
 const int WIDTH = 800;
 const int HEIGHT = 600;
 
+SceneInstanceSet g_sceneInstanceDescriptorSets [5];
+size_t g_sceneInstancesCount = 0;
+
 SceneInstance wandererSceneInstance = { glm::vec3(0.0f, -0.5f, 0.0f), glm::angleAxis(glm::radians(180.0f), glm::vec3{0.0f, 1.0f, 0.0f}), 1.0f };
-SceneInstanceSet wandererSceneInstanceDescriptorSet;
 SceneRenderableAsset wandererRenderable;
 
 SceneInstance planeSceneInstance = { glm::vec3(0.0f, -0.5f, 0.0f), glm::angleAxis(glm::radians(0.0f), glm::vec3{0.0f, 1.0f, 0.0f}), 10.0f };
-SceneInstanceSet planeSceneInstanceDescriptorSet;
 SceneRenderableAsset planeRenderable;
 
 SceneInstance cubeSceneInstance = { glm::vec3(0.0f, 0.0f, 2.0f), glm::angleAxis(glm::radians(0.0f), glm::vec3{0.0f, 1.0f, 0.0f}), 0.5f };
-SceneInstanceSet cubeSceneInstanceDescriptorSet;
 SceneRenderableAsset cubeRenderable;
 
 SceneInstance cameraSceneInstance = { glm::vec3(0.0f, 0.0f, -2.0f), glm::angleAxis(glm::radians(0.0f), glm::vec3{0.0f, 1.0f, 0.0f}), 1.0f };
@@ -82,9 +82,9 @@ void updateUniformBuffer(uint32_t currentImage) {
 
 	VkExtent2D swapChainExtent = g_swapchain.extent;
 
-	UpdateGeometryUniformBuffer(&wandererSceneInstance, &wandererSceneInstanceDescriptorSet, currentImage);
-	UpdateGeometryUniformBuffer(&planeSceneInstance, &planeSceneInstanceDescriptorSet, currentImage);
-	UpdateGeometryUniformBuffer(&cubeSceneInstance, &cubeSceneInstanceDescriptorSet, currentImage);
+	UpdateGeometryUniformBuffer(&wandererSceneInstance, wandererRenderable.descriptorSet, currentImage);
+	UpdateGeometryUniformBuffer(&planeSceneInstance, planeRenderable.descriptorSet, currentImage);
+	UpdateGeometryUniformBuffer(&cubeSceneInstance, cubeRenderable.descriptorSet, currentImage);
 
 	UpdateSceneUniformBuffer(world_view_matrix, swapChainExtent, currentImage);
 
@@ -285,6 +285,13 @@ void mainLoop() {
 	vkDeviceWaitIdle(g_vk.device);
 }
 
+void CreateRenderable(const ModelAsset* modelAsset, uint32_t albedoIndex, uint32_t normalIndex, SceneRenderableAsset* o_renderable)
+{
+	SceneInstanceSet* sceneInstanceSet = &g_sceneInstanceDescriptorSets[g_sceneInstancesCount++];
+	CreateGeometryInstanceDescriptorSet(sceneInstanceSet);
+	*o_renderable = { modelAsset, sceneInstanceSet, albedoIndex, normalIndex };
+}
+
 void Init()
 {
 	InitScene();
@@ -302,13 +309,10 @@ void Init()
 	InitSkybox(skyboxTexture);
 
 	CreateGeometryRenderpassDescriptorSet(albedoTexture, normalTexture);
-	CreateGeometryInstanceDescriptorSet(&wandererSceneInstanceDescriptorSet);
-	CreateGeometryInstanceDescriptorSet(&planeSceneInstanceDescriptorSet);
-	CreateGeometryInstanceDescriptorSet(&cubeSceneInstanceDescriptorSet);
 
-	wandererRenderable = { wandererModelAsset, &wandererSceneInstanceDescriptorSet, 0, 0 };
-	planeRenderable = { planeModelAsset, &planeSceneInstanceDescriptorSet, 0, 0 };
-	cubeRenderable = { cubeModelAsset, &cubeSceneInstanceDescriptorSet, 0, 0 };
+	CreateRenderable(wandererModelAsset, 0, 0, &wandererRenderable);
+	CreateRenderable(planeModelAsset, 0, 0, &planeRenderable);
+	CreateRenderable(cubeModelAsset, 0, 0, &cubeRenderable);
 
 	glfwSetCursorPosCallback(g_window, glfw_onMouseMove);
 	glfwSetCharCallback(g_window, character_callback);

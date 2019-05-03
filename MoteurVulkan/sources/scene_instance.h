@@ -28,8 +28,8 @@ struct SceneMatricesUniform {
 };
 
 struct SceneRenderableAsset {
-	ModelAsset* modelAsset;
-	SceneInstanceSet* descriptorSet;
+	const ModelAsset* modelAsset;
+	const SceneInstanceSet* descriptorSet;
 	uint32_t albedoIndex;
 	uint32_t normalIndex;
 };
