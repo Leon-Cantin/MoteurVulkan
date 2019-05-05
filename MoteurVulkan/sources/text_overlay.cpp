@@ -206,7 +206,7 @@ void AddTextRenderPass(const RenderPass* renderPass)
 	textRenderPass = renderPass;
 }
 
-void InitTextRenderPass(const Swapchain& swapchain)
+void CreateTextPipeline(const Swapchain& swapchain)
 {
 	CreateTextDescriptorSetLayout();
 	CreateTextGraphicsPipeline(swapchain.extent);

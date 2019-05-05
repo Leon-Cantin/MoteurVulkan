@@ -134,3 +134,14 @@ void ReloadSkyboxShaders(VkExtent2D extent)
 	create_skybox_graphics_pipeline(extent);
 }
 
+void CreateSkyboxPipeline(const Swapchain& swapchain)
+{
+	createSkyboxDescriptorSetLayout();
+	create_skybox_graphics_pipeline(swapchain.extent);
+}
+
+void RecreateSkyboxPipeline(const Swapchain& swapchain)
+{
+	create_skybox_graphics_pipeline(swapchain.extent);
+}
+

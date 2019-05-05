@@ -168,8 +168,9 @@ void recreate_swap_chain()
 	glfwGetFramebufferSize(g_window, &width, &height);
 	createSwapChain(g_windowSurface, width, height, g_swapchain);
 
-	create_skybox_graphics_pipeline(g_swapchain.extent);
-	createGeoGraphicPipeline(g_swapchain.extent);//Could be avoided with dynamic state, we only need to redo scissor and viewport
+	//Could be avoided with dynamic state, we only need to redo scissor and viewport
+	RecreateSkyboxPipeline(g_swapchain);
+	RecreateGeometryPipeline(g_swapchain);
 	RecreateTextRenderPass(g_swapchain);
 
 	FG_RecreateAfterSwapchain(&g_swapchain);
@@ -180,10 +181,7 @@ void recreate_swap_chain()
 
 void InitSkybox(const GfxImage* skyboxImage)
 {
-	createSkyboxDescriptorSetLayout();
-	createSkyboxUniformBuffers();
 	CreateSkyboxDescriptorSet(descriptorPool, skyboxImage->imageView, GetSampler(Samplers::Trilinear));
-	create_skybox_graphics_pipeline(g_swapchain.extent);
 }
 
 void InitScene()
@@ -229,17 +227,18 @@ void InitScene()
 
 	AddShadowRenderPass(GetRenderPass(0));
 	CreateShadowPass();
-
-	createGeoDescriptorSetLayout();
+	
 	AddGeometryRenderPass(GetRenderPass(1));
-	createGeoGraphicPipeline(g_swapchain.extent);
+	CreateGeometryPipeline(g_swapchain);
 	CreateInstanceMatricesBuffers();
 
 	AddSkyboxRenderPass(GetRenderPass(2));
+	CreateSkyboxPipeline(g_swapchain);
+	createSkyboxUniformBuffers();
 
 	LoadFontTexture();
 	AddTextRenderPass(GetRenderPass(3));
-	InitTextRenderPass(g_swapchain);
+	CreateTextPipeline(g_swapchain);
 	CreateTextVertexBuffer(256);
 	CreateTextDescriptorSet(descriptorPool, GetSampler(Samplers::Trilinear));
 

@@ -8,11 +8,14 @@
 
 #include <vector>
 
+//Have the frame graph deal with these and recreate those that are swap chain sized
+VkPipelineLayout geoPipelineLayout;
+VkPipeline geoGraphicsPipeline;
+const RenderPass* geometryRenderPass;
+
+//TODO: something to manage and generate descriptor sets. Passes can register to use one of many descriptor set layout
 VkDescriptorSetLayout geoDescriptorSetLayout;
 VkDescriptorSetLayout geoInstanceDescriptorSetLayout;
-VkPipelineLayout geoPipelineLayout;
-const RenderPass* geometryRenderPass;
-VkPipeline geoGraphicsPipeline;
 
 std::array<VkDescriptorSet, SIMULTANEOUS_FRAMES> geoDescriptorSets;
 std::array<VkDescriptorSet, SIMULTANEOUS_FRAMES> geoInstanceDescriptorSet;
@@ -128,6 +131,17 @@ void createGeoDescriptorSetLayout()
 	const VkDescriptorSetLayoutBinding instanceUboLayoutBinding = { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC , 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };
 	const std::array<VkDescriptorSetLayoutBinding, 1> bindings2 = { instanceUboLayoutBinding };
 	CreateDesciptorSetLayout(bindings2.data(), static_cast<uint32_t>(bindings2.size()), &geoInstanceDescriptorSetLayout);
+}
+
+void CreateGeometryPipeline(const Swapchain& swapchain)
+{
+	createGeoDescriptorSetLayout();
+	createGeoGraphicPipeline(swapchain.extent);
+}
+
+void RecreateGeometryPipeline(const Swapchain& swapchain)
+{
+	createGeoGraphicPipeline(swapchain.extent);
 }
 
 void CmdBeginGeometryRenderPass(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t currentFrame)

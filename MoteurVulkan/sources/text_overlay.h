@@ -52,7 +52,7 @@ struct TextZone {
 };
 
 
-void InitTextRenderPass(const Swapchain& swapchain);
+void CreateTextPipeline(const Swapchain& swapchain);
 void RecreateTextRenderPass(const Swapchain& swapchain);
 void CleanupTextRenderPassAfterSwapchain();
 void CleanupTextRenderPass();
