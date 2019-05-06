@@ -5,6 +5,11 @@
 #include "vk_framework.h"
 #include "vk_debug.h"
 
+#include "geometry_renderpass.h"
+#include "shadow_renderpass.h"
+#include "skybox.h"
+#include "text_overlay.h"
+
 #include <vector>
 #include <map>
 
@@ -328,6 +333,15 @@ void CreateGraph(const Swapchain* swapchain)
 	CreateRenderPass(_rpCreationData[1], "geometry_pass", &_render_passes[_render_passes_count++]);
 	CreateRenderPass(_rpCreationData[2], "skybox_pass", &_render_passes[_render_passes_count++]);
 	CreateRenderPass(_rpCreationData[3], "text_pass", &_render_passes[_render_passes_count++]);
+
+	AddShadowRenderPass(GetRenderPass(0));
+	CreateShadowPass();
+	AddGeometryRenderPass(GetRenderPass(1));
+	CreateGeometryPipeline(*swapchain);
+	AddSkyboxRenderPass(GetRenderPass(2));
+	CreateSkyboxPipeline(*swapchain);
+	AddTextRenderPass(GetRenderPass(3));
+	CreateTextPipeline(*swapchain);
 }
 
 void FG_RecreateAfterSwapchain(const Swapchain* swapchain)
@@ -356,6 +370,12 @@ void FG_RecreateAfterSwapchain(const Swapchain* swapchain)
 
 		CreateFrameBuffer(&renderpass, passCreationData, colorCount, containsDepth);
 	}
+
+	//TODO: Make this automatic by just calling callbacks on passes that are swapchain sized
+	//Could be avoided with dynamic state, we only need to redo scissor and viewport
+	RecreateSkyboxPipeline(*swapchain);
+	RecreateGeometryPipeline(*swapchain);
+	RecreateTextRenderPass(*swapchain);
 }
 
 void FG_CleanupAfterSwapchain()
@@ -385,6 +405,12 @@ void FG_CleanupAfterSwapchain()
 
 void FG_CleanupResources()
 {
+	//TODO: Make this automatic
+	CleanupGeometryRenderpass();
+	CleanupSkybox();
+	CleanupTextRenderPass();
+	CleanupShadowPass();
+
 	for (uint32_t i = 0; i < RT_COUNT; ++i)
 	{
 		GfxImage& image = _render_targets[i];

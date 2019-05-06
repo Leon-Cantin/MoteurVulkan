@@ -168,11 +168,6 @@ void recreate_swap_chain()
 	glfwGetFramebufferSize(g_window, &width, &height);
 	createSwapChain(g_windowSurface, width, height, g_swapchain);
 
-	//Could be avoided with dynamic state, we only need to redo scissor and viewport
-	RecreateSkyboxPipeline(g_swapchain);
-	RecreateGeometryPipeline(g_swapchain);
-	RecreateTextRenderPass(g_swapchain);
-
 	FG_RecreateAfterSwapchain(&g_swapchain);
 
 	CreateCommandBuffer();
@@ -223,22 +218,11 @@ void InitScene()
 	const uint32_t maxSets = (geometryDescriptorSets + shadowDescriptorSets + skyboxDescriptorSetsCount + textDescriptorSetsCount);
 	createDescriptorPool(uniformBuffersCount, uniformBuffersDynamicCount, imageSamplersCount, storageImageCount, maxSets, &descriptorPool);
 
-	CreateGraph( &g_swapchain );
+	CreateGraph( &g_swapchain );	
 
-	AddShadowRenderPass(GetRenderPass(0));
-	CreateShadowPass();
-	
-	AddGeometryRenderPass(GetRenderPass(1));
-	CreateGeometryPipeline(g_swapchain);
 	CreateInstanceMatricesBuffers();
-
-	AddSkyboxRenderPass(GetRenderPass(2));
-	CreateSkyboxPipeline(g_swapchain);
 	createSkyboxUniformBuffers();
-
 	LoadFontTexture();
-	AddTextRenderPass(GetRenderPass(3));
-	CreateTextPipeline(g_swapchain);
 	CreateTextVertexBuffer(256);
 	CreateTextDescriptorSet(descriptorPool, GetSampler(Samplers::Trilinear));
 
@@ -399,19 +383,11 @@ void CleanupScene() {
 	DestroyTimeStampsPool();
 	vkDestroyDescriptorPool(g_vk.device, descriptorPool, nullptr);
 
-	CleanupGeometryRenderpass();
-
 	DestroyPerFrameBuffer(&lightUniformBuffer);
 	DestroyPerFrameBuffer(&sceneUniformBuffer);
 	DestroyPerFrameBuffer(&instanceMatricesBuffer);
 
-	CleanupSkybox();
-
 	DestroySamplers();
-
-	CleanupTextRenderPass();
-
-	CleanupShadowPass();
 
 	FG_CleanupResources();
 
