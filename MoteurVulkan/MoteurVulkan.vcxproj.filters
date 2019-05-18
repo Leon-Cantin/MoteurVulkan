@@ -10,57 +10,24 @@
     <Filter Include="sources\frame_graph">
       <UniqueIdentifier>{ceb28dfb-3079-4480-a577-aef4398bcc0a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sources\asset_library">
+      <UniqueIdentifier>{02a230d6-fdfe-48d5-901d-10a0d3fd1996}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sources\input_handler">
+      <UniqueIdentifier>{89a2f53d-18fb-4ede-b728-c49e2e95ba9f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sources\renderer">
+      <UniqueIdentifier>{e92fe4c5-614b-474f-bba5-848ece7468e4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sources\main.cpp">
       <Filter>sources</Filter>
     </ClCompile>
-    <ClCompile Include="sources\vk_image.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\vk_commands.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\vk_globals.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\vk_memory.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\vk_buffer.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\vk_shader.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
     <ClCompile Include="sources\skybox.cpp">
       <Filter>sources</Filter>
     </ClCompile>
-    <ClCompile Include="sources\renderpass.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\descriptors.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
     <ClCompile Include="sources\camera_orbit.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\model_asset.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\swapchain.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\gpu_synchronization.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\framebuffer.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\vk_framework.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\vk_debug.cpp">
       <Filter>sources</Filter>
     </ClCompile>
     <ClCompile Include="sources\text_overlay.cpp">
@@ -72,9 +39,6 @@
     <ClCompile Include="sources\geometry_renderpass.cpp">
       <Filter>sources</Filter>
     </ClCompile>
-    <ClCompile Include="sources\profile.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
     <ClCompile Include="sources\shadow_renderpass.cpp">
       <Filter>sources</Filter>
     </ClCompile>
@@ -84,20 +48,65 @@
     <ClCompile Include="sources\console_command.cpp">
       <Filter>sources</Filter>
     </ClCompile>
-    <ClCompile Include="sources\input.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
     <ClCompile Include="sources\scene.cpp">
       <Filter>sources</Filter>
     </ClCompile>
     <ClCompile Include="sources\tick_system.cpp">
       <Filter>sources</Filter>
     </ClCompile>
-    <ClCompile Include="sources\asset_library.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
     <ClCompile Include="sources\frame_graph.cpp">
       <Filter>sources\frame_graph</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\asset_library.cpp">
+      <Filter>sources\asset_library</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\input.cpp">
+      <Filter>sources\input_handler</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\gpu_synchronization.cpp">
+      <Filter>sources\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\framebuffer.cpp">
+      <Filter>sources\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\descriptors.cpp">
+      <Filter>sources\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\swapchain.cpp">
+      <Filter>sources\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\vk_buffer.cpp">
+      <Filter>sources\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\vk_commands.cpp">
+      <Filter>sources\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\vk_debug.cpp">
+      <Filter>sources\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\vk_framework.cpp">
+      <Filter>sources\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\vk_globals.cpp">
+      <Filter>sources\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\vk_image.cpp">
+      <Filter>sources\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\vk_memory.cpp">
+      <Filter>sources\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\vk_shader.cpp">
+      <Filter>sources\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\profile.cpp">
+      <Filter>sources\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\renderpass.cpp">
+      <Filter>sources\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\model_asset.cpp">
+      <Filter>sources\renderer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -112,55 +121,16 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="sources\vk_globals.h">
-      <Filter>sources</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\vk_image.h">
-      <Filter>sources</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\vk_commands.h">
-      <Filter>sources</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\vk_memory.h">
-      <Filter>sources</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\vk_buffer.h">
-      <Filter>sources</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\vk_shader.h">
-      <Filter>sources</Filter>
-    </ClInclude>
     <ClInclude Include="sources\skybox.h">
       <Filter>sources</Filter>
     </ClInclude>
     <ClInclude Include="sources\ktx_loader.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="sources\renderpass.h">
-      <Filter>sources</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\descriptors.h">
-      <Filter>sources</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\vk_framework.h">
-      <Filter>sources</Filter>
-    </ClInclude>
     <ClInclude Include="sources\camera_orbit.h">
       <Filter>sources</Filter>
     </ClInclude>
     <ClInclude Include="sources\model_asset.h">
-      <Filter>sources</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\swapchain.h">
-      <Filter>sources</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\gpu_synchronization.h">
-      <Filter>sources</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\framebuffer.h">
-      <Filter>sources</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\vk_debug.h">
       <Filter>sources</Filter>
     </ClInclude>
     <ClInclude Include="sources\text_overlay.h">
@@ -172,9 +142,6 @@
     <ClInclude Include="sources\geometry_renderpass.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="sources\profile.h">
-      <Filter>sources</Filter>
-    </ClInclude>
     <ClInclude Include="sources\scene_instance.h">
       <Filter>sources</Filter>
     </ClInclude>
@@ -182,9 +149,6 @@
       <Filter>sources</Filter>
     </ClInclude>
     <ClInclude Include="sources\console_command.h">
-      <Filter>sources</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\input.h">
       <Filter>sources</Filter>
     </ClInclude>
     <ClInclude Include="sources\scene.h">
@@ -196,14 +160,59 @@
     <ClInclude Include="sources\defines_global.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="sources\asset_library.h">
-      <Filter>sources</Filter>
-    </ClInclude>
     <ClInclude Include="sources\frame_graph.h">
       <Filter>sources\frame_graph</Filter>
     </ClInclude>
     <ClInclude Include="sources\frame_graph_script.h">
       <Filter>sources\frame_graph</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\asset_library.h">
+      <Filter>sources\asset_library</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\input.h">
+      <Filter>sources\input_handler</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\gpu_synchronization.h">
+      <Filter>sources\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\framebuffer.h">
+      <Filter>sources\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\descriptors.h">
+      <Filter>sources\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\swapchain.h">
+      <Filter>sources\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\vk_buffer.h">
+      <Filter>sources\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\vk_commands.h">
+      <Filter>sources\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\vk_debug.h">
+      <Filter>sources\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\vk_framework.h">
+      <Filter>sources\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\vk_globals.h">
+      <Filter>sources\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\vk_image.h">
+      <Filter>sources\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\vk_memory.h">
+      <Filter>sources\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\vk_shader.h">
+      <Filter>sources\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\profile.h">
+      <Filter>sources\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\renderpass.h">
+      <Filter>sources\renderer</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
