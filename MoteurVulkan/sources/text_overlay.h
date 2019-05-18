@@ -52,13 +52,12 @@ struct TextZone {
 };
 
 
-void CreateTextPipeline(const Swapchain& swapchain);
-void RecreateTextRenderPass(const Swapchain& swapchain);
+void InitializeTextRenderPass(const RenderPass* renderpass, const Swapchain* swapchain);
+void RecreateTextRenderPassAfterSwapchain(const Swapchain* swapchain);
 void CleanupTextRenderPassAfterSwapchain();
 void CleanupTextRenderPass();
 
 void CreateTextGraphicsPipeline(VkExtent2D extent);
-void AddTextRenderPass(const RenderPass* renderPass);
 void CmdDrawText(VkCommandBuffer commandBuffer, VkExtent2D extent, size_t frameIndex);
 void CreateTextVertexBuffer( size_t maxCharCount);
 void UpdateText( const TextZone * textZones, size_t textZonesCount, VkExtent2D surfaceExtent);

@@ -9,11 +9,11 @@
 #include "scene_instance.h"
 #include "swapchain.h"
 
+void InitializeGeometryRenderPass(const RenderPass* renderpass, const Swapchain* swapchain);
 void CleanupGeometryRenderpassAfterSwapchain();
 void CleanupGeometryRenderpass();
-void CreateGeometryPipeline(const Swapchain& swapchain);
-void RecreateGeometryPipeline(const Swapchain& swapchain);
-void AddGeometryRenderPass(const RenderPass* renderpass);
+void RecreateGeometryAfterSwapChain( const Swapchain *swapchain);
+
 void CreateGeometryDescriptorSet(VkDescriptorPool descriptorPool, VkBuffer* sceneUniformBuffers, VkBuffer* instanceUniformBuffers, VkBuffer* lightBuffers, VkImageView textureView,
 	VkImageView normalTextureView, VkSampler sampler, VkImageView shadowTextureView, VkSampler shadowSampler);
 

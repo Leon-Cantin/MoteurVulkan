@@ -214,6 +214,7 @@
     <ClInclude Include="sources\descriptors.h" />
     <ClInclude Include="sources\framebuffer.h" />
     <ClInclude Include="sources\frame_graph.h" />
+    <ClInclude Include="sources\frame_graph_script.h" />
     <ClInclude Include="sources\input.h" />
     <ClInclude Include="sources\scene.h" />
     <ClInclude Include="sources\scene_instance.h" />

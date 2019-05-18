@@ -7,6 +7,9 @@
     <Filter Include="shaders">
       <UniqueIdentifier>{5be189bb-3fe3-48ba-a088-73674fc68012}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sources\frame_graph">
+      <UniqueIdentifier>{ceb28dfb-3079-4480-a577-aef4398bcc0a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sources\main.cpp">
@@ -90,11 +93,11 @@
     <ClCompile Include="sources\tick_system.cpp">
       <Filter>sources</Filter>
     </ClCompile>
-    <ClCompile Include="sources\frame_graph.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
     <ClCompile Include="sources\asset_library.cpp">
       <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\frame_graph.cpp">
+      <Filter>sources\frame_graph</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -193,11 +196,14 @@
     <ClInclude Include="sources\defines_global.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="sources\frame_graph.h">
-      <Filter>sources</Filter>
-    </ClInclude>
     <ClInclude Include="sources\asset_library.h">
       <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\frame_graph.h">
+      <Filter>sources\frame_graph</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\frame_graph_script.h">
+      <Filter>sources\frame_graph</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

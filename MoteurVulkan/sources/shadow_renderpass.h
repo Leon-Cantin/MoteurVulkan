@@ -6,14 +6,15 @@
 #include "scene_instance.h"
 #include "vk_image.h"
 #include "renderpass.h"
+#include "swapchain.h"
 
-void CreateShadowPass();
+void InitializeShadowPass(const RenderPass* renderpass, const Swapchain* swapchain);
 void CleanupShadowPass();
+
+void CreateShadowDescriptorSet(VkDescriptorPool descriptorPool, const VkBuffer*instanceUniformBuffer);
 
 void UpdateShadowUniformBuffers(size_t currentFrame, const SceneMatricesUniform* sceneMatrices);
 void CmdBeginShadowPass(VkCommandBuffer commandBuffer, size_t currentFrame);
 void CmdDrawShadowPass(VkCommandBuffer commandBuffer, const SceneInstanceSet* instanceSet, const ModelAsset* modelAsset, uint32_t currentFrame);
 void CmdEndShadowPass(VkCommandBuffer commandBuffer);
-void CreateShadowDescriptorSet(VkDescriptorPool descriptorPool, const VkBuffer*instanceUniformBuffer);
 void computeShadowMatrix(const glm::vec3& light_location, glm::mat4* view, glm::mat4* projection);
-void AddShadowRenderPass(const RenderPass* renderPass);

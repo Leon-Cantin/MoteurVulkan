@@ -201,20 +201,15 @@ void LoadFontTexture()
 	Load2DTexture(&font24pixels[0][0], fontWidth, fontHeight, 1, 1, VK_FORMAT_R8_UNORM, g_fontImage);
 }
 
-void AddTextRenderPass(const RenderPass* renderPass)
-{
-	textRenderPass = renderPass;
-}
-
-void CreateTextPipeline(const Swapchain& swapchain)
+static void CreateTextPipeline(const Swapchain& swapchain)
 {
 	CreateTextDescriptorSetLayout();
 	CreateTextGraphicsPipeline(swapchain.extent);
 }
 
-void RecreateTextRenderPass(const Swapchain& swapchain)
+void RecreateTextRenderPassAfterSwapchain(const Swapchain* swapchain)
 {
-	CreateTextGraphicsPipeline(swapchain.extent);
+	CreateTextGraphicsPipeline(swapchain->extent);
 	//TODO:destroy and recreate the render pass after the swapchain is recreated in case the format changes
 }
 
@@ -232,4 +227,10 @@ void CleanupTextRenderPass()
 	vkFreeMemory(g_vk.device, textVertexBufferMemory, nullptr);
 	vkDestroyBuffer(g_vk.device, textIndexBuffer, nullptr);
 	vkFreeMemory(g_vk.device, textIndexBufferMemory, nullptr);
+}
+
+void InitializeTextRenderPass(const RenderPass* renderpass, const Swapchain* swapchain)
+{
+	textRenderPass = renderpass;
+	CreateTextPipeline(*swapchain);
 }

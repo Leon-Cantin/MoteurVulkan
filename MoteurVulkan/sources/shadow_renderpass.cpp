@@ -145,12 +145,7 @@ void CreateShadowDescriptorSetLayout()
 	CreateDesciptorSetLayout(instanceBindings.data(), static_cast<uint32_t>(instanceBindings.size()), &shadowInstanceDescriptorSetLayout);
 }
 
-void AddShadowRenderPass(const RenderPass* renderPass)
-{
-	shadowRenderPass = renderPass;
-}
-
-void CreateShadowPass()
+static void CreateShadowPass()
 {
 	CreateShadowDescriptorSetLayout();
 	CreateShadowGraphicPipeline();
@@ -167,4 +162,10 @@ void CleanupShadowPass()
 	vkDestroyDescriptorSetLayout(g_vk.device, shadowInstanceDescriptorSetLayout, nullptr);
 
 	DestroyPerFrameBuffer(&shadowSceneUniformBuffer);
+}
+
+void InitializeShadowPass(const RenderPass* renderpass, const Swapchain* swapchain)
+{
+	shadowRenderPass = renderpass;
+	CreateShadowPass();
 }

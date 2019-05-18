@@ -15,7 +15,7 @@
 #include "vk_framework.h"
 #include "console_command.h"
 #include "gpu_synchronization.h"
-#include "frame_graph.h"
+#include "frame_graph_script.h"
 
 #include <array>
 #include <iostream>
@@ -139,10 +139,6 @@ void cleanup_swap_chain()
 
 	FG_CleanupAfterSwapchain();
 
-	CleanupGeometryRenderpassAfterSwapchain();
-	CleanupSkyboxAfterSwapchain();
-	CleanupTextRenderPassAfterSwapchain();
-
 	for (auto image : g_swapchain.images)
 		vkDestroyImageView(g_vk.device, image.imageView, nullptr);
 
@@ -218,7 +214,7 @@ void InitScene()
 	const uint32_t maxSets = (geometryDescriptorSets + shadowDescriptorSets + skyboxDescriptorSetsCount + textDescriptorSetsCount);
 	createDescriptorPool(uniformBuffersCount, uniformBuffersDynamicCount, imageSamplersCount, storageImageCount, maxSets, &descriptorPool);
 
-	CreateGraph( &g_swapchain );	
+	InitializeScript( &g_swapchain );
 
 	CreateInstanceMatricesBuffers();
 	createSkyboxUniformBuffers();

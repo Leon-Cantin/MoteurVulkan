@@ -25,9 +25,6 @@ const GfxImage* GetRenderTarget(eRenderTarget render_target_id)
 	return &_render_targets[render_target_id];
 }
 
-constexpr uint32_t MAX_ATTACHMENTS_COUNT = 8;
-constexpr uint32_t MAX_READ_TARGETS = 4;
-
 std::array<RenderPass, 8> _render_passes;
 uint32_t _render_passes_count = 0;
 
@@ -35,17 +32,6 @@ const RenderPass* GetRenderPass(uint32_t id)
 {
 	return &_render_passes[id];
 }
-
-struct FG_RenderPassCreationData
-{	
-	eRenderTarget e_render_targets[MAX_ATTACHMENTS_COUNT];
-	VkAttachmentDescription descriptions [MAX_ATTACHMENTS_COUNT];
-	VkAttachmentReference references [MAX_ATTACHMENTS_COUNT];
-	uint32_t attachmentCount = 0;
-
-	eRenderTarget read_targets[MAX_READ_TARGETS];
-	uint32_t read_targets_count = 0;
-};
 
 struct FG_RenderTargetCreationData
 {
@@ -95,17 +81,17 @@ void CreateRTCommon(FG_RenderPassCreationData& resource, VkFormat format, eRende
 	++resource.attachmentCount;
 }
 
-void CreateColor( FG_RenderPassCreationData& resource, VkFormat format, eRenderTarget render_target)
+void FG_CreateColor( FG_RenderPassCreationData& resource, VkFormat format, eRenderTarget render_target)
 {	
 	CreateRTCommon(resource, format, render_target, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 }
 
-void CreateDepth(FG_RenderPassCreationData& resource, VkFormat format, eRenderTarget render_target)
+void FG_CreateDepth(FG_RenderPassCreationData& resource, VkFormat format, eRenderTarget render_target)
 {
 	CreateRTCommon(resource, format, render_target, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 
-void ClearLast( FG_RenderPassCreationData& resource)
+void FG_ClearLast( FG_RenderPassCreationData& resource)
 {
 	assert(resource.attachmentCount > 0);
 
@@ -119,7 +105,7 @@ void TransitionToReadOnly(FG_RenderPassCreationData& resource)
 	resource.descriptions[resource.attachmentCount - 1].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 }
 
-void ReadResource(FG_RenderPassCreationData& resource, eRenderTarget render_target)
+void FG_ReadResource(FG_RenderPassCreationData& resource, eRenderTarget render_target)
 {
 	assert(resource.read_targets_count < MAX_READ_TARGETS);
 	resource.read_targets[resource.read_targets_count++] = render_target;
@@ -300,48 +286,21 @@ static void CreateResourceCreationData(const Swapchain* swapchain)
 	_rtCreationData[RT_SHADOW_MAP] = { RT_SHADOW_MAP, RT_FORMAT_SHADOW_DEPTH , RT_EXTENT_SHADOW, (VkImageUsageFlagBits)(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT), VK_IMAGE_ASPECT_DEPTH_BIT,  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
 }
 
-void CreateGraph(const Swapchain* swapchain)
+void FG_CreateGraph(const Swapchain* swapchain, std::vector<FG_RenderPassCreationData> *inRpCreationData)
 {
 	VkFormat swapchainFormat = swapchain->surfaceFormat.format;
 	CreateResourceCreationData(swapchain);
 
-	//Setup passes	
-	FG_RenderPassCreationData shadowPass;
-	CreateDepth(shadowPass, VK_FORMAT_D32_SFLOAT, RT_SHADOW_MAP);
-	ClearLast(shadowPass);
-	_rpCreationData.push_back(shadowPass);
-
-	FG_RenderPassCreationData geoPass;
-	CreateColor(geoPass, swapchainFormat, RT_SCENE_COLOR);
-	CreateDepth(geoPass, VK_FORMAT_D32_SFLOAT, RT_SCENE_DEPTH);
-	ClearLast(geoPass);
-	ReadResource(geoPass, RT_SHADOW_MAP);
-	_rpCreationData.push_back(geoPass);
-
-	FG_RenderPassCreationData skyPass;
-	CreateColor(skyPass, swapchainFormat, RT_SCENE_COLOR);
-	CreateDepth(skyPass, VK_FORMAT_D32_SFLOAT, RT_SCENE_DEPTH);
-	_rpCreationData.push_back(skyPass);
-
-	FG_RenderPassCreationData textPass;
-	CreateColor(textPass, swapchainFormat, RT_SCENE_COLOR);
-	_rpCreationData.push_back(textPass);
+	//Setup passes
+	_rpCreationData = *inRpCreationData;
 
 	ComposeGraph(_rpCreationData, _rtCreationData);
-
-	CreateRenderPass(_rpCreationData[0], "shadow_pass", &_render_passes[_render_passes_count++]);
-	CreateRenderPass(_rpCreationData[1], "geometry_pass", &_render_passes[_render_passes_count++]);
-	CreateRenderPass(_rpCreationData[2], "skybox_pass", &_render_passes[_render_passes_count++]);
-	CreateRenderPass(_rpCreationData[3], "text_pass", &_render_passes[_render_passes_count++]);
-
-	AddShadowRenderPass(GetRenderPass(0));
-	CreateShadowPass();
-	AddGeometryRenderPass(GetRenderPass(1));
-	CreateGeometryPipeline(*swapchain);
-	AddSkyboxRenderPass(GetRenderPass(2));
-	CreateSkyboxPipeline(*swapchain);
-	AddTextRenderPass(GetRenderPass(3));
-	CreateTextPipeline(*swapchain);
+	
+	for (uint32_t i = 0; i < _rpCreationData.size(); ++i)
+	{
+		CreateRenderPass(_rpCreationData[i], _rpCreationData[i].name, &_render_passes[_render_passes_count++]);
+		_rpCreationData[i].frame_graph_node.Initialize(GetRenderPass(i), swapchain);
+	}
 }
 
 void FG_RecreateAfterSwapchain(const Swapchain* swapchain)
@@ -371,11 +330,13 @@ void FG_RecreateAfterSwapchain(const Swapchain* swapchain)
 		CreateFrameBuffer(&renderpass, passCreationData, colorCount, containsDepth);
 	}
 
-	//TODO: Make this automatic by just calling callbacks on passes that are swapchain sized
+
 	//Could be avoided with dynamic state, we only need to redo scissor and viewport
-	RecreateSkyboxPipeline(*swapchain);
-	RecreateGeometryPipeline(*swapchain);
-	RecreateTextRenderPass(*swapchain);
+	for (uint32_t i = 0; i < _rpCreationData.size(); ++i)
+	{
+		if (_rpCreationData[i].frame_graph_node.RecreateAfterSwapchain)
+			_rpCreationData[i].frame_graph_node.RecreateAfterSwapchain(swapchain);
+	}
 }
 
 void FG_CleanupAfterSwapchain()
@@ -401,15 +362,20 @@ void FG_CleanupAfterSwapchain()
 		if( (eRenderTarget)(i) != RT_OUTPUT_TARGET && _rtCreationData[i].swapChainSized )
 			DestroyImage(_render_targets[RT_SCENE_DEPTH]);
 	}
+
+	for (uint32_t i = 0; i < _rpCreationData.size(); ++i)
+	{
+		if (_rpCreationData[i].frame_graph_node.CleanupAfterSwapchain)
+			_rpCreationData[i].frame_graph_node.CleanupAfterSwapchain();
+	}
 }
 
 void FG_CleanupResources()
 {
-	//TODO: Make this automatic
-	CleanupGeometryRenderpass();
-	CleanupSkybox();
-	CleanupTextRenderPass();
-	CleanupShadowPass();
+	for (uint32_t i = 0; i < _rpCreationData.size(); ++i)
+	{
+		_rpCreationData[i].frame_graph_node.Cleanup();
+	}
 
 	for (uint32_t i = 0; i < RT_COUNT; ++i)
 	{

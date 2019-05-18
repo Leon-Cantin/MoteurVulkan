@@ -49,7 +49,7 @@ void CreateSkyboxDescriptorSet(VkDescriptorPool descriptorPool, VkImageView skyb
 		skyboxDescriptorSets[i] = descriptorSets[i].set;
 }
 
-void create_skybox_graphics_pipeline(VkExtent2D extent)
+static void create_skybox_graphics_pipeline(VkExtent2D extent)
 {
 	std::vector<char> vertShaderCode = readFile("shaders/skybox.vert.spv");
 	std::vector<char> fragShaderCode = readFile("shaders/skybox.frag.spv");
@@ -81,11 +81,6 @@ void create_skybox_graphics_pipeline(VkExtent2D extent)
 		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
 		VK_COMPARE_OP_LESS_OR_EQUAL,
 		&skyboxGraphicsPipeline);
-}
-
-void AddSkyboxRenderPass(const RenderPass* _skyboxRenderPass)
-{
-	skyboxRenderPass = _skyboxRenderPass;
 }
 
 void createSkyboxUniformBuffers()
@@ -134,14 +129,20 @@ void ReloadSkyboxShaders(VkExtent2D extent)
 	create_skybox_graphics_pipeline(extent);
 }
 
-void CreateSkyboxPipeline(const Swapchain& swapchain)
+static void CreateSkyboxPipeline(const Swapchain& swapchain)
 {
 	createSkyboxDescriptorSetLayout();
 	create_skybox_graphics_pipeline(swapchain.extent);
 }
 
-void RecreateSkyboxPipeline(const Swapchain& swapchain)
+void RecreateSkyboxAfterSwapchain(const Swapchain* swapchain)
 {
-	create_skybox_graphics_pipeline(swapchain.extent);
+	create_skybox_graphics_pipeline(swapchain->extent);
+}
+
+void InitializeSkyboxRenderPass(const RenderPass* renderpass, const Swapchain* swapchain)
+{
+	skyboxRenderPass = renderpass;
+	CreateSkyboxPipeline( *swapchain);
 }
 

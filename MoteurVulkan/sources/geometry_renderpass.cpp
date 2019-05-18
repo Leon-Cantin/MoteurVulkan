@@ -63,11 +63,6 @@ void createGeoGraphicPipeline( VkExtent2D extent )
 		&geoGraphicsPipeline);
 }
 
-void AddGeometryRenderPass(const RenderPass* renderpass)
-{
-	geometryRenderPass = renderpass;
-}
-
 void CreateGeometryDescriptorSet(VkDescriptorPool descriptorPool, VkBuffer* sceneUniformBuffers, VkBuffer* instanceUniformBuffers, VkBuffer* lightBuffers, VkImageView textureView,
 	VkImageView normalTextureView, VkSampler sampler, VkImageView shadowTextureView, VkSampler shadowSampler)
 {
@@ -139,11 +134,6 @@ void CreateGeometryPipeline(const Swapchain& swapchain)
 	createGeoGraphicPipeline(swapchain.extent);
 }
 
-void RecreateGeometryPipeline(const Swapchain& swapchain)
-{
-	createGeoGraphicPipeline(swapchain.extent);
-}
-
 void CmdBeginGeometryRenderPass(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t currentFrame)
 {
 	CmdBeginVkLabel(commandBuffer, "Geometry renderpass", glm::vec4(0.8f, 0.6f, 0.4f, 1.0f));
@@ -185,4 +175,15 @@ void CleanupGeometryRenderpass()
 {
 	vkDestroyDescriptorSetLayout(g_vk.device, geoDescriptorSetLayout, nullptr);
 	vkDestroyDescriptorSetLayout(g_vk.device, geoInstanceDescriptorSetLayout, nullptr);
+}
+
+void InitializeGeometryRenderPass(const RenderPass* renderpass, const Swapchain* swapchain)
+{
+	geometryRenderPass = renderpass;
+	CreateGeometryPipeline(*swapchain);
+}
+
+void RecreateGeometryAfterSwapChain(const Swapchain* swapchain)
+{
+	createGeoGraphicPipeline(swapchain->extent);
 }
