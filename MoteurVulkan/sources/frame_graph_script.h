@@ -24,6 +24,7 @@ static void FG_Geometry_CreateGraphNode(FG_RenderPassCreationData* renderPassCre
 	frameGraphNode->RecreateAfterSwapchain = RecreateGeometryAfterSwapChain;
 	frameGraphNode->CleanupAfterSwapchain = CleanupGeometryRenderpassAfterSwapchain;
 	frameGraphNode->Cleanup = CleanupGeometryRenderpass;
+	frameGraphNode->RecordDrawCommands = GeometryRecordDrawCommandsBuffer;
 }
 
 static void FG_Shadow_CreateGraphNode(FG_RenderPassCreationData* renderPassCreationData, const Swapchain* swapchain)
@@ -39,6 +40,7 @@ static void FG_Shadow_CreateGraphNode(FG_RenderPassCreationData* renderPassCreat
 	frameGraphNode->RecreateAfterSwapchain = nullptr;
 	frameGraphNode->CleanupAfterSwapchain = nullptr;
 	frameGraphNode->Cleanup = CleanupShadowPass;
+	frameGraphNode->RecordDrawCommands = ShadowRecordDrawCommandsBuffer;
 }
 
 static void FG_Skybox_CreateGraphNode(FG_RenderPassCreationData* renderPassCreationData, const Swapchain* swapchain)
@@ -56,6 +58,7 @@ static void FG_Skybox_CreateGraphNode(FG_RenderPassCreationData* renderPassCreat
 	frameGraphNode->RecreateAfterSwapchain = RecreateSkyboxAfterSwapchain;
 	frameGraphNode->CleanupAfterSwapchain = CleanupSkyboxAfterSwapchain;
 	frameGraphNode->Cleanup = CleanupSkybox;
+	frameGraphNode->RecordDrawCommands = SkyboxRecordDrawCommandsBuffer;
 }
 
 static void FG_TextOverlay_CreateGraphNode(FG_RenderPassCreationData* renderPassCreationData, const Swapchain* swapchain)
@@ -72,6 +75,7 @@ static void FG_TextOverlay_CreateGraphNode(FG_RenderPassCreationData* renderPass
 	frameGraphNode->RecreateAfterSwapchain = RecreateTextRenderPassAfterSwapchain;
 	frameGraphNode->CleanupAfterSwapchain = CleanupTextRenderPassAfterSwapchain;
 	frameGraphNode->Cleanup = CleanupTextRenderPass;
+	frameGraphNode->RecordDrawCommands = TextRecordDrawCommandsBuffer;
 }
 
 void InitializeScript(const Swapchain* swapchain)

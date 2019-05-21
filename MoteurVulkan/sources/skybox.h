@@ -3,6 +3,7 @@
 #include "vk_globals.h"
 #include "vk_image.h"
 #include "renderpass.h"
+#include "scene_frame_data.h"
 
 #include "glm/mat4x4.hpp"
 #include "swapchain.h"
@@ -11,6 +12,7 @@ void InitializeSkyboxRenderPass(const RenderPass* renderpass, const Swapchain* s
 void RecreateSkyboxAfterSwapchain(const Swapchain* swapchain);
 void CleanupSkyboxAfterSwapchain();
 void CleanupSkybox();
+void SkyboxRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent);
 
 
 void createSkyboxUniformBuffers();

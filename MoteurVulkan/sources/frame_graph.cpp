@@ -226,7 +226,7 @@ static void CreateFrameBuffer(RenderPass* renderpass, const FG_RenderPassCreatio
 	}
 }
 
-void CreateRenderPass(const FG_RenderPassCreationData& passCreationData, const char* name, RenderPass* o_renderPass)
+static void CreateRenderPass(const FG_RenderPassCreationData& passCreationData, const char* name, RenderPass* o_renderPass)
 {
 	assert(passCreationData.attachmentCount > 0);
 	bool containsDepth = passCreationData.references[passCreationData.attachmentCount - 1].layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
@@ -399,5 +399,13 @@ void FG_CleanupResources()
 		}
 		vkDestroyRenderPass(g_vk.device, renderpass.vk_renderpass, nullptr);
 		renderpass.vk_renderpass = VK_NULL_HANDLE;
+	}
+}
+
+void FG_RecordDrawCommands(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent)
+{
+	for (uint32_t i = 0; i < _rpCreationData.size(); ++i)
+	{
+		_rpCreationData[i].frame_graph_node.RecordDrawCommands(currentFrame, frameData, graphicsCommandBuffer, extent);
 	}
 }

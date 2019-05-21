@@ -9,6 +9,7 @@
 #include "vk_shader.h"
 #include "vk_image.h"
 #include "swapchain.h"
+#include "scene_frame_data.h"
 
 struct TextVertex {
 	glm::vec3 pos;
@@ -56,6 +57,7 @@ void InitializeTextRenderPass(const RenderPass* renderpass, const Swapchain* swa
 void RecreateTextRenderPassAfterSwapchain(const Swapchain* swapchain);
 void CleanupTextRenderPassAfterSwapchain();
 void CleanupTextRenderPass();
+void TextRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent);
 
 void CreateTextGraphicsPipeline(VkExtent2D extent);
 void CmdDrawText(VkCommandBuffer commandBuffer, VkExtent2D extent, size_t frameIndex);

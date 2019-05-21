@@ -19,6 +19,9 @@
     <Filter Include="sources\renderer">
       <UniqueIdentifier>{e92fe4c5-614b-474f-bba5-848ece7468e4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sources\console_commands_handler">
+      <UniqueIdentifier>{b346f247-a4d9-448d-8359-73ac3cb63b0e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sources\main.cpp">
@@ -43,9 +46,6 @@
       <Filter>sources</Filter>
     </ClCompile>
     <ClCompile Include="sources\scene_instance.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\console_command.cpp">
       <Filter>sources</Filter>
     </ClCompile>
     <ClCompile Include="sources\scene.cpp">
@@ -108,6 +108,9 @@
     <ClCompile Include="sources\model_asset.cpp">
       <Filter>sources\renderer</Filter>
     </ClCompile>
+    <ClCompile Include="sources\console_command.cpp">
+      <Filter>sources\console_commands_handler</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\triangle.frag">
@@ -130,9 +133,6 @@
     <ClInclude Include="sources\camera_orbit.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="sources\model_asset.h">
-      <Filter>sources</Filter>
-    </ClInclude>
     <ClInclude Include="sources\text_overlay.h">
       <Filter>sources</Filter>
     </ClInclude>
@@ -148,9 +148,6 @@
     <ClInclude Include="sources\shadow_renderpass.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="sources\console_command.h">
-      <Filter>sources</Filter>
-    </ClInclude>
     <ClInclude Include="sources\scene.h">
       <Filter>sources</Filter>
     </ClInclude>
@@ -161,9 +158,6 @@
       <Filter>sources</Filter>
     </ClInclude>
     <ClInclude Include="sources\frame_graph.h">
-      <Filter>sources\frame_graph</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\frame_graph_script.h">
       <Filter>sources\frame_graph</Filter>
     </ClInclude>
     <ClInclude Include="sources\asset_library.h">
@@ -213,6 +207,18 @@
     </ClInclude>
     <ClInclude Include="sources\renderpass.h">
       <Filter>sources\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\console_command.h">
+      <Filter>sources\console_commands_handler</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\model_asset.h">
+      <Filter>sources\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\frame_graph_script.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\scene_frame_data.h">
+      <Filter>sources</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

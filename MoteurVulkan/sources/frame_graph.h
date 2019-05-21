@@ -2,6 +2,7 @@
 #include "vk_globals.h"
 #include "renderpass.h"
 #include "swapchain.h"
+#include "scene_frame_data.h"
 
 enum eRenderTarget
 {
@@ -20,6 +21,7 @@ struct FrameGraphNode
 	void(*CleanupAfterSwapchain)();
 	void(*RecreateAfterSwapchain)(const Swapchain* swapchain);
 	void(*Cleanup)();
+	void(*RecordDrawCommands)(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent);
 };
 
 struct FG_RenderPassCreationData
@@ -47,3 +49,5 @@ void FG_CreateColor(FG_RenderPassCreationData& resource, VkFormat format, eRende
 void FG_CreateDepth(FG_RenderPassCreationData& resource, VkFormat format, eRenderTarget render_target);
 void FG_ReadResource(FG_RenderPassCreationData& resource, eRenderTarget render_target);
 void FG_ClearLast(FG_RenderPassCreationData& resource);
+
+void FG_RecordDrawCommands(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent);

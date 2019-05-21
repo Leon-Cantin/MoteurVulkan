@@ -280,25 +280,7 @@ void RecordCommandBuffer(uint32_t currentFrame, const SceneFrameData* frameData)
 
 	CmdWriteTimestamp(graphicsCommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, Timestamp::COMMAND_BUFFER_START, currentFrame);
 
-	CmdBeginShadowPass(graphicsCommandBuffer, currentFrame);
-	for (size_t i = 0; i < frameData->renderableAssets.size(); ++i)
-	{
-		const SceneRenderableAsset* renderable = frameData->renderableAssets[i];
-		CmdDrawShadowPass(graphicsCommandBuffer, renderable->descriptorSet, renderable->modelAsset, currentFrame);
-	}
-	CmdEndShadowPass(graphicsCommandBuffer);
-
-	CmdBeginGeometryRenderPass(graphicsCommandBuffer, g_swapchain.extent, currentFrame);
-	for (size_t i = 0; i < frameData->renderableAssets.size(); ++i)
-	{
-		const SceneRenderableAsset* renderable = frameData->renderableAssets[i];
-		CmdDrawModelAsset(graphicsCommandBuffer, renderable, currentFrame);
-	}
-	CmdEndGeometryRenderPass(graphicsCommandBuffer);
-
-	CmdDrawSkybox(graphicsCommandBuffer, g_swapchain.extent, currentFrame);
-
-	CmdDrawText(graphicsCommandBuffer, g_swapchain.extent, currentFrame);
+	FG_RecordDrawCommands(currentFrame, frameData, graphicsCommandBuffer, g_swapchain.extent);
 
 	CmdWriteTimestamp(graphicsCommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, Timestamp::COMMAND_BUFFER_END, currentFrame);
 

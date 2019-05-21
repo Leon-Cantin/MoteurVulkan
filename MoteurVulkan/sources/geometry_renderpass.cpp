@@ -187,3 +187,14 @@ void RecreateGeometryAfterSwapChain(const Swapchain* swapchain)
 {
 	createGeoGraphicPipeline(swapchain->extent);
 }
+
+void GeometryRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent)
+{
+	CmdBeginGeometryRenderPass(graphicsCommandBuffer, extent, currentFrame);
+	for (size_t i = 0; i < frameData->renderableAssets.size(); ++i)
+	{
+		const SceneRenderableAsset* renderable = frameData->renderableAssets[i];
+		CmdDrawModelAsset(graphicsCommandBuffer, renderable, currentFrame);
+	}
+	CmdEndGeometryRenderPass(graphicsCommandBuffer);
+}

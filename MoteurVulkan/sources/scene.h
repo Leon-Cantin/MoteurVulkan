@@ -2,6 +2,7 @@
 
 #include "vk_globals.h"
 #include "scene_instance.h"
+#include "scene_frame_data.h"
 
 #include "vk_image.h"
 #include <vector>
@@ -12,10 +13,6 @@ struct LightUniform {
 	glm::mat4 shadowMatrix;
 	glm::vec3 position;
 	float intensity;
-};
-
-struct SceneFrameData {
-	std::vector<const SceneRenderableAsset *> renderableAssets;
 };
 
 void InitScene();

@@ -7,9 +7,11 @@
 #include "vk_image.h"
 #include "renderpass.h"
 #include "swapchain.h"
+#include "scene_frame_data.h"
 
 void InitializeShadowPass(const RenderPass* renderpass, const Swapchain* swapchain);
 void CleanupShadowPass();
+void ShadowRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent);
 
 void CreateShadowDescriptorSet(VkDescriptorPool descriptorPool, const VkBuffer*instanceUniformBuffer);
 

@@ -146,3 +146,7 @@ void InitializeSkyboxRenderPass(const RenderPass* renderpass, const Swapchain* s
 	CreateSkyboxPipeline( *swapchain);
 }
 
+void SkyboxRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent)
+{
+	CmdDrawSkybox(graphicsCommandBuffer, extent, currentFrame);
+}

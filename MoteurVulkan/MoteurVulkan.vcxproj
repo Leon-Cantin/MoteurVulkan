@@ -217,6 +217,7 @@
     <ClInclude Include="sources\frame_graph_script.h" />
     <ClInclude Include="sources\input.h" />
     <ClInclude Include="sources\scene.h" />
+    <ClInclude Include="sources\scene_frame_data.h" />
     <ClInclude Include="sources\scene_instance.h" />
     <ClInclude Include="sources\geometry_renderpass.h" />
     <ClInclude Include="sources\gpu_synchronization.h" />

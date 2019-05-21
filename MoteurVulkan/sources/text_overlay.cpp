@@ -234,3 +234,8 @@ void InitializeTextRenderPass(const RenderPass* renderpass, const Swapchain* swa
 	textRenderPass = renderpass;
 	CreateTextPipeline(*swapchain);
 }
+
+void TextRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent)
+{
+	CmdDrawText(graphicsCommandBuffer, extent, currentFrame);
+}

@@ -169,3 +169,14 @@ void InitializeShadowPass(const RenderPass* renderpass, const Swapchain* swapcha
 	shadowRenderPass = renderpass;
 	CreateShadowPass();
 }
+
+void ShadowRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent)
+{
+	CmdBeginShadowPass(graphicsCommandBuffer, currentFrame);
+	for (size_t i = 0; i < frameData->renderableAssets.size(); ++i)
+	{
+		const SceneRenderableAsset* renderable = frameData->renderableAssets[i];
+		CmdDrawShadowPass(graphicsCommandBuffer, renderable->descriptorSet, renderable->modelAsset, currentFrame);
+	}
+	CmdEndShadowPass(graphicsCommandBuffer);
+}
