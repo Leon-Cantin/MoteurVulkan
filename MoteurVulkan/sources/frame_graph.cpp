@@ -263,7 +263,6 @@ static void CreateResourceCreationData(const Swapchain* swapchain)
 	for (uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
 		_output_buffers[i] = swapchain->images[i];
 
-	//TODO add resources, should specify size if swapchain sized?
 	for (uint32_t i = 0; i < RENDERTARGETS_COUNT; ++i)
 	{
 		if (_rtCreationData[i].swapChainSized)
