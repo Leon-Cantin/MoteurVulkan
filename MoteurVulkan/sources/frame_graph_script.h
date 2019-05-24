@@ -7,6 +7,14 @@
 #include "skybox.h"
 #include "text_overlay.h"
 
+enum eRenderTarget : uint32_t
+{
+	RT_SCENE_COLOR = 0,
+	RT_SCENE_DEPTH,
+	RT_SHADOW_MAP,
+	RT_COUNT
+};
+
 static void FG_Geometry_CreateGraphNode(FG_RenderPassCreationData* renderPassCreationData, const Swapchain* swapchain)
 {
 	renderPassCreationData->name = "geometry_pass";
@@ -78,9 +86,22 @@ static void FG_TextOverlay_CreateGraphNode(FG_RenderPassCreationData* renderPass
 	frameGraphNode->RecordDrawCommands = TextRecordDrawCommandsBuffer;
 }
 
+constexpr VkFormat RT_FORMAT_SHADOW_DEPTH = VK_FORMAT_D32_SFLOAT;
+constexpr VkExtent2D RT_EXTENT_SHADOW = { 1024, 1024 };
+
 void InitializeScript(const Swapchain* swapchain)
 {
+	//Setup resources
 	VkFormat swapchainFormat = swapchain->surfaceFormat.format;
+	VkExtent2D swapchainExtent = swapchain->extent;
+	std::vector<FG_RenderTargetCreationData> _rtCreationData;
+	_rtCreationData.resize(RT_COUNT);
+
+	eRenderTarget backBuffer = RT_SCENE_COLOR;
+
+	_rtCreationData[RT_SCENE_COLOR] = { RT_SCENE_COLOR, swapchainFormat , swapchainExtent, (VkImageUsageFlagBits)(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT), VK_IMAGE_ASPECT_COLOR_BIT,  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, true };
+	_rtCreationData[RT_SCENE_DEPTH] = { RT_SCENE_DEPTH, VK_FORMAT_D32_SFLOAT , swapchainExtent, (VkImageUsageFlagBits)(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT), VK_IMAGE_ASPECT_DEPTH_BIT,  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, true };
+	_rtCreationData[RT_SHADOW_MAP] = { RT_SHADOW_MAP, RT_FORMAT_SHADOW_DEPTH , RT_EXTENT_SHADOW, (VkImageUsageFlagBits)(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT), VK_IMAGE_ASPECT_DEPTH_BIT,  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
 
 	std::vector<FG_RenderPassCreationData> _rpCreationData;
 
@@ -101,5 +122,5 @@ void InitializeScript(const Swapchain* swapchain)
 	FG_TextOverlay_CreateGraphNode(&textPass, swapchain);
 	_rpCreationData.push_back(textPass);
 
-	FG_CreateGraph(swapchain, &_rpCreationData);
+	FG_CreateGraph(swapchain, &_rpCreationData, &_rtCreationData, backBuffer);
 }
