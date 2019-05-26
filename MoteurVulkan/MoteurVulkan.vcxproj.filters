@@ -111,6 +111,12 @@
     <ClCompile Include="sources\console_command.cpp">
       <Filter>sources\console_commands_handler</Filter>
     </ClCompile>
+    <ClCompile Include="sources\file_system.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\window_handler.cpp">
+      <Filter>sources\renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\triangle.frag">
@@ -219,6 +225,18 @@
     </ClInclude>
     <ClInclude Include="sources\scene_frame_data.h">
       <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\Scene2DGame.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\SceneFPS.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\file_system.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\window_handler.h">
+      <Filter>sources\renderer</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

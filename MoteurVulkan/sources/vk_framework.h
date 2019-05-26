@@ -25,23 +25,9 @@ struct SwapChainSupportDetails {
 	std::vector<VkPresentModeKHR> present_modes;
 };
 
-void InitFramework(int windowWidth, int windowHeight);
+void InitFramework(int windowWidth, int windowHeight, const char * windowName);
 void ShutdownFramework();
 
-VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pCallback);
-void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT callback, const VkAllocationCallbacks* pAllocator);
-std::vector<const char*> get_required_extensions();
-uint32_t detect_available_extensions(VkExtensionProperties* extensions);
-bool check_extensions(const char** required_extensions, uint32_t required_extensions_count);
-uint32_t detect_supported_validation_layers(VkLayerProperties * available_layers);
-bool check_validation_layers(const char* const* required_layers, uint32_t required_layers_count);
-void create_instance();
-
+//TODO try to get rid of this
 QueueFamilyIndices find_queue_families(const VkPhysicalDevice device);
-bool check_device_extension_support(VkPhysicalDevice device);
 SwapChainSupportDetails query_swap_chain_support(VkPhysicalDevice device, VkSurfaceKHR surface);
-bool is_device_suitable(const VkPhysicalDevice device);
-void pick_physical_device();
-void create_logical_device();
-void create_surface();
-std::vector<char> readFile(const std::string& filename);

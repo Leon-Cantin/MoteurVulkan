@@ -1,10 +1,10 @@
 #include "vk_framework.h"
 #include "vk_debug.h"
+#include "window_handler.h"
 
 #include <iostream>
 #include <algorithm>
 #include <set>
-#include <fstream>
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -14,7 +14,6 @@ const bool enableValidationLayers = true;
 const bool enableVkObjectMarking = true;
 #endif
 
-GLFWwindow* g_window;
 VkSurfaceKHR g_windowSurface;
 
 bool framebuffer_resized = false;
@@ -22,42 +21,6 @@ bool framebuffer_resized = false;
 static void framebuffer_resize_callback(GLFWwindow* window, int width, int height)
 {
 	framebuffer_resized = true;
-}
-
-void init_window(int windowWidth, int windowHeight) {
-	glfwInit();
-
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
-	g_window = glfwCreateWindow(windowWidth, windowHeight, "Moteur Vulkan", nullptr, nullptr);
-
-	//glfwSetWindowUserPointer(window, this);
-	glfwSetFramebufferSizeCallback(g_window, framebuffer_resize_callback);
-}
-
-void InitFramework(int windowWidth, int windowHeight)
-{
-	init_window(windowWidth, windowHeight);
-	create_instance();
-	if (enableValidationLayers)
-		SetupDebugCallback();
-	create_surface();
-	pick_physical_device();
-	create_logical_device();
-}
-
-void ShutdownFramework()
-{
-	vkDestroyDevice(g_vk.device, nullptr);
-
-	if (enableValidationLayers) 
-		DestroyDebugCallback();
-
-	vkDestroySurfaceKHR(g_vk.vk_instance, g_windowSurface, nullptr);
-	vkDestroyInstance(g_vk.vk_instance, nullptr);
-
-	glfwDestroyWindow(g_window);
-	glfwTerminate();
 }
 
 const std::vector<const char*> validationLayers = {
@@ -68,7 +31,7 @@ const std::vector<const char*> required_device_extensions = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
-std::vector<const char*> get_required_extensions()
+static std::vector<const char*> get_required_extensions()
 {
 	//glfwExtensions
 	uint32_t glfwExtensionCount = 0;
@@ -87,7 +50,7 @@ std::vector<const char*> get_required_extensions()
 	return extensions;
 }
 
-uint32_t detect_available_extensions(VkExtensionProperties* extensions)
+static uint32_t detect_available_extensions(VkExtensionProperties* extensions)
 {
 	uint32_t extension_count = 0;
 	vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, nullptr);
@@ -100,7 +63,7 @@ uint32_t detect_available_extensions(VkExtensionProperties* extensions)
 	return extension_count;
 }
 
-bool check_extensions(const char** required_extensions, uint32_t required_extensions_count)
+static bool check_extensions(const char** required_extensions, uint32_t required_extensions_count)
 {
 	uint32_t extension_count = 0;
 
@@ -144,7 +107,7 @@ bool check_extensions(const char** required_extensions, uint32_t required_extens
 	return !any_missing;
 }
 
-uint32_t detect_supported_validation_layers(VkLayerProperties * available_layers) {
+static uint32_t detect_supported_validation_layers(VkLayerProperties * available_layers) {
 	uint32_t layerCount = 0;
 	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 	vkEnumerateInstanceLayerProperties(&layerCount, available_layers);
@@ -156,7 +119,7 @@ uint32_t detect_supported_validation_layers(VkLayerProperties * available_layers
 	return layerCount;
 }
 
-bool check_validation_layers(const char* const* required_layers, uint32_t required_layers_count)
+static bool check_validation_layers(const char* const* required_layers, uint32_t required_layers_count)
 {
 	std::cout << "Required validation layers :" << std::endl;
 	for (uint32_t i = 0; i < required_layers_count; ++i)
@@ -204,7 +167,7 @@ bool check_validation_layers(const char* const* required_layers, uint32_t requir
 	return !any_missing;
 }
 
-void create_instance()
+static void create_instance()
 {
 	VkApplicationInfo app_info = {};
 	app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -243,76 +206,7 @@ void create_instance()
 		throw std::runtime_error("failed to create instance");
 }
 
-SwapChainSupportDetails query_swap_chain_support(VkPhysicalDevice device, VkSurfaceKHR surface) {
-	SwapChainSupportDetails details;
-
-	//Capabilities
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
-
-	//Formats
-	uint32_t format_count;
-	vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &format_count, nullptr);
-
-	if (format_count != 0) {
-		details.formats.resize(format_count);
-		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &format_count, details.formats.data());
-	}
-
-	//Present modes
-	uint32_t present_mode_count;
-	vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_mode_count, nullptr);
-
-	if (present_mode_count != 0) {
-		details.present_modes.resize(present_mode_count);
-		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_mode_count, details.present_modes.data());
-	}
-
-	return details;
-}
-
-QueueFamilyIndices find_queue_families(const VkPhysicalDevice device) {
-	QueueFamilyIndices indices;
-
-	uint32_t queueFamilyCount = 0;
-	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-
-	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
-
-	for (uint32_t i = 0; i < queueFamilyCount; ++i)
-	{
-		const VkQueueFamilyProperties& queueProperties = queueFamilies[i];
-		if (queueProperties.queueCount > 0)
-		{
-			if (queueProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT 
-				&& ( queueProperties.timestampValidBits > 0 ) 
-				&& (!indices.graphics_family.has_value()))
-				indices.graphics_family = i;
-
-			if (!(queueProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT) 
-				&& (queueProperties.queueFlags & VK_QUEUE_COMPUTE_BIT) 
-				&& (!indices.compute_family.has_value()))
-				indices.compute_family = i;
-
-			if (queueProperties.queueFlags & VK_QUEUE_TRANSFER_BIT 
-				&& !(queueProperties.queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT))
-				&& (!indices.transfer_family.has_value()))
-				indices.transfer_family = i;
-
-			VkBool32 present_support = false;
-			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, g_windowSurface, &present_support);
-			if (present_support && !indices.present_family.has_value())
-				indices.present_family = i;
-
-			if (indices.is_complete())
-				break;
-		}
-	}
-
-	return indices;
-}
-
-bool check_device_extension_support(VkPhysicalDevice device) {
+static bool check_device_extension_support(VkPhysicalDevice device) {
 	uint32_t extension_count;
 	vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, nullptr);
 
@@ -328,7 +222,7 @@ bool check_device_extension_support(VkPhysicalDevice device) {
 	return requiredExtensions.empty();
 }
 
-bool is_device_suitable(const VkPhysicalDevice device)
+static bool is_device_suitable(const VkPhysicalDevice device)
 {
 	VkPhysicalDeviceProperties deviceProperties;
 	vkGetPhysicalDeviceProperties(device, &deviceProperties);
@@ -351,7 +245,7 @@ bool is_device_suitable(const VkPhysicalDevice device)
 	return suitable;
 }
 
-void pick_physical_device()
+static void pick_physical_device()
 {
 	uint32_t device_count = 0;
 	vkEnumeratePhysicalDevices(g_vk.vk_instance, &device_count, nullptr);
@@ -375,7 +269,7 @@ void pick_physical_device()
 
 }
 
-void create_logical_device()
+static void create_logical_device()
 {
 	//Queues
 	QueueFamilyIndices indices = find_queue_families(g_vk.physicalDevice);
@@ -432,24 +326,96 @@ void create_logical_device()
 	MarkVkObject((uint64_t)(g_vk.transfer_queue), VK_OBJECT_TYPE_QUEUE, "transfer_queue");
 }
 
-void create_surface() {
-	if (glfwCreateWindowSurface(g_vk.vk_instance, g_window, nullptr, &g_windowSurface) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create window surface!");
+SwapChainSupportDetails query_swap_chain_support(VkPhysicalDevice device, VkSurfaceKHR surface) {
+	SwapChainSupportDetails details;
+
+	//Capabilities
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+
+	//Formats
+	uint32_t format_count;
+	vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &format_count, nullptr);
+
+	if (format_count != 0) {
+		details.formats.resize(format_count);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &format_count, details.formats.data());
 	}
+
+	//Present modes
+	uint32_t present_mode_count;
+	vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_mode_count, nullptr);
+
+	if (present_mode_count != 0) {
+		details.present_modes.resize(present_mode_count);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_mode_count, details.present_modes.data());
+	}
+
+	return details;
 }
 
-std::vector<char> readFile(const std::string& filename) {
-	std::ifstream file(filename, std::ios::ate | std::ios::binary);
+QueueFamilyIndices find_queue_families(const VkPhysicalDevice device) {
+	QueueFamilyIndices indices;
 
-	if (!file.is_open()) {
-		throw std::runtime_error("failed to open file!");
+	uint32_t queueFamilyCount = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+	for (uint32_t i = 0; i < queueFamilyCount; ++i)
+	{
+		const VkQueueFamilyProperties& queueProperties = queueFamilies[i];
+		if (queueProperties.queueCount > 0)
+		{
+			if (queueProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT
+				&& (queueProperties.timestampValidBits > 0)
+				&& (!indices.graphics_family.has_value()))
+				indices.graphics_family = i;
+
+			if (!(queueProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+				&& (queueProperties.queueFlags & VK_QUEUE_COMPUTE_BIT)
+				&& (!indices.compute_family.has_value()))
+				indices.compute_family = i;
+
+			if (queueProperties.queueFlags & VK_QUEUE_TRANSFER_BIT
+				&& !(queueProperties.queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT))
+				&& (!indices.transfer_family.has_value()))
+				indices.transfer_family = i;
+
+			VkBool32 present_support = false;
+			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, g_windowSurface, &present_support);
+			if (present_support && !indices.present_family.has_value())
+				indices.present_family = i;
+
+			if (indices.is_complete())
+				break;
+		}
 	}
 
-	size_t file_size = static_cast<size_t>(file.tellg());
-	std::vector<char> buffer(file_size);
-	file.seekg(0);
-	file.read(buffer.data(), file_size);
-	file.close();
+	return indices;
+}
 
-	return buffer;
+void InitFramework(int windowWidth, int windowHeight, const char * windowName)
+{
+	WH::init_window(windowWidth, windowHeight, windowName);
+	WH::add_framebuffer_resize_callback(framebuffer_resize_callback);
+	create_instance();
+	if (enableValidationLayers)
+		SetupDebugCallback();
+	WH::create_surface(&g_windowSurface);
+	pick_physical_device();
+	create_logical_device();
+}
+
+void ShutdownFramework()
+{
+	vkDestroyDevice(g_vk.device, nullptr);
+
+	if (enableValidationLayers)
+		DestroyDebugCallback();
+
+	vkDestroySurfaceKHR(g_vk.vk_instance, g_windowSurface, nullptr);
+	vkDestroyInstance(g_vk.vk_instance, nullptr);
+
+	WH::terminate();
 }

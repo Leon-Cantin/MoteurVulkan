@@ -1,7 +1,7 @@
 #include "geometry_renderpass.h"
 #include "..\shaders\shadersCommon.h"
 
-#include "vk_framework.h"
+#include "file_system.h"
 #include "descriptors.h"
 #include "vk_commands.h"
 #include "vk_debug.h"
@@ -25,8 +25,8 @@ void createGeoGraphicPipeline( VkExtent2D extent )
 	auto bindingDescription = Vertex::get_binding_description();
 	auto attributeDescriptions = Vertex::get_attribute_descriptions();
 
-	std::vector<char> vertShaderCode = readFile("shaders/triangle.vert.spv");
-	std::vector<char> fragShaderCode = readFile("shaders/triangle.frag.spv");
+	std::vector<char> vertShaderCode = FS::readFile("shaders/triangle.vert.spv");
+	std::vector<char> fragShaderCode = FS::readFile("shaders/triangle.frag.spv");
 
 	VkPushConstantRange pushConstantRange = {};
 	pushConstantRange.offset = 0;

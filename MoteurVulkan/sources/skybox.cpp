@@ -1,7 +1,7 @@
 #include "skybox.h"
 
 #include "vk_shader.h"
-#include "vk_framework.h"
+#include "file_system.h"
 #include "vk_buffer.h"
 #include "descriptors.h"
 #include "vk_debug.h"
@@ -51,8 +51,8 @@ void CreateSkyboxDescriptorSet(VkDescriptorPool descriptorPool, VkImageView skyb
 
 static void create_skybox_graphics_pipeline(VkExtent2D extent)
 {
-	std::vector<char> vertShaderCode = readFile("shaders/skybox.vert.spv");
-	std::vector<char> fragShaderCode = readFile("shaders/skybox.frag.spv");
+	std::vector<char> vertShaderCode = FS::readFile("shaders/skybox.vert.spv");
+	std::vector<char> fragShaderCode = FS::readFile("shaders/skybox.frag.spv");
 
 	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
 	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

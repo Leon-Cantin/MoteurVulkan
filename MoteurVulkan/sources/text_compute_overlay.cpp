@@ -2,7 +2,7 @@
 #include "text_compute_overlay.h"
 
 #include "descriptors.h"
-#include "vk_framework.h"
+#include "file_system.h"
 #include "vk_shader.h"
 
 #include <cassert>
@@ -83,7 +83,7 @@ static void CreateComputePipeline(std::vector<char>& shaderCode, VkDescriptorSet
 
 void CreateTextComputePipeline()
 {
-	std::vector<char> shaderCode = readFile("shaders/textCompute.comp.spv");
+	std::vector<char> shaderCode = FS::readFile("shaders/textCompute.comp.spv");
 	CreateComputePipeline(shaderCode, textComputeDescriptorSetLayout, &textComputePipelineLayout, &textComputePipeline);
 }
 

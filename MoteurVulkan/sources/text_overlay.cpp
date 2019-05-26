@@ -2,7 +2,7 @@
 
 #include "model_asset.h"
 #include "vk_shader.h"
-#include "vk_framework.h"
+#include "file_system.h"
 #include "stb_font_consolas_24_latin1.inl"
 #include "vk_buffer.h"
 #include "descriptors.h"
@@ -54,8 +54,8 @@ void CreateTextGraphicsPipeline( VkExtent2D extent)
 	auto bindingDescription = TextVertex::get_binding_description();
 	auto attributeDescriptions = TextVertex::get_attribute_descriptions();
 
-	std::vector<char> vertShaderCode = readFile("shaders/text.vert.spv");
-	std::vector<char> fragShaderCode = readFile("shaders/text.frag.spv");
+	std::vector<char> vertShaderCode = FS::readFile("shaders/text.vert.spv");
+	std::vector<char> fragShaderCode = FS::readFile("shaders/text.frag.spv");
 
 	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
 	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

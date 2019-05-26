@@ -7,7 +7,7 @@
 #include "vk_commands.h"
 #include "framebuffer.h"
 #include "vk_shader.h"
-#include "vk_framework.h"
+#include "file_system.h"
 #include "vk_buffer.h"
 #include "scene_instance.h"
 #include "..\shaders\shadersCommon.h"
@@ -73,7 +73,7 @@ void CreateShadowGraphicPipeline()
 	auto bindingDescription = Vertex::get_binding_description();
 	auto attributeDescriptions = Vertex::get_attribute_descriptions();
 
-	std::vector<char> vertShaderCode = readFile("shaders/shadows.vert.spv");
+	std::vector<char> vertShaderCode = FS::readFile("shaders/shadows.vert.spv");
 	std::vector<char> fragShaderCode;// = readFile("shaders/shadows.frag.spv"); no shadow frag
 
 	VkDescriptorSetLayout descriptorSetLayouts[] = { shadowDescriptorSetLayout, shadowInstanceDescriptorSetLayout };
