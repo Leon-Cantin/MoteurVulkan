@@ -15,6 +15,7 @@
 #include "profile.h"
 #include "tick_system.h"
 #include "asset_library.h"
+#include "window_handler.h"
 
 #include "camera_orbit.h"
 #include "model_asset.h"
@@ -58,8 +59,6 @@ namespace Scene2DGame
 
 	LightUniform g_light{ glm::mat4(1.0f), {3.0f, 3.0f, -3.0f}, 1.0f };
 
-	bool console_active = false;
-
 	float frameDeltaTime = 0.0f;
 
 	void updateTextOverlayBuffer(uint32_t currentFrame)
@@ -69,7 +68,7 @@ namespace Scene2DGame
 		int charCount = sprintf_s(textBuffer, 256, "GPU: %4.4fms", miliseconds);
 		size_t textZonesCount = 1;
 		TextZone textZones[2] = { -1.0f, -1.0f, std::string(textBuffer) };
-		if (console_active) {
+		if (ConCom::isOpen()) {
 			textZones[1] = { -1.0f, 0.0f, ConCom::GetViewableString() };
 			++textZonesCount;
 		}
@@ -104,31 +103,6 @@ namespace Scene2DGame
 		if (paramsCount >= 4)
 		{
 			g_light.position = glm::vec3((float)atof(params[1].data()), (float)atof(params[2].data()), (float)atof(params[3].data()));
-		}
-	}
-
-	void ConsoleCallback()
-	{
-		ConCom::ClearConsoleText();
-		console_active = true;
-	}
-
-	void AcceptCallback()
-	{
-		if (console_active)
-		{
-			//TODO: multithreading concerns
-			ConCom::SubmitCommand();
-			ConCom::ClearConsoleText();
-			console_active = false;
-		}
-	}
-
-	void BackspaceCallback()
-	{
-		if (console_active)
-		{
-			ConCom::RemoveConsoleChar();
 		}
 	}
 
@@ -172,73 +146,6 @@ namespace Scene2DGame
 		g_reloadShaders = true;
 	}
 
-	bool mouse_pressed = false;
-	double cx, cy;
-	void glfw_onMouseMove(GLFWwindow* window, double x, double y)
-	{
-		if (glfwGetMouseButton(g_window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS && !mouse_pressed) {
-			glfwSetInputMode(g_window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-			glfwGetCursorPos(g_window, &cx, &cy);
-			//glfwSetCursorPos(window, cx, cy);
-			mouse_pressed = true;
-		}
-		else if (glfwGetMouseButton(g_window, GLFW_MOUSE_BUTTON_1) == GLFW_RELEASE && mouse_pressed) {
-			glfwSetInputMode(g_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-			mouse_pressed = false;
-		}
-
-		if (mouse_pressed)
-		{
-			glfwSetCursorPos(g_window, cx, cy);
-			float dx = x - cx;
-			float dy = y - cy;
-
-			//TODO: Create offsets instead of applying transformation right away
-			glm::fquat pitchRotation = glm::angleAxis(glm::radians(dy) * frameDeltaTime, PitchVector());
-			glm::fquat yawRotation = glm::angleAxis(glm::radians(dx) * frameDeltaTime, glm::vec3{ 0.0f,1.0f,0.0f });
-			cameraSceneInstance.orientation = yawRotation * pitchRotation * cameraSceneInstance.orientation;
-		}
-	}
-
-	void character_callback(GLFWwindow* window, unsigned int codepoint)
-	{
-		if (console_active)
-		{
-			ConCom::AddConsoleChar(codepoint);
-		}
-	}
-
-	void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-	{
-		if (console_active && (action == GLFW_PRESS || action == GLFW_REPEAT))
-		{
-			switch (key) {
-			case GLFW_KEY_ENTER:
-				AcceptCallback();
-				break;
-			case GLFW_KEY_BACKSPACE:
-				BackspaceCallback();
-				break;
-			case GLFW_KEY_GRAVE_ACCENT:
-				ConCom::ClearConsoleText();
-				console_active = false;
-				break;
-			}
-		}
-		else
-		{
-			if (action == GLFW_PRESS)
-			{
-				IH::AddHeldKey(key);
-				//CallActionCallbacks(static_cast<uint32_t>(key));
-			}
-			else if (action == GLFW_RELEASE)
-			{
-				IH::RemoveHeldKey(key);
-			}
-		}
-	}
-
 	void TickObjectCallback(float dt, void* unused)
 	{
 		static bool goRight = true;
@@ -253,7 +160,7 @@ namespace Scene2DGame
 	}
 
 	void mainLoop() {
-		while (!glfwWindowShouldClose(g_window))
+		while (!WH::shouldClose())
 		{
 			static double lastTime = glfwGetTime();
 			double currentTime = glfwGetTime();
@@ -312,10 +219,6 @@ namespace Scene2DGame
 
 		CreateRenderable(planeModelAsset, 0, 0, &planeRenderable);
 		CreateRenderable(cubeModelAsset, 0, 0, &cubeRenderable);
-
-		glfwSetCursorPosCallback(g_window, glfw_onMouseMove);
-		glfwSetCharCallback(g_window, character_callback);
-		glfwSetKeyCallback(g_window, key_callback);
 	}
 
 	void cleanup() {
@@ -324,15 +227,48 @@ namespace Scene2DGame
 		AL::Cleanup();
 	}
 
+	bool mouse_pressed = false;
+	double cx, cy;
+	static void onMouseMove(GLFWwindow* window, double x, double y)
+	{
+		if (glfwGetMouseButton(g_window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS && !mouse_pressed) {
+			glfwSetInputMode(g_window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+			glfwGetCursorPos(g_window, &cx, &cy);
+			//glfwSetCursorPos(window, cx, cy);
+			mouse_pressed = true;
+		}
+		else if (glfwGetMouseButton(g_window, GLFW_MOUSE_BUTTON_1) == GLFW_RELEASE && mouse_pressed) {
+			glfwSetInputMode(g_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+			mouse_pressed = false;
+		}
+
+		if (mouse_pressed)
+		{
+			glfwSetCursorPos(g_window, cx, cy);
+			float dx = x - cx;
+			float dy = y - cy;
+
+			//TODO: Create offsets instead of applying transformation right away
+			glm::fquat pitchRotation = glm::angleAxis(glm::radians(dy) * frameDeltaTime, PitchVector());
+			glm::fquat yawRotation = glm::angleAxis(glm::radians(dx) * frameDeltaTime, glm::vec3{ 0.0f,1.0f,0.0f });
+			cameraSceneInstance.orientation = yawRotation * pitchRotation * cameraSceneInstance.orientation;
+		}
+	}
+
 	void run() {
+		InitFramework(WIDTH, HEIGHT, "2D game");
+
 		IH::InitInputs();
+		ConCom::Init();
 
 		ConCom::RegisterCommand("light", &LightCallback);
 		ConCom::RegisterCommand("reloadshaders", &ReloadShadersCallback);
 
 		RegisterTickFunction(&TickObjectCallback);
 
-		IH::RegisterAction("console", &ConsoleCallback);
+		glfwSetCursorPosCallback(g_window, onMouseMove);
+
+		IH::RegisterAction("console", &ConCom::OpenConsole);
 		IH::BindInputToAction("console", GLFW_KEY_GRAVE_ACCENT);
 		IH::RegisterAction("forward", &ForwardCallback);
 		IH::BindInputToAction("forward", GLFW_KEY_W);
@@ -343,7 +279,6 @@ namespace Scene2DGame
 		IH::RegisterAction("right", &MoveRightCallback);
 		IH::BindInputToAction("right", GLFW_KEY_D);
 
-		InitFramework(WIDTH, HEIGHT, "2D game");
 		Init();
 		mainLoop();
 		cleanup();

@@ -7,12 +7,11 @@ namespace ConCom
 {
 	typedef void(*CommandCallback) (const std::string*, uint32_t);
 
+	void Init();
+	void OpenConsole();
 	void SubmitCommand(const std::string& command);
 	void RegisterCommand(const std::string& command_name, CommandCallback callback);
 
-	void AddConsoleChar(unsigned int chararacter);
-	void ClearConsoleText();
-	void RemoveConsoleChar();
-	void SubmitCommand();
+	bool isOpen();
 	std::string GetViewableString();
 }

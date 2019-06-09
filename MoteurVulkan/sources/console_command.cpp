@@ -1,5 +1,7 @@
 #include "console_command.h"
 
+#include "input.h"
+
 #include <map>
 #include <sstream>
 #include <iostream>
@@ -7,11 +9,13 @@
 
 namespace ConCom
 {
+	bool console_active = false;
+
 	std::map<std::string, CommandCallback> command_map;
 
 	std::string console_string = "";
 
-	void SubmitCommand(const std::string& command)
+	static void SubmitCommand(const std::string& command)
 	{
 		std::vector<std::string> strings;
 		std::istringstream f(command.data());
@@ -32,31 +36,57 @@ namespace ConCom
 		}
 	}
 
-	void RegisterCommand(const std::string& command_name, CommandCallback callback)
-	{
-		command_map.insert(std::pair(command_name, callback));
-	}
-
-	void AddConsoleChar(unsigned int chararacter)
-	{
-		console_string.push_back(chararacter);
-	}
-
-	void ClearConsoleText()
+	static void ClearConsoleText()
 	{
 		console_string.clear();
 		memset(console_string.data(), 0, console_string.capacity() * sizeof(char));
 	}
 
-	void RemoveConsoleChar()
+	static void RemoveConsoleChar()
 	{
 		if (!console_string.empty())
 			console_string.erase(console_string.end() - 1);
 	}
 
-	void SubmitCommand()
+	static void SubmitCommand()
 	{
 		SubmitCommand(console_string.data());
+	}
+
+	static void AddConsoleChar(unsigned int chararacter)
+	{
+		if(console_active)
+			console_string.push_back(chararacter);
+	}
+
+	static void AcceptCallback()
+	{
+		if (console_active)
+		{
+			//TODO: multithreading concerns
+			SubmitCommand();
+			ClearConsoleText();
+			console_active = false;
+		}
+	}
+
+	static void BackspaceCallback()
+	{
+		if (console_active)
+		{
+			RemoveConsoleChar();
+		}
+	}
+
+	void RegisterCommand(const std::string& command_name, CommandCallback callback)
+	{
+		command_map.insert(std::pair(command_name, callback));
+	}
+
+	void OpenConsole()
+	{
+		ClearConsoleText();
+		console_active ^= true;
 	}
 
 	std::string GetViewableString()
@@ -65,5 +95,20 @@ namespace ConCom
 		string.append(console_string.data());
 		string.append("|");
 		return string;
+	}
+
+	void Init()
+	{
+		IH::RegisterCharacterCallback(AddConsoleChar);
+
+		IH::RegisterAction("console_accept", &AcceptCallback);
+		IH::BindInputToAction("console_accept", GLFW_KEY_ENTER);
+		IH::RegisterAction("console_backspace", &BackspaceCallback);
+		IH::BindInputToAction("console_backspace", GLFW_KEY_BACKSPACE);
+	}
+
+	bool isOpen()
+	{
+		return console_active;
 	}
 }

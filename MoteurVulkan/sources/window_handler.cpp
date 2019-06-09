@@ -34,4 +34,9 @@ namespace WH
 		glfwDestroyWindow(g_window);
 		glfwTerminate();
 	}
+
+	bool shouldClose()
+	{
+		return glfwWindowShouldClose(g_window);
+	}
 }

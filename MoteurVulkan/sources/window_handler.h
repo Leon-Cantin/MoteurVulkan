@@ -9,4 +9,5 @@ namespace WH
 	void add_framebuffer_resize_callback(GLFWframebuffersizefun cbfun);
 	void create_surface(VkSurfaceKHR * windowSurface);
 	void terminate();
+	bool shouldClose();
 }

@@ -110,7 +110,7 @@ void CreateGeometryUniformBuffer()
 
 void CreateGeometryRenderpassDescriptorSet(const GfxImage* albedoImage, const GfxImage* normalImage)
 {
-	const GfxImage *shadowImages = GetRenderTarget(RT_SHADOW_MAP);
+	const GfxImage *shadowImages = FG::GetRenderTarget(RT_SHADOW_MAP);
 
 	CreateGeometryDescriptorSet(descriptorPool, sceneUniformBuffer.buffers.data(), instanceMatricesBuffer.buffers.data(), lightUniformBuffer.buffers.data(), albedoImage->imageView, normalImage->imageView, GetSampler(Samplers::Trilinear),
 		shadowImages->imageView, GetSampler(Samplers::Shadow));
@@ -137,7 +137,7 @@ void cleanup_swap_chain()
 	vkFreeCommandBuffers(g_vk.device, g_vk.transferCommandPool, static_cast<uint32_t>(g_transferCommandBuffers.size()), g_transferCommandBuffers.data());
 	vkFreeCommandBuffers(g_vk.device, g_vk.computeCommandPool, static_cast<uint32_t>(g_computeCommandBuffers.size()), g_computeCommandBuffers.data());
 
-	FG_CleanupAfterSwapchain();
+	FG::CleanupAfterSwapchain();
 
 	for (auto image : g_swapchain.images)
 		vkDestroyImageView(g_vk.device, image.imageView, nullptr);
@@ -164,7 +164,7 @@ void recreate_swap_chain()
 	glfwGetFramebufferSize(g_window, &width, &height);
 	createSwapChain(g_windowSurface, width, height, g_swapchain);
 
-	FG_RecreateAfterSwapchain(&g_swapchain);
+	FG::RecreateAfterSwapchain(&g_swapchain);
 
 	CreateCommandBuffer();
 	CreateTransferCommandBuffer();
@@ -280,7 +280,7 @@ void RecordCommandBuffer(uint32_t currentFrame, const SceneFrameData* frameData)
 
 	CmdWriteTimestamp(graphicsCommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, Timestamp::COMMAND_BUFFER_START, currentFrame);
 
-	FG_RecordDrawCommands(currentFrame, frameData, graphicsCommandBuffer, g_swapchain.extent);
+	FG::RecordDrawCommands(currentFrame, frameData, graphicsCommandBuffer, g_swapchain.extent);
 
 	CmdWriteTimestamp(graphicsCommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, Timestamp::COMMAND_BUFFER_END, currentFrame);
 
@@ -367,7 +367,7 @@ void CleanupScene() {
 
 	DestroySamplers();
 
-	FG_CleanupResources();
+	FG::CleanupResources();
 
 	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
 	{
