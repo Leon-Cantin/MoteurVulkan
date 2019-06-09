@@ -167,7 +167,7 @@ static bool check_validation_layers(const char* const* required_layers, uint32_t
 	return !any_missing;
 }
 
-static void create_instance()
+static void create_vk_instance()
 {
 	VkApplicationInfo app_info = {};
 	app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -399,7 +399,7 @@ void InitFramework(int windowWidth, int windowHeight, const char * windowName)
 {
 	WH::init_window(windowWidth, windowHeight, windowName);
 	WH::add_framebuffer_resize_callback(framebuffer_resize_callback);
-	create_instance();
+	create_vk_instance();
 	if (enableValidationLayers)
 		SetupDebugCallback();
 	WH::create_surface(&g_windowSurface);

@@ -106,6 +106,8 @@ namespace IH
 
 	void DoCommands()
 	{
+		glfwPollEvents();
+
 		for (uint32_t i = 0; i < heldKeysSize; ++i)
 		{
 			int key = heldKeys[i];

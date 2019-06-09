@@ -33,9 +33,6 @@
     <ClCompile Include="sources\camera_orbit.cpp">
       <Filter>sources</Filter>
     </ClCompile>
-    <ClCompile Include="sources\text_overlay.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
     <ClCompile Include="sources\text_compute_overlay.cpp">
       <Filter>sources</Filter>
     </ClCompile>
@@ -117,6 +114,9 @@
     <ClCompile Include="sources\window_handler.cpp">
       <Filter>sources\renderer</Filter>
     </ClCompile>
+    <ClCompile Include="sources\text_overlay.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\triangle.frag">
@@ -137,9 +137,6 @@
       <Filter>sources</Filter>
     </ClInclude>
     <ClInclude Include="sources\camera_orbit.h">
-      <Filter>sources</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\text_overlay.h">
       <Filter>sources</Filter>
     </ClInclude>
     <ClInclude Include="sources\text_compute_overlay.h">
@@ -237,6 +234,9 @@
     </ClInclude>
     <ClInclude Include="sources\window_handler.h">
       <Filter>sources\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\text_overlay.h">
+      <Filter>sources</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
