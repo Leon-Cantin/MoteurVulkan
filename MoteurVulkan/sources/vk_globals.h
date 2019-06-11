@@ -1,7 +1,10 @@
 #pragma once
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
+#define VK_USE_PLATFORM_WIN32_KHR
+#include <vulkan/vulkan.h>
+//TODO: find a way of getting rid of those undef
+#undef max
+#undef min
 
 struct Vk_Globals {
 	VkInstance vk_instance = VK_NULL_HANDLE;
@@ -15,6 +18,7 @@ struct Vk_Globals {
 	VkCommandPool graphicsCommandPool = VK_NULL_HANDLE;
 	VkCommandPool computeCommandPool = VK_NULL_HANDLE;
 	VkCommandPool transferCommandPool = VK_NULL_HANDLE;
+	VkSurfaceKHR windowSurface = VK_NULL_HANDLE;
 };
 
 extern Vk_Globals g_vk;

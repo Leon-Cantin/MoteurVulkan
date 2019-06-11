@@ -1,7 +1,7 @@
 #include "Camera_orbit.h"
 // Include GLFW
-#include <GLFW/glfw3.h>
-extern GLFWwindow* g_window; // The "extern" keyword here is to access the variable "window" declared in Framework.cpp. This is a hack to keep the tutorials simple. Please avoid this.
+//#include <GLFW/glfw3.h>
+//extern GLFWwindow* g_window; // The "extern" keyword here is to access the variable "window" declared in Framework.cpp. This is a hack to keep the tutorials simple. Please avoid this.
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -19,7 +19,7 @@ void Camera_orbit::on_mousewheel_scroll_callback(double yoffset)
 
 void Camera_orbit::on_mouse_move_callback(double x, double y)
 {
-	// Get mouse position
+	/*// Get mouse position
 	if (glfwGetMouseButton(g_window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS && !mouse_pressed) {
 		glfwSetInputMode(g_window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 		glfwGetCursorPos(g_window, &cx, &cy);
@@ -38,12 +38,12 @@ void Camera_orbit::on_mouse_move_callback(double x, double y)
 		horizontalAngle -= mouseSpeed * float(cx - x);
 		verticalAngle -= mouseSpeed * float(cy - y);
 		verticalAngle = glm::clamp(verticalAngle, -glm::pi<float>() / 2.0f, glm::pi<float>() / 2.0f);
-	}
+	}*/
 }
 
 void Camera_orbit::compute_matrix() {
 
-	// glfwGetTime is called only once, the first time this function is called
+	/*// glfwGetTime is called only once, the first time this function is called
 	static double lastTime = glfwGetTime();
 
 	// Compute time difference between current and last frame
@@ -62,5 +62,5 @@ void Camera_orbit::compute_matrix() {
 	world_view_matrix = glm::lookAt(location, look_at_position, glm::vec3(0, 1, 0));
 
 	// For the next frame, the "last time" will be "now"
-	lastTime = currentTime;
+	lastTime = currentTime;*/
 };

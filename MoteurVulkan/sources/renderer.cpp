@@ -1,14 +1,8 @@
-#include "scene.h"
+#include "renderer.h"
 
-#include "swapchain.h"
-#include "framebuffer.h"
 #include "vk_buffer.h"
 #include "vk_debug.h"
 #include "scene_instance.h"
-#include "shadow_renderpass.h"
-#include "geometry_renderpass.h"
-#include "text_overlay.h"
-#include "skybox.h"
 #include "descriptors.h"
 #include "vk_commands.h"
 #include "profile.h"
@@ -16,6 +10,7 @@
 #include "console_command.h"
 #include "gpu_synchronization.h"
 #include "frame_graph_script.h"
+#include "window_handler.h"
 
 #include <array>
 #include <iostream>
@@ -148,10 +143,11 @@ void cleanup_swap_chain()
 void recreate_swap_chain()
 {
 	//TODO: find a better way of handling window minimization
-	int width = 0, height = 0;
+	uint64_t width = 0, height = 0;
 	while (width == 0 || height == 0) {
-		glfwGetFramebufferSize(g_window, &width, &height);
-		glfwWaitEvents();
+		WH::GetFramebufferSize( &width, &height );
+		//TODO
+		//glfwWaitEvents();
 	}
 
 	framebuffer_resized = false;
@@ -161,8 +157,8 @@ void recreate_swap_chain()
 	cleanup_swap_chain();
 
 	//TODO: try to use the "oldSwapchain" parameter to optimize when recreating swap chains
-	glfwGetFramebufferSize(g_window, &width, &height);
-	createSwapChain(g_windowSurface, width, height, g_swapchain);
+	WH::GetFramebufferSize(&width, &height);
+	createSwapChain(g_vk.windowSurface, width, height, g_swapchain);
 
 	FG::RecreateAfterSwapchain(&g_swapchain);
 
@@ -175,11 +171,11 @@ void InitSkybox(const GfxImage* skyboxImage)
 	CreateSkyboxDescriptorSet(descriptorPool, skyboxImage->imageView, GetSampler(Samplers::Trilinear));
 }
 
-void InitScene()
+void InitRenderer()
 {
-	int width, height;
-	glfwGetFramebufferSize(g_window, &width, &height);
-	createSwapChain(g_windowSurface, width, height, g_swapchain);
+	uint64_t width, height;
+	WH::GetFramebufferSize(&width, &height);
+	createSwapChain(g_vk.windowSurface, width, height, g_swapchain);
 
 	QueueFamilyIndices queue_family_indices = find_queue_families(g_vk.physicalDevice);
 	CreateCommandPool(queue_family_indices.graphics_family.value(), &g_vk.graphicsCommandPool);
@@ -355,7 +351,7 @@ void draw_frame(uint32_t currentFrame, const SceneFrameData* frameData)
 	}
 }
 
-void CleanupScene() {
+void CleanupRenderer() {
 	cleanup_swap_chain();
 
 	DestroyTimeStampsPool();

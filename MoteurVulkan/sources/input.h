@@ -1,7 +1,6 @@
 #pragma once
 
-//TODO: get rid of this, used for GLFW inputs
-#include "vk_globals.h"
+#include "inputs_def.h"
 
 #include <string>
 

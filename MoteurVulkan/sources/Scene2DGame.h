@@ -1,18 +1,19 @@
 #pragma once
 
 #include "scene_instance.h"
-#include "scene.h"
+#include "renderer.h"
 #include "swapchain.h"
 #include "vk_framework.h"
-#include "shadow_renderpass.h"
-#include "skybox.h"
 #include "console_command.h"
 #include "input.h"
-#include "text_overlay.h"
 #include "profile.h"
 #include "tick_system.h"
 #include "asset_library.h"
 #include "window_handler.h"
+
+#include "shadow_renderpass.h"
+#include "text_overlay.h"
+#include "skybox.h"
 
 #include "camera_orbit.h"
 #include "model_asset.h"
@@ -26,7 +27,6 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-
 #include <assert.h>
 
 
@@ -120,28 +120,29 @@ namespace Scene2DGame
 
 	void ForwardCallback()
 	{
-		cameraSceneInstance.location += ForwardVector() * frameDeltaTime;
+		cameraSceneInstance.location += ForwardVector() * (frameDeltaTime/1000.0f);
 	}
 
 	void BackwardCallback()
 	{
-		cameraSceneInstance.location -= ForwardVector() * frameDeltaTime;
+		cameraSceneInstance.location -= ForwardVector() * (frameDeltaTime / 1000.0f);
 	}
 
 	void MoveRightCallback()
 	{
-		cameraSceneInstance.location += PitchVector() * frameDeltaTime;
+		cameraSceneInstance.location += PitchVector() * (frameDeltaTime / 1000.0f);
 	}
 
 	void MoveLeftCallback()
 	{
-		cameraSceneInstance.location -= PitchVector() * frameDeltaTime;
+		cameraSceneInstance.location -= PitchVector() * (frameDeltaTime / 1000.0f);
 	}
-
-	bool mouse_pressed = false;
-	double cx, cy;
-	static void onMouseMove(GLFWwindow* window, double x, double y)
+	
+	//TODO
+	/*static void onMouseMove( double x, double y )
 	{
+		static bool mouse_pressed = false;
+		static double cx, cy;
 		if (glfwGetMouseButton(g_window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS && !mouse_pressed) {
 			glfwSetInputMode(g_window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 			glfwGetCursorPos(g_window, &cx, &cy);
@@ -164,7 +165,7 @@ namespace Scene2DGame
 			glm::fquat yawRotation = glm::angleAxis(glm::radians(dx) * frameDeltaTime, glm::vec3{ 0.0f,1.0f,0.0f });
 			cameraSceneInstance.orientation = yawRotation * pitchRotation * cameraSceneInstance.orientation;
 		}
-	}
+	}*/
 
 	void ReloadShadersCallback(const std::string* params, uint32_t paramsCount)
 	{
@@ -174,7 +175,7 @@ namespace Scene2DGame
 	void TickObjectCallback(float dt, void* unused)
 	{
 		static bool goRight = true;
-		cubeSceneInstance.location.x += dt * (goRight ? 0.5f : -0.5f);
+		cubeSceneInstance.location.x += (dt/1000.0f) * (goRight ? 0.5f : -0.5f);
 		if (abs(cubeSceneInstance.location.x) >= 2.0f)
 			goRight ^= true;
 	}
@@ -187,9 +188,12 @@ namespace Scene2DGame
 	void mainLoop() {
 		while (!WH::shouldClose())
 		{
-			static double lastTime = glfwGetTime();
-			double currentTime = glfwGetTime();
-			frameDeltaTime = float(currentTime - lastTime);
+			//TODO: thread this
+			WH::ProcessMessages();
+			size_t currentTime = WH::GetTime();
+			static size_t lastTime = currentTime;
+			
+			frameDeltaTime = static_cast<float>(currentTime - lastTime);
 			lastTime = currentTime;
 
 			//Input
@@ -231,17 +235,18 @@ namespace Scene2DGame
 		//Input callbacks
 		IH::InitInputs();
 		IH::RegisterAction("console", &ConCom::OpenConsole);
-		IH::BindInputToAction("console", GLFW_KEY_GRAVE_ACCENT);
+		IH::BindInputToAction("console", IH::GRAVE_ACCENT);
 		IH::RegisterAction("forward", &ForwardCallback);
-		IH::BindInputToAction("forward", GLFW_KEY_W);
+		IH::BindInputToAction("forward", IH::W);
 		IH::RegisterAction("backward", &BackwardCallback);
-		IH::BindInputToAction("backward", GLFW_KEY_S);
+		IH::BindInputToAction("backward", IH::S);
 		IH::RegisterAction("left", &MoveLeftCallback);
-		IH::BindInputToAction("left", GLFW_KEY_A);
+		IH::BindInputToAction("left", IH::A);
 		IH::RegisterAction("right", &MoveRightCallback);
-		IH::BindInputToAction("right", GLFW_KEY_D);
+		IH::BindInputToAction("right", IH::D);
 
-		glfwSetCursorPosCallback(g_window, onMouseMove);
+		//TODO
+		//glfwSetCursorPosCallback(g_window, onMouseMove);
 
 		//Console commands callback (need IH)
 		ConCom::Init();
@@ -252,7 +257,7 @@ namespace Scene2DGame
 		RegisterTickFunction(&TickObjectCallback);
 
 		//Init renderer stuff
-		InitScene();
+		InitRenderer();
 
 		//LoadAssets
 		GfxImage* skyboxTexture = AL::LoadCubeTexture("SkyboxTexture", "assets/mountaincube.ktx");
@@ -272,7 +277,7 @@ namespace Scene2DGame
 	}
 
 	void cleanup() {
-		CleanupScene();
+		CleanupRenderer();
 
 		AL::Cleanup();
 	}

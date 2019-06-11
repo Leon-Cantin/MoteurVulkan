@@ -1,6 +1,7 @@
 #include "swapchain.h"
 #include "vk_framework.h"
 
+#include <limits>
 #include <algorithm>
 
 VkSurfaceFormatKHR choose_swap_surface_format(const std::vector<VkSurfaceFormatKHR>& available_formats)

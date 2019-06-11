@@ -102,9 +102,9 @@ namespace ConCom
 		IH::RegisterCharacterCallback(AddConsoleChar);
 
 		IH::RegisterAction("console_accept", &AcceptCallback);
-		IH::BindInputToAction("console_accept", GLFW_KEY_ENTER);
+		IH::BindInputToAction("console_accept", IH::ENTER);
 		IH::RegisterAction("console_backspace", &BackspaceCallback);
-		IH::BindInputToAction("console_backspace", GLFW_KEY_BACKSPACE);
+		IH::BindInputToAction("console_backspace", IH::BACKSPACE);
 	}
 
 	bool isOpen()

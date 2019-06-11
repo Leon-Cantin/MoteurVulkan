@@ -298,7 +298,7 @@ namespace SceneFPS
 
 	void Init()
 	{
-		InitScene();
+		InitRenderer();
 
 		//LoadAssets
 		GfxImage* skyboxTexture = AL::LoadCubeTexture("SkyboxTexture", "assets/mountaincube.ktx");
@@ -324,7 +324,7 @@ namespace SceneFPS
 	}
 
 	void cleanup() {
-		CleanupScene();
+		CleanupRenderer();
 
 		AL::Cleanup();
 	}

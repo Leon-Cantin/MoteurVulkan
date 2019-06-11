@@ -1,7 +1,5 @@
 #pragma once
-
 #include "vk_globals.h"
-#include "vk_image.h"
 #include <glm/vec4.hpp>
 
 #include <vector>

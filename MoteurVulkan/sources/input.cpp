@@ -1,8 +1,5 @@
 #include "input.h"
 
-//TODO: get rid of this, this is just for g_window
-#include "vk_framework.h"
-
 #include <unordered_map>
 #include <vector>
 
@@ -23,7 +20,7 @@ namespace IH
 	int heldKeys[HELD_KEYS_MAX_SIZE];
 	uint32_t heldKeysSize = 0;
 
-	static void character_callback(GLFWwindow* window, unsigned int codepoint)
+	static void character_callback( uint32_t codepoint)
 	{
 		for (auto callback : character_callbacks)
 			callback(codepoint);
@@ -44,7 +41,7 @@ namespace IH
 	{
 		for (uint32_t i = 0; i < HELD_KEYS_MAX_SIZE; ++i)
 		{
-			if (heldKeys[i] == GLFW_KEY_UNKNOWN)
+			if (heldKeys[i] == UNKNOWN)
 			{
 				heldKeys[i] = input;
 				heldKeysSize += i >= heldKeysSize ? 1 : 0;
@@ -59,21 +56,21 @@ namespace IH
 		{
 			if (heldKeys[i] == input)
 			{
-				heldKeys[i] = GLFW_KEY_UNKNOWN;
+				heldKeys[i] = UNKNOWN;
 				heldKeysSize -= (i == heldKeysSize - 1) ? 1 : 0;
 				return;
 			}
 		}
 	}
 
-	static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+	static void key_callback(int key, int scancode, int action, int mods)
 	{
-		if (action == GLFW_PRESS)
+		if (action == PRESSED)
 		{
 			IH::AddHeldKey(key);
 			//TODO: add repeat function CallActionCallbacks(static_cast<uint32_t>(key));
 		}
-		else if (action == GLFW_RELEASE)
+		else if (action == RELEASED)
 		{
 			IH::RemoveHeldKey(key);
 		}
@@ -81,10 +78,11 @@ namespace IH
 
 	void InitInputs()
 	{
-		memset(heldKeys, GLFW_KEY_UNKNOWN, sizeof(heldKeys));
+		memset(heldKeys, UNKNOWN, sizeof(heldKeys));
 
-		glfwSetCharCallback(g_window, character_callback);
-		glfwSetKeyCallback(g_window, key_callback);
+		//TODO
+		//glfwSetCharCallback(g_window, character_callback);
+		//glfwSetKeyCallback(g_window, key_callback);
 	}
 
 	void RegisterAction(const std::string& name, ActionCallback callback)
@@ -106,12 +104,13 @@ namespace IH
 
 	void DoCommands()
 	{
-		glfwPollEvents();
+		//TODO
+		//glfwPollEvents();
 
 		for (uint32_t i = 0; i < heldKeysSize; ++i)
 		{
 			int key = heldKeys[i];
-			if (key != GLFW_KEY_UNKNOWN)
+			if (key != UNKNOWN)
 			{
 				auto it = input_action_map.find(key);
 				if (it != input_action_map.end())

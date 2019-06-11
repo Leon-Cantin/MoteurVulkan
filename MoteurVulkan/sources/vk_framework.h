@@ -5,9 +5,6 @@
 #include <vector>
 #include <optional>
 
-extern GLFWwindow* g_window;
-extern VkSurfaceKHR g_windowSurface;
-
 struct QueueFamilyIndices {
 	std::optional<uint32_t> graphics_family;
 	std::optional<uint32_t> present_family;

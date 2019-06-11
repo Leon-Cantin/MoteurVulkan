@@ -13,6 +13,7 @@
 #include <stb_image.h>
 #include "ktx_loader.h"
 
+
 std::array<VkSampler, (size_t)(Samplers::Count)> samplers;
 
 void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount)

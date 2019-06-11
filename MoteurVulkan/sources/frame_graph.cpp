@@ -2,7 +2,6 @@
 
 #include "framebuffer.h"
 #include "vk_image.h"
-#include "vk_framework.h"
 #include "vk_debug.h"
 
 #include <vector>

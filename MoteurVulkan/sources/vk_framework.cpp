@@ -1,10 +1,13 @@
 #include "vk_framework.h"
 #include "vk_debug.h"
 #include "window_handler.h"
+#include "window_handler_vk.h"
 
 #include <iostream>
 #include <algorithm>
 #include <set>
+
+#include "vk_loader.h"
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -14,11 +17,9 @@ const bool enableValidationLayers = true;
 const bool enableVkObjectMarking = true;
 #endif
 
-VkSurfaceKHR g_windowSurface;
-
 bool framebuffer_resized = false;
 
-static void framebuffer_resize_callback(GLFWwindow* window, int width, int height)
+static void framebuffer_resize_callback(int width, int height)
 {
 	framebuffer_resized = true;
 }
@@ -28,20 +29,17 @@ const std::vector<const char*> validationLayers = {
 };
 
 const std::vector<const char*> required_device_extensions = {
-	VK_KHR_SWAPCHAIN_EXTENSION_NAME
+	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 };
 
 static std::vector<const char*> get_required_extensions()
 {
-	//glfwExtensions
-	uint32_t glfwExtensionCount = 0;
-	const char** glfw_extensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-	//Other extensions
-	std::vector<const char*> extensions(glfw_extensions, glfw_extensions + glfwExtensionCount);
+	std::vector<const char*> extensions;
 
 	if (enableValidationLayers || enableVkObjectMarking )
 		extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+	extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+	extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 
 	std::cout << "required extensions :" << std::endl;
 	for (uint32_t i = 0; i < extensions.size(); ++i)
@@ -238,7 +236,7 @@ static bool is_device_suitable(const VkPhysicalDevice device)
 	suitable |= deviceFeatures.shaderSampledImageArrayDynamicIndexing == VK_TRUE;
 
 	if (suitable) {
-		SwapChainSupportDetails swapchain_details = query_swap_chain_support(device, g_windowSurface);
+		SwapChainSupportDetails swapchain_details = query_swap_chain_support(device, g_vk.windowSurface);
 		suitable |= !swapchain_details.formats.empty() && !swapchain_details.present_modes.empty();
 	}
 
@@ -383,7 +381,7 @@ QueueFamilyIndices find_queue_families(const VkPhysicalDevice device) {
 				indices.transfer_family = i;
 
 			VkBool32 present_support = false;
-			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, g_windowSurface, &present_support);
+			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, g_vk.windowSurface, &present_support);
 			if (present_support && !indices.present_family.has_value())
 				indices.present_family = i;
 
@@ -397,12 +395,14 @@ QueueFamilyIndices find_queue_families(const VkPhysicalDevice device) {
 
 void InitFramework(int windowWidth, int windowHeight, const char * windowName)
 {
-	WH::init_window(windowWidth, windowHeight, windowName);
-	WH::add_framebuffer_resize_callback(framebuffer_resize_callback);
 	create_vk_instance();
 	if (enableValidationLayers)
 		SetupDebugCallback();
-	WH::create_surface(&g_windowSurface);
+
+	WH::init_window(windowWidth, windowHeight, windowName);
+	WH::add_framebuffer_resize_callback(framebuffer_resize_callback);
+	WH::VK::create_surface( g_vk.vk_instance, WH::g_window, WH::g_instance, &g_vk.windowSurface);
+
 	pick_physical_device();
 	create_logical_device();
 }
@@ -414,7 +414,7 @@ void ShutdownFramework()
 	if (enableValidationLayers)
 		DestroyDebugCallback();
 
-	vkDestroySurfaceKHR(g_vk.vk_instance, g_windowSurface, nullptr);
+	vkDestroySurfaceKHR(g_vk.vk_instance, g_vk.windowSurface, nullptr);
 	vkDestroyInstance(g_vk.vk_instance, nullptr);
 
 	WH::terminate();
