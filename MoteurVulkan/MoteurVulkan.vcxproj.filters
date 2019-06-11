@@ -129,6 +129,9 @@
     <ClCompile Include="sources\renderer.cpp">
       <Filter>sources\renderer</Filter>
     </ClCompile>
+    <ClCompile Include="sources\scene2D_renderer_imp.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\triangle.frag">
@@ -264,6 +267,9 @@
     </ClInclude>
     <ClInclude Include="sources\renderer.h">
       <Filter>sources\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\scene2D_renderer_imp.h">
+      <Filter>sources</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

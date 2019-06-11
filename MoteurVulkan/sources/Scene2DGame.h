@@ -1,8 +1,7 @@
 #pragma once
 
-#include "scene_instance.h"
+#include "scene2D_renderer_imp.h"
 #include "renderer.h"
-#include "swapchain.h"
 #include "vk_framework.h"
 #include "console_command.h"
 #include "input.h"
@@ -257,7 +256,7 @@ namespace Scene2DGame
 		RegisterTickFunction(&TickObjectCallback);
 
 		//Init renderer stuff
-		InitRenderer();
+		InitRendererImp();
 
 		//LoadAssets
 		GfxImage* skyboxTexture = AL::LoadCubeTexture("SkyboxTexture", "assets/mountaincube.ktx");
@@ -277,7 +276,7 @@ namespace Scene2DGame
 	}
 
 	void cleanup() {
-		CleanupRenderer();
+		CleanupRendererImp();
 
 		AL::Cleanup();
 	}

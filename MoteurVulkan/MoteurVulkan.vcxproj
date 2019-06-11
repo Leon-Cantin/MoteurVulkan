@@ -182,6 +182,7 @@
     <ClCompile Include="sources\input.cpp" />
     <ClCompile Include="sources\profile.cpp" />
     <ClCompile Include="sources\renderer.cpp" />
+    <ClCompile Include="sources\scene2D_renderer_imp.cpp" />
     <ClCompile Include="sources\scene_instance.cpp" />
     <ClCompile Include="sources\shadow_renderpass.cpp" />
     <ClCompile Include="sources\text_compute_overlay.cpp" />
@@ -225,6 +226,7 @@
     <ClInclude Include="sources\inputs_def.h" />
     <ClInclude Include="sources\renderer.h" />
     <ClInclude Include="sources\Scene2DGame.h" />
+    <ClInclude Include="sources\scene2D_renderer_imp.h" />
     <ClInclude Include="sources\SceneFPS.h" />
     <ClInclude Include="sources\scene_frame_data.h" />
     <ClInclude Include="sources\scene_instance.h" />
