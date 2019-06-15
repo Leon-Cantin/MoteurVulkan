@@ -4,6 +4,8 @@
 #include "frame_graph_script.h"
 #include "renderer.h"
 #include "descriptors.h"
+#include "profile.h"
+#include "console_command.h"
 
 #include <glm/glm.hpp>
 #include <glm/vec4.hpp>
@@ -17,16 +19,17 @@ VkDescriptorPool descriptorPool;
 
 extern Swapchain g_swapchain;
 
+bool g_forceReloadShaders = false;
+
 /*
 	Create Stuff
 */
-void CreateInstanceMatricesBuffers()
+static void CreateInstanceMatricesBuffers(uint32_t maxModelsCount)
 {
-	uint32_t modelsCount = 3;
-	CreatePerFrameBuffer(sizeof(InstanceMatrices)*modelsCount, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &instanceMatricesBuffer);
+	CreatePerFrameBuffer(sizeof(InstanceMatrices)*maxModelsCount, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &instanceMatricesBuffer);
 }
 
-void CreateGeometryUniformBuffer()
+static void CreateGeometryUniformBuffer()
 {
 	CreatePerFrameBuffer(sizeof(SceneMatricesUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &sceneUniformBuffer);
 	CreatePerFrameBuffer(sizeof(LightUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &lightUniformBuffer);
@@ -57,7 +60,6 @@ void UpdateGeometryUniformBuffer(const SceneInstance* sceneInstance, const Scene
 	vkMapMemory(g_vk.device, instanceMatricesBuffer.memory, sceneInstanceDescriptorSet->geometryBufferOffsets[currentFrame] + frameMemoryOffset, sizeof(InstanceMatrices), 0, &data);
 	memcpy(data, &instanceMatrices, sizeof(InstanceMatrices));
 	vkUnmapMemory(g_vk.device, instanceMatricesBuffer.memory);
-
 }
 
 void InitSkybox(const GfxImage* skyboxImage)
@@ -128,7 +130,7 @@ void InitRendererImp()
 	createDescriptorPool(uniformBuffersCount, uniformBuffersDynamicCount, imageSamplersCount, storageImageCount, maxSets, &descriptorPool);
 
 	CreateGeometryUniformBuffer();
-	CreateInstanceMatricesBuffers();
+	CreateInstanceMatricesBuffers(3);
 	createSkyboxUniformBuffers();
 	LoadFontTexture();
 	CreateTextVertexBuffer(256);
@@ -144,4 +146,73 @@ void CleanupRendererImp()
 	DestroyPerFrameBuffer(&instanceMatricesBuffer);
 	
 	vkDestroyDescriptorPool(g_vk.device, descriptorPool, nullptr);
+}
+
+static void updateTextOverlayBuffer(uint32_t currentFrame)
+{
+	float miliseconds = GetTimestampsDelta(Timestamp::COMMAND_BUFFER_START, Timestamp::COMMAND_BUFFER_END, abs(static_cast<int64_t>(currentFrame) - 1ll));
+	char textBuffer[256];
+	int charCount = sprintf_s(textBuffer, 256, "GPU: %4.4fms", miliseconds);
+	size_t textZonesCount = 1;
+	TextZone textZones[2] = { -1.0f, -1.0f, std::string(textBuffer) };
+	if (ConCom::isOpen()) {
+		textZones[1] = { -1.0f, 0.0f, ConCom::GetViewableString() };
+		++textZonesCount;
+	}
+	UpdateText(textZones, textZonesCount, g_swapchain.extent);
+}
+
+//TODO seperate the buffer update and computation of frame data
+//TODO Make light Uniform const
+static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<std::pair<const SceneInstance*,const SceneRenderableAsset*>>& drawList )
+{
+	//camera->compute_matrix();
+	glm::mat4 world_view_matrix = ComputeCameraSceneInstanceViewMatrix(*cameraSceneInstance);
+	//glm::mat4 world_view_matrixx = camera.get_world_view_matrix();
+
+	VkExtent2D swapChainExtent = g_swapchain.extent;
+
+	//Update GeometryUniformBuffer
+	for( auto& drawNode : drawList )
+		UpdateGeometryUniformBuffer(drawNode.first, drawNode.second->descriptorSet, currentFrame);
+
+	UpdateSceneUniformBuffer(world_view_matrix, swapChainExtent, currentFrame);
+
+	SceneMatricesUniform shadowSceneMatrices;
+	computeShadowMatrix(light->position, &shadowSceneMatrices.view, &shadowSceneMatrices.proj);
+
+	UpdateLightUniformBuffer(&shadowSceneMatrices, light, currentFrame);
+
+	UpdateSkyboxUniformBuffers(currentFrame, world_view_matrix);
+
+	updateTextOverlayBuffer(currentFrame);
+}
+
+static void PrepareSceneFrameData(SceneFrameData* frameData, uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<std::pair<const SceneInstance*, const SceneRenderableAsset*>>& drawList)
+{
+	updateUniformBuffer(currentFrame, cameraSceneInstance, light,drawList);
+
+	frameData->renderableAssets.resize(drawList.size());
+	for (size_t i = 0; i < drawList.size(); ++i)
+		frameData->renderableAssets[i] = drawList[i].second;
+}
+
+void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<std::pair<const SceneInstance*, const SceneRenderableAsset*>>& drawList )
+{
+	if (g_forceReloadShaders)
+	{
+		g_forceReloadShaders = false;
+		ReloadSceneShaders();
+	}
+	WaitForFrame(currentFrame);
+
+	SceneFrameData frameData;
+	PrepareSceneFrameData(&frameData, currentFrame, cameraSceneInstance, light, drawList);
+
+	draw_frame(currentFrame, &frameData);
+}
+
+void ForceReloadShaders()
+{
+	g_forceReloadShaders = true;
 }

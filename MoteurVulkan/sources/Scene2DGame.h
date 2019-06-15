@@ -5,7 +5,6 @@
 #include "vk_framework.h"
 #include "console_command.h"
 #include "input.h"
-#include "profile.h"
 #include "tick_system.h"
 #include "asset_library.h"
 #include "window_handler.h"
@@ -14,7 +13,6 @@
 #include "text_overlay.h"
 #include "skybox.h"
 
-#include "camera_orbit.h"
 #include "model_asset.h"
 
 #include <glm/glm.hpp>
@@ -33,11 +31,7 @@ extern Swapchain g_swapchain;
 
 namespace Scene2DGame
 {
-	Camera_orbit camera(2);
-
 	uint32_t current_frame = 0;
-
-	bool g_reloadShaders = false;
 
 	const int WIDTH = 800;
 	const int HEIGHT = 600;
@@ -45,54 +39,17 @@ namespace Scene2DGame
 	SceneInstanceSet g_sceneInstanceDescriptorSets[5];
 	size_t g_sceneInstancesCount = 0;
 
-	SceneInstance planeSceneInstance = { glm::vec3(0.0f, -0.5f, 0.0f), glm::angleAxis(glm::radians(0.0f), glm::vec3{0.0f, 1.0f, 0.0f}), 10.0f };
+	SceneInstance planeSceneInstance;
 	SceneRenderableAsset planeRenderable;
 
-	SceneInstance cubeSceneInstance = { glm::vec3(0.0f, 0.0f, 2.0f), glm::angleAxis(glm::radians(0.0f), glm::vec3{0.0f, 1.0f, 0.0f}), 0.5f };
+	SceneInstance cubeSceneInstance;
 	SceneRenderableAsset cubeRenderable;
 
-	SceneInstance cameraSceneInstance = { glm::vec3(0.0f, 0.0f, -2.0f), glm::angleAxis(glm::radians(0.0f), glm::vec3{0.0f, 1.0f, 0.0f}), 1.0f };
+	SceneInstance cameraSceneInstance;
 
-	LightUniform g_light{ glm::mat4(1.0f), {3.0f, 3.0f, -3.0f}, 1.0f };
+	LightUniform g_light;
 
 	float frameDeltaTime = 0.0f;
-
-	void updateTextOverlayBuffer(uint32_t currentFrame)
-	{
-		float miliseconds = GetTimestampsDelta(Timestamp::COMMAND_BUFFER_START, Timestamp::COMMAND_BUFFER_END, abs(static_cast<int64_t>(currentFrame) - 1ll));
-		char textBuffer[256];
-		int charCount = sprintf_s(textBuffer, 256, "GPU: %4.4fms", miliseconds);
-		size_t textZonesCount = 1;
-		TextZone textZones[2] = { -1.0f, -1.0f, std::string(textBuffer) };
-		if (ConCom::isOpen()) {
-			textZones[1] = { -1.0f, 0.0f, ConCom::GetViewableString() };
-			++textZonesCount;
-		}
-		UpdateText(textZones, textZonesCount, g_swapchain.extent);
-	}
-
-	//TODO seperate the buffer update and computation of frame data
-	void updateUniformBuffer(uint32_t currentImage) {
-		camera.compute_matrix();
-		glm::mat4 world_view_matrix = ComputeCameraSceneInstanceViewMatrix(cameraSceneInstance);
-		glm::mat4 world_view_matrixx = camera.get_world_view_matrix();
-
-		VkExtent2D swapChainExtent = g_swapchain.extent;
-
-		UpdateGeometryUniformBuffer(&planeSceneInstance, planeRenderable.descriptorSet, currentImage);
-		UpdateGeometryUniformBuffer(&cubeSceneInstance, cubeRenderable.descriptorSet, currentImage);
-
-		UpdateSceneUniformBuffer(world_view_matrix, swapChainExtent, currentImage);
-
-		SceneMatricesUniform shadowSceneMatrices;
-		computeShadowMatrix(g_light.position, &shadowSceneMatrices.view, &shadowSceneMatrices.proj);
-
-		UpdateLightUniformBuffer(&shadowSceneMatrices, &g_light, currentImage);
-
-		UpdateSkyboxUniformBuffers(currentImage, world_view_matrix);
-
-		updateTextOverlayBuffer(currentImage);
-	}
 
 	void LightCallback(const std::string* params, uint32_t paramsCount)
 	{
@@ -168,7 +125,7 @@ namespace Scene2DGame
 
 	void ReloadShadersCallback(const std::string* params, uint32_t paramsCount)
 	{
-		g_reloadShaders = true;
+		ForceReloadShaders;
 	}
 
 	void TickObjectCallback(float dt, void* unused)
@@ -177,11 +134,6 @@ namespace Scene2DGame
 		cubeSceneInstance.location.x += (dt/1000.0f) * (goRight ? 0.5f : -0.5f);
 		if (abs(cubeSceneInstance.location.x) >= 2.0f)
 			goRight ^= true;
-	}
-
-	void PrepareSceneFrameData(SceneFrameData* frameData) {
-		updateUniformBuffer(current_frame);
-		frameData->renderableAssets = { &planeRenderable, &cubeRenderable };
 	}
 
 	void mainLoop() {
@@ -200,19 +152,9 @@ namespace Scene2DGame
 
 			//Update objects
 			TickUpdate(frameDeltaTime);
-			//TODO:Move to Scene2D_renderer_imp
-			//Rendering
-			if (g_reloadShaders)
-			{
-				g_reloadShaders = false;
-				ReloadSceneShaders();
-			}
-			WaitForFrame(current_frame);
 
-			SceneFrameData frameData;
-			PrepareSceneFrameData(&frameData);
-
-			draw_frame(current_frame, &frameData);
+			std::vector<std::pair<const SceneInstance*, const SceneRenderableAsset*>> drawList = { {&planeSceneInstance, &planeRenderable}, { &cubeSceneInstance, &cubeRenderable} };
+			DrawFrame( current_frame, &cameraSceneInstance, &g_light, drawList);
 
 			current_frame = (++current_frame) % SIMULTANEOUS_FRAMES;
 		}
@@ -271,11 +213,17 @@ namespace Scene2DGame
 
 		CreateGeometryRenderpassDescriptorSet(albedoTexture, normalTexture);
 
+		planeSceneInstance = { glm::vec3(0.0f, -0.5f, 0.0f), glm::angleAxis(glm::radians(0.0f), glm::vec3{0.0f, 1.0f, 0.0f}), 10.0f };
+		cubeSceneInstance = { glm::vec3(0.0f, 0.0f, 2.0f), glm::angleAxis(glm::radians(0.0f), glm::vec3{0.0f, 1.0f, 0.0f}), 0.5f };
+		cameraSceneInstance = { glm::vec3(0.0f, 0.0f, -2.0f), glm::angleAxis(glm::radians(0.0f), glm::vec3{0.0f, 1.0f, 0.0f}), 1.0f };
+		g_light = { glm::mat4(1.0f), {3.0f, 3.0f, -3.0f}, 1.0f };
+
 		CreateRenderable(planeModelAsset, 0, 0, &planeRenderable);
 		CreateRenderable(cubeModelAsset, 0, 0, &cubeRenderable);
 	}
 
-	void cleanup() {
+	void cleanup() 
+	{
 		CleanupRendererImp();
 
 		AL::Cleanup();
