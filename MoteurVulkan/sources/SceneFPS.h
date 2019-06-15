@@ -207,7 +207,7 @@ namespace SceneFPS
 	{
 		if (console_active)
 		{
-			ConCom::AddConsoleChar(codepoint);
+			ConCom::CharacterReceived(codepoint);
 		}
 	}
 

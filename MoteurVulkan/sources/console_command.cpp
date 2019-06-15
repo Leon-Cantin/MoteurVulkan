@@ -53,28 +53,29 @@ namespace ConCom
 		SubmitCommand(console_string.data());
 	}
 
-	static void AddConsoleChar(unsigned int chararacter)
-	{
-		if(console_active)
-			console_string.push_back(chararacter);
-	}
-
-	static void AcceptCallback()
+	static void CharacterReceived(unsigned int character)
 	{
 		if (console_active)
 		{
-			//TODO: multithreading concerns
-			SubmitCommand();
-			ClearConsoleText();
-			console_active = false;
-		}
-	}
+			if(character == '\r')
+			{
+				SubmitCommand();
+				CloseConsole();
 
-	static void BackspaceCallback()
-	{
-		if (console_active)
-		{
-			RemoveConsoleChar();
+			}
+			else if (character == '#')
+			{
+				CloseConsole();
+			}
+			else if (character == '\b')
+			{
+				if (!console_string.empty())
+					console_string.erase(console_string.end() - 1);
+			}
+			else
+			{
+				console_string.push_back(character);
+			}
 		}
 	}
 
@@ -86,7 +87,15 @@ namespace ConCom
 	void OpenConsole()
 	{
 		ClearConsoleText();
-		console_active ^= true;
+		console_active = true;
+		IH::ActiveInputs(false);
+	}
+
+	void CloseConsole()
+	{
+		ClearConsoleText();
+		console_active = false;
+		IH::ActiveInputs(true);
 	}
 
 	std::string GetViewableString()
@@ -99,12 +108,7 @@ namespace ConCom
 
 	void Init()
 	{
-		IH::RegisterCharacterCallback(AddConsoleChar);
-
-		IH::RegisterAction("console_accept", &AcceptCallback);
-		IH::BindInputToAction("console_accept", IH::ENTER);
-		IH::RegisterAction("console_backspace", &BackspaceCallback);
-		IH::BindInputToAction("console_backspace", IH::BACKSPACE);
+		IH::RegisterCharacterCallback(CharacterReceived);
 	}
 
 	bool isOpen()

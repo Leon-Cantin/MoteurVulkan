@@ -4,21 +4,43 @@
 
 namespace IH
 {
-	enum key_status
+	enum eKeyState
 	{
-		PRESSED,
-		RELEASED
+		Pressed = 0,
+		Released = 1
 	};
-
-	enum keys : uint32_t
+	//Same as Windows Virtual keys
+	enum eKeys : uint32_t
 	{
-		UNKNOWN,
-		ENTER,
-		BACKSPACE,
-		GRAVE_ACCENT,
-		W,
-		A,
+		UNKNOWN = 0,
+		BACKSPACE = 0x08,
+		ENTER = 0x0D,
+		A = 0x41,
+		B,
+		C,
+		D,
+		E,
+		F,
+		G,
+		H,
+		I,
+		J,
+		K,
+		L,
+		M,
+		N,
+		O,
+		P,
+		Q,
+		R,
 		S,
-		D
+		T,
+		U,
+		V,
+		W,
+		X,
+		Y,
+		Z = 0x5B,
+		TILD = 0xDE,
 	};
 }

@@ -28,6 +28,9 @@
     <Filter Include="sources\vulkan_layer">
       <UniqueIdentifier>{9acd1455-ed17-4b43-bb77-40655941da8e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sources\containers">
+      <UniqueIdentifier>{578f5277-2293-48e1-a30c-813b6fb3ab32}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sources\main.cpp">
@@ -131,6 +134,9 @@
     </ClCompile>
     <ClCompile Include="sources\scene2D_renderer_imp.cpp">
       <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\bitfield.cpp">
+      <Filter>sources\containers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -270,6 +276,9 @@
     </ClInclude>
     <ClInclude Include="sources\scene2D_renderer_imp.h">
       <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\bitfield.h">
+      <Filter>sources\containers</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

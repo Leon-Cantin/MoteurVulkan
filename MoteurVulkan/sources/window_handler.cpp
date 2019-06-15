@@ -9,6 +9,7 @@ namespace WH
 	HINSTANCE g_instance = nullptr;
 
 	FrameBufferResizeCallback_T framebuffer_resize_callback;
+	CharCallback_T charCallback;
 	bool shouldQuit = false;
 
 	LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
@@ -17,7 +18,10 @@ namespace WH
 			if(framebuffer_resize_callback)
 				framebuffer_resize_callback(LOWORD(lParam), HIWORD(lParam));
 			break;
-		case WM_KEYDOWN:
+		case WM_CHAR:
+			if (charCallback)
+				charCallback(static_cast<uint32_t>(wParam));
+			break;
 		case WM_CLOSE:
 			shouldQuit = true;
 			break;
@@ -71,6 +75,11 @@ namespace WH
 	void add_framebuffer_resize_callback(FrameBufferResizeCallback_T cbfun )
 	{
 		framebuffer_resize_callback = cbfun;
+	}
+
+	void SetCharCallback(CharCallback_T callback)
+	{
+		charCallback = callback;
 	}
 
 

@@ -2,14 +2,16 @@
 
 #include <unordered_map>
 #include <vector>
+#include <assert.h>
+
+#include "window_handler.h"
 
 namespace IH
 {
-
 	typedef void(*ActionCallback)(void);
 
 	struct Action {
-		std::vector<ActionCallback> callbacks;
+		std::vector<ActionCallback> callbacks[2];
 	};
 
 	std::unordered_map<std::string, Action> name_action_map;
@@ -19,6 +21,9 @@ namespace IH
 	const uint32_t HELD_KEYS_MAX_SIZE = 256;
 	int heldKeys[HELD_KEYS_MAX_SIZE];
 	uint32_t heldKeysSize = 0;
+	constexpr byte PRESSED_STATE = 0xFF;
+	byte lastKeysState[HELD_KEYS_MAX_SIZE];
+	bool inputsActive = true;
 
 	static void character_callback( uint32_t codepoint)
 	{
@@ -26,69 +31,23 @@ namespace IH
 			callback(codepoint);
 	}
 
-	static void CallActionCallbacks(uint32_t input)
+	static void CallActionCallbacks(uint32_t input, eKeyState keyStatus)
 	{
+		assert(keyStatus == Pressed || keyStatus == Released);
 		auto it = input_action_map.find(input);
 		if (it != input_action_map.end())
 		{
 			Action* action = it->second;
-			for (size_t i = 0; i < action->callbacks.size(); ++i)
-				action->callbacks[i]();
+			for (size_t i = 0; i < action->callbacks[keyStatus].size(); ++i)
+				action->callbacks[keyStatus][i]();
 		}
 	}
 
-	static void AddHeldKey(uint32_t input)
+	void RegisterAction(const std::string& name, eKeyState status, ActionCallback callback)
 	{
-		for (uint32_t i = 0; i < HELD_KEYS_MAX_SIZE; ++i)
-		{
-			if (heldKeys[i] == UNKNOWN)
-			{
-				heldKeys[i] = input;
-				heldKeysSize += i >= heldKeysSize ? 1 : 0;
-				return;
-			}
-		}
-	}
-
-	static void RemoveHeldKey(uint32_t input)
-	{
-		for (uint32_t i = 0; i < heldKeysSize; ++i)
-		{
-			if (heldKeys[i] == input)
-			{
-				heldKeys[i] = UNKNOWN;
-				heldKeysSize -= (i == heldKeysSize - 1) ? 1 : 0;
-				return;
-			}
-		}
-	}
-
-	static void key_callback(int key, int scancode, int action, int mods)
-	{
-		if (action == PRESSED)
-		{
-			IH::AddHeldKey(key);
-			//TODO: add repeat function CallActionCallbacks(static_cast<uint32_t>(key));
-		}
-		else if (action == RELEASED)
-		{
-			IH::RemoveHeldKey(key);
-		}
-	}
-
-	void InitInputs()
-	{
-		memset(heldKeys, UNKNOWN, sizeof(heldKeys));
-
-		//TODO
-		//glfwSetCharCallback(g_window, character_callback);
-		//glfwSetKeyCallback(g_window, key_callback);
-	}
-
-	void RegisterAction(const std::string& name, ActionCallback callback)
-	{
+		assert(status == Pressed || status == Released);
 		Action &action = name_action_map[name];
-		action.callbacks.push_back(callback);
+		action.callbacks[status].push_back(callback);
 	}
 
 	void RegisterCharacterCallback(CharacterCallback callback)
@@ -102,24 +61,41 @@ namespace IH
 		input_action_map[input] = &action;
 	}
 
+	static void PollEvents()
+	{
+		constexpr uint32_t kbStateSize = 256;
+		byte kbState[kbStateSize];
+		GetKeyboardState(kbState);
+		constexpr byte KEY_PRESSED_MASK = 1 << 7;
+		for (uint32_t i = 0; i < kbStateSize; ++i)
+		{
+			if ((kbState[i] & KEY_PRESSED_MASK))
+			{
+				CallActionCallbacks(i, Pressed);
+			}
+			else if (!(kbState[i] & KEY_PRESSED_MASK) && lastKeysState[i])
+			{
+				CallActionCallbacks(i, Released);
+			}
+			lastKeysState[i] = kbState[i] & KEY_PRESSED_MASK;
+		}
+	}
+
 	void DoCommands()
 	{
-		//TODO
-		//glfwPollEvents();
+		if(inputsActive)
+			PollEvents();
+	}
 
-		for (uint32_t i = 0; i < heldKeysSize; ++i)
-		{
-			int key = heldKeys[i];
-			if (key != UNKNOWN)
-			{
-				auto it = input_action_map.find(key);
-				if (it != input_action_map.end())
-				{
-					Action* action = it->second;
-					for (size_t j = 0; j < action->callbacks.size(); ++j)
-						action->callbacks[j]();
-				}
-			}
-		}
+	void ActiveInputs(bool value)
+	{
+		inputsActive = value;
+	}
+
+	void InitInputs()
+	{
+		memset(heldKeys, UNKNOWN, sizeof(heldKeys));
+
+		WH::SetCharCallback(character_callback);
 	}
 }

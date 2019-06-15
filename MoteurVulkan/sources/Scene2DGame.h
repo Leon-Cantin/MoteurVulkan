@@ -200,7 +200,7 @@ namespace Scene2DGame
 
 			//Update objects
 			TickUpdate(frameDeltaTime);
-
+			//TODO:Move to Scene2D_renderer_imp
 			//Rendering
 			if (g_reloadShaders)
 			{
@@ -233,15 +233,15 @@ namespace Scene2DGame
 
 		//Input callbacks
 		IH::InitInputs();
-		IH::RegisterAction("console", &ConCom::OpenConsole);
-		IH::BindInputToAction("console", IH::GRAVE_ACCENT);
-		IH::RegisterAction("forward", &ForwardCallback);
+		IH::RegisterAction("console", IH::Pressed, &ConCom::OpenConsole);
+		IH::BindInputToAction("console", IH::TILD);
+		IH::RegisterAction("forward", IH::Pressed, &ForwardCallback);
 		IH::BindInputToAction("forward", IH::W);
-		IH::RegisterAction("backward", &BackwardCallback);
+		IH::RegisterAction("backward", IH::Pressed, &BackwardCallback);
 		IH::BindInputToAction("backward", IH::S);
-		IH::RegisterAction("left", &MoveLeftCallback);
+		IH::RegisterAction("left", IH::Pressed, &MoveLeftCallback);
 		IH::BindInputToAction("left", IH::A);
-		IH::RegisterAction("right", &MoveRightCallback);
+		IH::RegisterAction("right", IH::Pressed, &MoveRightCallback);
 		IH::BindInputToAction("right", IH::D);
 
 		//TODO
