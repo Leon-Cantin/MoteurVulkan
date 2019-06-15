@@ -10,7 +10,7 @@ struct LightUniform {
 	float intensity;
 };
 void InitSkybox(const GfxImage* skyboxImage);
-void CreateGeometryInstanceDescriptorSet(SceneInstanceSet* sceneInstanceDescriptorSet);
+SceneInstanceSet*  CreateGeometryInstanceDescriptorSet();
 void CreateGeometryRenderpassDescriptorSet(const GfxImage* albedoImage, const GfxImage* normalImage);
 void UpdateGeometryUniformBuffer(const SceneInstance* sceneInstance, const SceneInstanceSet* sceneInstanceDescriptorSet, uint32_t currentFrame);
 void UpdateLightUniformBuffer(const SceneMatricesUniform* shadowSceneMatrices, LightUniform* light, uint32_t currentFrame);

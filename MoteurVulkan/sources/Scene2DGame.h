@@ -1,7 +1,6 @@
 #pragma once
 
 #include "scene2D_renderer_imp.h"
-#include "renderer.h"
 #include "vk_framework.h"
 #include "console_command.h"
 #include "input.h"
@@ -35,9 +34,6 @@ namespace Scene2DGame
 
 	const int WIDTH = 800;
 	const int HEIGHT = 600;
-
-	SceneInstanceSet g_sceneInstanceDescriptorSets[5];
-	size_t g_sceneInstancesCount = 0;
 
 	SceneInstance planeSceneInstance;
 	SceneRenderableAsset planeRenderable;
@@ -162,10 +158,9 @@ namespace Scene2DGame
 		vkDeviceWaitIdle(g_vk.device);
 	}
 
-	void CreateRenderable(const ModelAsset* modelAsset, uint32_t albedoIndex, uint32_t normalIndex, SceneRenderableAsset* o_renderable)
+	void CreateRenderable(const GfxModel* modelAsset, uint32_t albedoIndex, uint32_t normalIndex, SceneRenderableAsset* o_renderable)
 	{
-		SceneInstanceSet* sceneInstanceSet = &g_sceneInstanceDescriptorSets[g_sceneInstancesCount++];
-		CreateGeometryInstanceDescriptorSet(sceneInstanceSet);
+		SceneInstanceSet* sceneInstanceSet = CreateGeometryInstanceDescriptorSet();
 		*o_renderable = { modelAsset, sceneInstanceSet, albedoIndex, normalIndex };
 	}
 
@@ -206,8 +201,8 @@ namespace Scene2DGame
 		GfxImage* albedoTexture = AL::CreateSolidColorTexture("ModelAlbedoTexture", glm::vec4(0.8f, 0.8f, 0.8f, 1.0f));
 		GfxImage* normalTexture = AL::CreateSolidColorTexture("ModelNormalTexture", glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
 
-		ModelAsset* planeModelAsset = AL::Load3DModel("Plane", "assets/plane.obj", 0);
-		ModelAsset* cubeModelAsset = AL::Load3DModel("Cube", "assets/cube.obj", 0);
+		GfxModel* planeModelAsset = AL::Load3DModel("Plane", "assets/plane.obj", 0);
+		GfxModel* cubeModelAsset = AL::Load3DModel("Cube", "assets/cube.obj", 0);
 
 		InitSkybox(skyboxTexture);
 

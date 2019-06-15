@@ -11,4 +11,4 @@ void CreateCommandPool(uint32_t queueFamilyIndex, VkCommandPool* o_commandPool);
 void BeginCommandBufferRecording(VkCommandBuffer commandBuffer);
 void EndCommandBufferRecording(VkCommandBuffer commandBuffer);
 
-void CmdDrawIndexed(VkCommandBuffer commandBuffer, const ModelAsset& modelAsset);
+void CmdDrawIndexed(VkCommandBuffer commandBuffer, const GfxModel& modelAsset);

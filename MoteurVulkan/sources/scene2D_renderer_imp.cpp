@@ -21,6 +21,9 @@ extern Swapchain g_swapchain;
 
 bool g_forceReloadShaders = false;
 
+SceneInstanceSet g_sceneInstanceDescriptorSets[5];
+size_t g_sceneInstancesCount = 0;
+
 /*
 	Create Stuff
 */
@@ -45,9 +48,11 @@ void CreateGeometryRenderpassDescriptorSet(const GfxImage* albedoImage, const Gf
 	CreateShadowDescriptorSet(descriptorPool, instanceMatricesBuffer.buffers.data());
 }
 
-void CreateGeometryInstanceDescriptorSet(SceneInstanceSet* sceneInstanceDescriptorSet)
+SceneInstanceSet*  CreateGeometryInstanceDescriptorSet()
 {
+	SceneInstanceSet* sceneInstanceDescriptorSet = &g_sceneInstanceDescriptorSets[g_sceneInstancesCount++];
 	CreateSceneInstanceDescriptorSet(sceneInstanceDescriptorSet);
+	return sceneInstanceDescriptorSet;
 }
 
 void UpdateGeometryUniformBuffer(const SceneInstance* sceneInstance, const SceneInstanceSet* sceneInstanceDescriptorSet, uint32_t currentFrame)
@@ -164,11 +169,10 @@ static void updateTextOverlayBuffer(uint32_t currentFrame)
 
 //TODO seperate the buffer update and computation of frame data
 //TODO Make light Uniform const
+//TODO Instead of preassigning descriptors to instances, just give them one before drawing
 static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<std::pair<const SceneInstance*,const SceneRenderableAsset*>>& drawList )
 {
-	//camera->compute_matrix();
 	glm::mat4 world_view_matrix = ComputeCameraSceneInstanceViewMatrix(*cameraSceneInstance);
-	//glm::mat4 world_view_matrixx = camera.get_world_view_matrix();
 
 	VkExtent2D swapChainExtent = g_swapchain.extent;
 

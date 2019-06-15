@@ -9,7 +9,7 @@ namespace AL
 {
 	std::array<GfxImage, 32> _images;
 	size_t _imagesCount;
-	std::array<ModelAsset, 32> _modelAssets;
+	std::array<GfxModel, 32> _modelAssets;
 	size_t _modelAssetsCount;
 	std::unordered_map<std::string, void*> _asset_map;
 
@@ -26,10 +26,10 @@ namespace AL
 		return imageSlot;
 	}
 
-	static ModelAsset* AL_GetModelSlot(const char* assetName)
+	static GfxModel* AL_GetModelSlot(const char* assetName)
 	{
 		assert(_modelAssetsCount < 32);
-		ModelAsset* modelSlot = &_modelAssets[_modelAssetsCount++];
+		GfxModel* modelSlot = &_modelAssets[_modelAssetsCount++];
 		AL_AddAsset(assetName, modelSlot);
 		return modelSlot;
 	}
@@ -56,9 +56,9 @@ namespace AL
 		return colorImage;
 	}
 
-	ModelAsset* Load3DModel(const char* assetName, const char* assetPath, uint32_t hackIndex)
+	GfxModel* Load3DModel(const char* assetName, const char* assetPath, uint32_t hackIndex)
 	{
-		ModelAsset* modelAsset = AL_GetModelSlot(assetName);
+		GfxModel* modelAsset = AL_GetModelSlot(assetName);
 		LoadGenericModel(assetPath, *modelAsset, hackIndex);
 
 		return modelAsset;

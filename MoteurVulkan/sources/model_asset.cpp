@@ -88,7 +88,7 @@ void loadObjModel(const char * filename, std::vector<Vertex>& o_vertices, std::v
 	o_vertices.shrink_to_fit();
 }
 
-void CreateModelAsset(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices, ModelAsset& o_modelAsset)
+void CreateModelAsset(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices, GfxModel& o_modelAsset)
 {
 	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 	createBufferToDeviceLocalMemory(vertices.data(), bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &o_modelAsset.vertexBuffer, &o_modelAsset.vertexBufferMemory);
@@ -99,7 +99,7 @@ void CreateModelAsset(const std::vector<Vertex>& vertices, const std::vector<uin
 	o_modelAsset.indexCount = static_cast<uint32_t>(indices.size());
 }
 
-void LoadGenericModel(const char * filename, ModelAsset& o_modelAsset, size_t hackModelIndex)
+void LoadGenericModel(const char * filename, GfxModel& o_modelAsset, size_t hackModelIndex)
 {
 	Assimp::Importer importer;
 	const aiScene* scene = importer.ReadFile(filename,
@@ -135,7 +135,7 @@ void LoadGenericModel(const char * filename, ModelAsset& o_modelAsset, size_t ha
 	CreateModelAsset(vertices, indices, o_modelAsset);
 }
 
-void DestroyModelAsset(ModelAsset& o_modelAsset)
+void DestroyModelAsset(GfxModel& o_modelAsset)
 {
 	vkDestroyBuffer(g_vk.device, o_modelAsset.vertexBuffer, nullptr);
 	vkFreeMemory(g_vk.device, o_modelAsset.vertexBufferMemory, nullptr);

@@ -151,7 +151,7 @@ void CmdEndGeometryRenderPass(VkCommandBuffer vkCommandBuffer)
 void CmdDrawModelAsset( VkCommandBuffer commandBuffer, const SceneRenderableAsset* renderableAsset, uint32_t currentFrame)
 {	
 	const SceneInstanceSet* instanceSet = renderableAsset->descriptorSet;
-	const ModelAsset* modelAsset = renderableAsset->modelAsset;
+	const GfxModel* modelAsset = renderableAsset->modelAsset;
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, geoPipelineLayout, INSTANCE_SET, 1,
 		&geoInstanceDescriptorSet[currentFrame], 1, &instanceSet->geometryBufferOffsets[currentFrame]);
 	vkCmdPushConstants(commandBuffer, geoPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(uint32_t), &renderableAsset->albedoIndex);

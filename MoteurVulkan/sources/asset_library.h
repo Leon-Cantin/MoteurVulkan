@@ -10,7 +10,7 @@ namespace AL
 	GfxImage* LoadCubeTexture(const char* assetName, const char* assetPath);
 	GfxImage* CreateSolidColorTexture(const char* assetName, glm::vec4 color);
 
-	ModelAsset* Load3DModel(const char* assetName, const char* assetPath, uint32_t hackIndex);
+	GfxModel* Load3DModel(const char* assetName, const char* assetPath, uint32_t hackIndex);
 
 	void* GetAsset(const char* assetName);
 

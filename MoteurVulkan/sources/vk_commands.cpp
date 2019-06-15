@@ -77,7 +77,7 @@ void EndCommandBufferRecording(VkCommandBuffer commandBuffer)
 		throw std::runtime_error("failed to record command buffer!");
 }
 
-void CmdDrawIndexed(VkCommandBuffer commandBuffer, const ModelAsset& modelAsset)
+void CmdDrawIndexed(VkCommandBuffer commandBuffer, const GfxModel& modelAsset)
 {
 	VkBuffer vertexBuffers[] = { modelAsset.vertexBuffer };
 	VkDeviceSize offsets[] = { 0 };

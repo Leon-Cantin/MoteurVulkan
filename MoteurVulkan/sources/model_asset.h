@@ -59,7 +59,7 @@ struct Vertex {
 	}
 };
 
-struct ModelAsset {
+struct GfxModel {
 	VkBuffer vertexBuffer;
 	VkDeviceMemory vertexBufferMemory;
 	VkBuffer indexBuffer;
@@ -73,6 +73,6 @@ struct ModelAsset {
 extern const std::vector<uint32_t> static_cube_indices;
 
 void loadObjModel(const char * filename, std::vector<Vertex>& o_vertices, std::vector<uint32_t>& o_indices);
-void CreateModelAsset(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices, ModelAsset& o_modelAsset);
-void LoadGenericModel(const char * filename, ModelAsset& o_modelAsset, size_t hackModelIndex);
-void DestroyModelAsset(ModelAsset& o_modelAsset);
+void CreateModelAsset(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices, GfxModel& o_modelAsset);
+void LoadGenericModel(const char * filename, GfxModel& o_modelAsset, size_t hackModelIndex);
+void DestroyModelAsset(GfxModel& o_modelAsset);

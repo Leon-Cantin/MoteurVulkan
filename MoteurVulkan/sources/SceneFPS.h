@@ -289,7 +289,7 @@ namespace SceneFPS
 		vkDeviceWaitIdle(g_vk.device);
 	}
 
-	void CreateRenderable(const ModelAsset* modelAsset, uint32_t albedoIndex, uint32_t normalIndex, SceneRenderableAsset* o_renderable)
+	void CreateRenderable(const GfxModel* modelAsset, uint32_t albedoIndex, uint32_t normalIndex, SceneRenderableAsset* o_renderable)
 	{
 		SceneInstanceSet* sceneInstanceSet = &g_sceneInstanceDescriptorSets[g_sceneInstancesCount++];
 		CreateGeometryInstanceDescriptorSet(sceneInstanceSet);
@@ -306,9 +306,9 @@ namespace SceneFPS
 		GfxImage* albedoTexture = AL::CreateSolidColorTexture("ModelAlbedoTexture", glm::vec4(0.8f, 0.8f, 0.8f, 1.0f));
 		GfxImage* normalTexture = AL::CreateSolidColorTexture("ModelNormalTexture", glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
 
-		ModelAsset* wandererModelAsset = AL::Load3DModel("Wanderer", "assets/wanderer_decimated.obj", 1);
-		ModelAsset* planeModelAsset = AL::Load3DModel("Plane", "assets/plane.obj", 0);
-		ModelAsset* cubeModelAsset = AL::Load3DModel("Cube", "assets/cube.obj", 0);
+		GfxModel* wandererModelAsset = AL::Load3DModel("Wanderer", "assets/wanderer_decimated.obj", 1);
+		GfxModel* planeModelAsset = AL::Load3DModel("Plane", "assets/plane.obj", 0);
+		GfxModel* cubeModelAsset = AL::Load3DModel("Cube", "assets/cube.obj", 0);
 
 		InitSkybox(skyboxTexture);
 
