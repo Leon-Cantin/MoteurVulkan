@@ -31,6 +31,9 @@
     <Filter Include="sources\containers">
       <UniqueIdentifier>{578f5277-2293-48e1-a30c-813b6fb3ab32}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sources\glTF">
+      <UniqueIdentifier>{259a04e2-61f9-4d56-a89c-fe7f1bef1b81}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sources\main.cpp">
@@ -137,6 +140,9 @@
     </ClCompile>
     <ClCompile Include="sources\bitfield.cpp">
       <Filter>sources\containers</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\glTF_loader.cpp">
+      <Filter>sources\glTF</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -279,6 +285,12 @@
     </ClInclude>
     <ClInclude Include="sources\bitfield.h">
       <Filter>sources\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\json.h">
+      <Filter>sources\glTF</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\glTF_loader.h">
+      <Filter>sources\glTF</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,5 +1,7 @@
 #include "asset_library.h"
 
+#include "glTF_loader.h"
+
 #include <vector>
 #include <array>
 #include <unordered_map>
@@ -60,6 +62,14 @@ namespace AL
 	{
 		GfxModel* modelAsset = AL_GetModelSlot(assetName);
 		LoadGenericModel(assetPath, *modelAsset, hackIndex);
+
+		return modelAsset;
+	}
+
+	GfxModel* LoadglTf3DModel( const char* assetName, const char* assetPath )
+	{
+		GfxModel* modelAsset = AL_GetModelSlot( assetName );
+		glTF_L::LoadMesh( assetPath, modelAsset);
 
 		return modelAsset;
 	}

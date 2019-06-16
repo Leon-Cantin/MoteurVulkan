@@ -180,6 +180,7 @@
     <ClCompile Include="sources\framebuffer.cpp" />
     <ClCompile Include="sources\frame_graph.cpp" />
     <ClCompile Include="sources\geometry_renderpass.cpp" />
+    <ClCompile Include="sources\glTF_loader.cpp" />
     <ClCompile Include="sources\input.cpp" />
     <ClCompile Include="sources\profile.cpp" />
     <ClCompile Include="sources\renderer.cpp" />
@@ -224,8 +225,10 @@
     <ClInclude Include="sources\framebuffer.h" />
     <ClInclude Include="sources\frame_graph.h" />
     <ClInclude Include="sources\frame_graph_script.h" />
+    <ClInclude Include="sources\glTF_loader.h" />
     <ClInclude Include="sources\input.h" />
     <ClInclude Include="sources\inputs_def.h" />
+    <ClInclude Include="sources\json.h" />
     <ClInclude Include="sources\renderer.h" />
     <ClInclude Include="sources\Scene2DGame.h" />
     <ClInclude Include="sources\scene2D_renderer_imp.h" />

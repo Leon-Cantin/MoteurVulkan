@@ -11,6 +11,7 @@ namespace AL
 	GfxImage* CreateSolidColorTexture(const char* assetName, glm::vec4 color);
 
 	GfxModel* Load3DModel(const char* assetName, const char* assetPath, uint32_t hackIndex);
+	GfxModel* LoadglTf3DModel( const char* assetName, const char* assetPath );
 
 	void* GetAsset(const char* assetName);
 

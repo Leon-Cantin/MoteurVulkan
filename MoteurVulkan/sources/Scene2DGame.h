@@ -202,7 +202,8 @@ namespace Scene2DGame
 		GfxImage* normalTexture = AL::CreateSolidColorTexture("ModelNormalTexture", glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
 
 		GfxModel* planeModelAsset = AL::Load3DModel("Plane", "assets/plane.obj", 0);
-		GfxModel* cubeModelAsset = AL::Load3DModel("Cube", "assets/cube.obj", 0);
+		//GfxModel* cubeModelAsset = AL::Load3DModel("Cube", "assets/cube.obj", 0);
+		GfxModel* cubeModelAsset = AL::LoadglTf3DModel( "newCube", "assets/cube.glb" );
 
 		InitSkybox(skyboxTexture);
 
