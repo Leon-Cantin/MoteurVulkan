@@ -1,5 +1,5 @@
 #include "glTF_loader.h"
-#include "json.h"
+#include "nlohmann\json.h"
 
 #include <fstream>
 #include <cstdint>
@@ -226,7 +226,7 @@ namespace glTF_L
 		{
 			vertexes[i].pos.x = GetType<float>( positions, i, 0, VEC3, FLOAT );
 			vertexes[i].pos.y = GetType<float>( positions, i, 1, VEC3, FLOAT );
-			vertexes[i].pos.z = GetType<float>( positions, i, 2, VEC3, FLOAT );
+			vertexes[i].pos.z = GetType<float>( positions, i, 2, VEC3, FLOAT ) *-1.0f;//TODO: glTF forced to right handed with Z backward
 
 			vertexes[i].normal.x = GetType<float>( normals, i, 0, VEC3, FLOAT );
 			vertexes[i].normal.y = GetType<float>( normals, i, 1, VEC3, FLOAT );
@@ -245,19 +245,7 @@ namespace glTF_L
 		indexes_32.resize( indexCount );
 		for( size_t i = 0; i < indexCount; ++i )
 		{
-			//Hack because blender exports winding order CW while the specification says it should be CCW
-			size_t hack = i % 3;
-			size_t realIndex = i;
-			if( hack == 1 )
-			{
-				++realIndex;
-			}
-			else if( hack == 2 )
-			{
-				--realIndex;
-			}
-
-			indexes_32[realIndex] = indexes[(i * TYPE_ELEMENT_COUNTS[SCALAR] + 0) * COMPONENT_TYPE_SIZES[UNSIGNED_SHORT]];
+			indexes_32[i] = GetType<unsigned short>( indexes, i, 0, SCALAR, UNSIGNED_SHORT );//indexes[(i * TYPE_ELEMENT_COUNTS[SCALAR] + 0) * COMPONENT_TYPE_SIZES[UNSIGNED_SHORT]];
 		}
 
 		CreateModelAsset( vertexes, indexes_32, *model );

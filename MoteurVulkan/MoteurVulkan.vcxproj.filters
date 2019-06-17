@@ -286,9 +286,6 @@
     <ClInclude Include="sources\bitfield.h">
       <Filter>sources\containers</Filter>
     </ClInclude>
-    <ClInclude Include="sources\json.h">
-      <Filter>sources\glTF</Filter>
-    </ClInclude>
     <ClInclude Include="sources\glTF_loader.h">
       <Filter>sources\glTF</Filter>
     </ClInclude>
