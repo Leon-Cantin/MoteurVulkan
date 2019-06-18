@@ -15,6 +15,7 @@ struct RenderPass {
 
 void CreatePipeline(
 	const VkVertexInputBindingDescription * vibDescription,
+	uint32_t vibDescriptionsCount,
 	const VkVertexInputAttributeDescription* visDescriptions,
 	uint32_t visDescriptionsCount,
 	std::vector<char>& vertShaderCode, std::vector<char>& fragShaderCode,

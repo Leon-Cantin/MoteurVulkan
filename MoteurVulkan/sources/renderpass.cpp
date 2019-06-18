@@ -4,6 +4,7 @@
 
 void CreatePipeline(
 	const VkVertexInputBindingDescription * vibDescription,
+	uint32_t vibDescriptionsCount,
 	const VkVertexInputAttributeDescription* visDescriptions,
 	uint32_t visDescriptionsCount,
 	std::vector<char>& vertShaderCode, std::vector<char>& fragShaderCode,
@@ -22,7 +23,7 @@ void CreatePipeline(
 
 	VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
 	vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertex_input_info.vertexBindingDescriptionCount = vibDescription != VK_NULL_HANDLE ? 1 : 0;
+	vertex_input_info.vertexBindingDescriptionCount = vibDescriptionsCount;
 	vertex_input_info.pVertexBindingDescriptions = vibDescription; // Optional
 	vertex_input_info.vertexAttributeDescriptionCount = visDescriptionsCount;
 	vertex_input_info.pVertexAttributeDescriptions = visDescriptions; // Optional

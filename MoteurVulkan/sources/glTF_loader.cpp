@@ -220,24 +220,31 @@ namespace glTF_L
 		const char* indexes = &bufferChunk[bufferViews[indexesIndex].byteOffset];
 
 		size_t vertexCount = accessors[positionsIndex].count;
-		std::vector<Vertex> vertexes;
-		vertexes.resize( vertexCount );
+
+		std::vector<glm::vec3> vertPos, vertNormals, vertTangents, vertColor;
+		std::vector<glm::vec2> vertTexCoord;
+		vertPos.resize( vertexCount );
+		vertNormals.resize( vertexCount );
+		vertTangents.resize( vertexCount );
+		vertColor.resize( vertexCount );
+		vertTexCoord.resize( vertexCount );
+
 		for( size_t i = 0; i < vertexCount; ++i )
 		{
-			vertexes[i].pos.x = GetType<float>( positions, i, 0, VEC3, FLOAT );
-			vertexes[i].pos.y = GetType<float>( positions, i, 1, VEC3, FLOAT );
-			vertexes[i].pos.z = GetType<float>( positions, i, 2, VEC3, FLOAT ) *-1.0f;//TODO: glTF forced to right handed with Z backward
+			vertPos[i].x = GetType<float>( positions, i, 0, VEC3, FLOAT );
+			vertPos[i].y = GetType<float>( positions, i, 1, VEC3, FLOAT );
+			vertPos[i].z = GetType<float>( positions, i, 2, VEC3, FLOAT ) *-1.0f;//TODO: glTF forced to right handed with Z backward
 
-			vertexes[i].normal.x = GetType<float>( normals, i, 0, VEC3, FLOAT );
-			vertexes[i].normal.y = GetType<float>( normals, i, 1, VEC3, FLOAT );
-			vertexes[i].normal.z = GetType<float>( normals, i, 2, VEC3, FLOAT );
+			vertNormals[i].x = GetType<float>( normals, i, 0, VEC3, FLOAT );
+			vertNormals[i].y = GetType<float>( normals, i, 1, VEC3, FLOAT );
+			vertNormals[i].z = GetType<float>( normals, i, 2, VEC3, FLOAT );
 
-			vertexes[i].tangent.x = GetType<float>( tangents, i, 0, VEC4, FLOAT );
-			vertexes[i].tangent.y = GetType<float>( tangents, i, 1, VEC4, FLOAT );
-			vertexes[i].tangent.z = GetType<float>( tangents, i, 2, VEC4, FLOAT );
+			vertTangents[i].x = GetType<float>( tangents, i, 0, VEC4, FLOAT );
+			vertTangents[i].y = GetType<float>( tangents, i, 1, VEC4, FLOAT );
+			vertTangents[i].z = GetType<float>( tangents, i, 2, VEC4, FLOAT );
 
-			vertexes[i].texCoord.x = GetType<float>( texcoords, i, 0, VEC2, FLOAT );
-			vertexes[i].texCoord.y = GetType<float>( texcoords, i, 1, VEC2, FLOAT );
+			vertTexCoord[i].x = GetType<float>( texcoords, i, 0, VEC2, FLOAT );
+			vertTexCoord[i].y = GetType<float>( texcoords, i, 1, VEC2, FLOAT );
 		}
 
 		size_t indexCount = accessors[indexesIndex].count;
@@ -245,9 +252,9 @@ namespace glTF_L
 		indexes_32.resize( indexCount );
 		for( size_t i = 0; i < indexCount; ++i )
 		{
-			indexes_32[i] = GetType<unsigned short>( indexes, i, 0, SCALAR, UNSIGNED_SHORT );//indexes[(i * TYPE_ELEMENT_COUNTS[SCALAR] + 0) * COMPONENT_TYPE_SIZES[UNSIGNED_SHORT]];
+			indexes_32[i] = GetType<unsigned short>( indexes, i, 0, SCALAR, UNSIGNED_SHORT );
 		}
 
-		CreateModelAsset( vertexes, indexes_32, *model );
+		CreateGfxModel( vertPos, vertNormals, vertTangents, vertColor, vertTexCoord, indexes_32, *model );
 	}
 }

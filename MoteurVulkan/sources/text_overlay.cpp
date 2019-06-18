@@ -69,7 +69,8 @@ void CreateTextGraphicsPipeline( VkExtent2D extent)
 	}
 
 	CreatePipeline(
-		&bindingDescription, 
+		&bindingDescription,
+		1,
 		attributeDescriptions.data(), 
 		static_cast<uint32_t>(attributeDescriptions.size()), 
 		vertShaderCode, fragShaderCode,

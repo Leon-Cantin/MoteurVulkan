@@ -79,9 +79,9 @@ void EndCommandBufferRecording(VkCommandBuffer commandBuffer)
 
 void CmdDrawIndexed(VkCommandBuffer commandBuffer, const GfxModel& modelAsset)
 {
-	VkBuffer vertexBuffers[] = { modelAsset.vertexBuffer };
-	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+	VkBuffer vertexBuffers[] = { modelAsset.vertPosBuffer, modelAsset.vertColorBuffer,  modelAsset.vertTexCoordBuffer, modelAsset.vertNormalBuffer, modelAsset.vertTangentBuffer };
+	VkDeviceSize offsets[] = { 0, 0, 0, 0, 0 };
+	vkCmdBindVertexBuffers(commandBuffer, 0, 5, vertexBuffers, offsets);
 	vkCmdBindIndexBuffer(commandBuffer, modelAsset.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 	vkCmdDrawIndexed(commandBuffer, modelAsset.indexCount, 1, 0, 0, 0);
 }

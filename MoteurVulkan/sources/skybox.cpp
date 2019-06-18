@@ -67,6 +67,7 @@ static void create_skybox_graphics_pipeline(VkExtent2D extent)
 
 	CreatePipeline(
 		VK_NULL_HANDLE,
+		0,
 		VK_NULL_HANDLE,
 		0,
 		vertShaderCode, fragShaderCode,

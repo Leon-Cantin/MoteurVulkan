@@ -46,7 +46,8 @@ void createGeoGraphicPipeline( VkExtent2D extent )
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
 
-	CreatePipeline(&bindingDescription,
+	CreatePipeline(bindingDescription.data(),
+		static_cast< uint32_t >(bindingDescription.size()),
 		attributeDescriptions.data(),
 		static_cast<uint32_t>(attributeDescriptions.size()),
 		vertShaderCode, fragShaderCode,

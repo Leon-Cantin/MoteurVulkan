@@ -86,7 +86,7 @@ namespace AL
 		_imagesCount = 0;
 
 		for (size_t i = 0; i < _modelAssetsCount; ++i)
-			DestroyModelAsset(_modelAssets[i]);
+			DestroyGfxModel(_modelAssets[i]);
 		_modelAssetsCount = 0;
 
 		_asset_map.clear();
