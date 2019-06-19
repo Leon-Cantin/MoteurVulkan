@@ -47,21 +47,28 @@ void createGeoGraphicPipeline( VkExtent2D extent )
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
 
-	CreatePipeline( bindingDescriptions,
-		bindingCount,
-		attributeDescriptions,
-		bindingCount,
-		vertShaderCode, fragShaderCode,
+	VICreation viState = { bindingDescriptions, bindingCount, attributeDescriptions, bindingCount};
+	//TODO: these cast are dangerous for alligment
+	std::vector<ShaderCreation> shaderState = { 
+		{ reinterpret_cast< uint32_t* >(vertShaderCode.data()), vertShaderCode.size(), "main", VK_SHADER_STAGE_VERTEX_BIT },
+		{ reinterpret_cast< uint32_t* >(fragShaderCode.data()), fragShaderCode.size(), "main", VK_SHADER_STAGE_FRAGMENT_BIT } };
+	RasterizationState rasterizationState;
+	rasterizationState.backFaceCulling = true;
+	rasterizationState.depthBiased = false;
+	DepthStencilState depthStencilState;
+	depthStencilState.depthRead = true;
+	depthStencilState.depthWrite = true;
+	depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS;
+
+	CreatePipeline( viState,
+		shaderState,
 		extent,
 		geometryRenderPass->vk_renderpass,
 		geoPipelineLayout,
+		rasterizationState,
+		depthStencilState,
 		false,
-		true,
-		true,
-		false,
-		true,
 		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-		VK_COMPARE_OP_LESS,
 		&geoGraphicsPipeline);
 }
 

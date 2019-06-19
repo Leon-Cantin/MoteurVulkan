@@ -13,22 +13,45 @@ struct RenderPass {
 	FrameBuffer outputFrameBuffer[SIMULTANEOUS_FRAMES];
 };
 
+struct VICreation
+{
+	const VkVertexInputBindingDescription * vibDescription;
+	uint32_t vibDescriptionsCount;
+	const VkVertexInputAttributeDescription* visDescriptions;
+	uint32_t visDescriptionsCount;
+};
+
+struct ShaderCreation
+{
+	const uint32_t* code;
+	size_t length;
+	const char* entryPoint;
+	VkShaderStageFlagBits flags;
+};
+
+struct RasterizationState
+{
+	bool depthBiased;
+	bool backFaceCulling;
+};
+
+struct DepthStencilState
+{
+	bool depthRead;
+	bool depthWrite;
+	VkCompareOp depthCompareOp;
+};
+
 void CreatePipeline(
-	const VkVertexInputBindingDescription * vibDescription,
-	uint32_t vibDescriptionsCount,
-	const VkVertexInputAttributeDescription* visDescriptions,
-	uint32_t visDescriptionsCount,
-	std::vector<char>& vertShaderCode, std::vector<char>& fragShaderCode,
+	const VICreation& viCreation,
+	const std::vector<ShaderCreation>& shaders,
 	VkExtent2D framebufferExtent,
 	VkRenderPass renderPass,
 	VkPipelineLayout pipelineLayout,
-	bool depthBiased,
-	bool depthRead,
-	bool depthWrite,
+	RasterizationState rasterizationState,
+	DepthStencilState depthStencilState,
 	bool blendEnabled,
-	bool backFaceCulling,
 	VkPrimitiveTopology primitiveTopology,
-	VkCompareOp depthCompareOp,
 	VkPipeline* o_pipeline);
 
 void BeginRenderPass(VkCommandBuffer commandBuffer, const RenderPass& renderpass, VkFramebuffer framebuffer, VkExtent2D extent);

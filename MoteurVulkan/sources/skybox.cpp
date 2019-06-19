@@ -65,22 +65,29 @@ static void create_skybox_graphics_pipeline(VkExtent2D extent)
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
 
+	VICreation viState = { VK_NULL_HANDLE, 0, VK_NULL_HANDLE, 0 };
+	//TODO: these cast are dangerous for alligment
+	std::vector<ShaderCreation> shaderState = {
+		{ reinterpret_cast< uint32_t* >(vertShaderCode.data()), vertShaderCode.size(), "main", VK_SHADER_STAGE_VERTEX_BIT },
+		{ reinterpret_cast< uint32_t* >(fragShaderCode.data()), fragShaderCode.size(), "main", VK_SHADER_STAGE_FRAGMENT_BIT } };
+	RasterizationState rasterizationState;
+	rasterizationState.backFaceCulling = false;
+	rasterizationState.depthBiased = false;
+	DepthStencilState depthStencilState;
+	depthStencilState.depthRead = true;
+	depthStencilState.depthWrite = false;
+	depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+
 	CreatePipeline(
-		VK_NULL_HANDLE,
-		0,
-		VK_NULL_HANDLE,
-		0,
-		vertShaderCode, fragShaderCode,
+		viState,
+		shaderState,
 		extent,
 		skyboxRenderPass->vk_renderpass, 
 		skyboxPipelineLayout,
-		false,
-		true,
-		false,
-		false,
+		rasterizationState,
+		depthStencilState,
 		false,
 		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
-		VK_COMPARE_OP_LESS_OR_EQUAL,
 		&skyboxGraphicsPipeline);
 }
 

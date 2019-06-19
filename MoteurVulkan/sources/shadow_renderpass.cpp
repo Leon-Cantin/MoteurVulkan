@@ -75,7 +75,6 @@ void CreateShadowGraphicPipeline()
 	uint32_t bindingCount = GetBindingDescription( bindingDescriptions, attributeDescriptions );
 
 	std::vector<char> vertShaderCode = FS::readFile("shaders/shadows.vert.spv");
-	std::vector<char> fragShaderCode;// = readFile("shaders/shadows.frag.spv"); no shadow frag
 
 	VkDescriptorSetLayout descriptorSetLayouts[] = { shadowDescriptorSetLayout, shadowInstanceDescriptorSetLayout };
 	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
@@ -89,22 +88,27 @@ void CreateShadowGraphicPipeline()
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
 
-	CreatePipeline( bindingDescriptions,
-		bindingCount,
-		attributeDescriptions,
-		bindingCount,
-		vertShaderCode,
-		fragShaderCode,
+	VICreation viState = { bindingDescriptions, bindingCount, attributeDescriptions, bindingCount };
+	//TODO: these cast are dangerous for alligment
+	std::vector<ShaderCreation> shaderState = {
+		{ reinterpret_cast< uint32_t* >(vertShaderCode.data()), vertShaderCode.size(), "main", VK_SHADER_STAGE_VERTEX_BIT } };
+	RasterizationState rasterizationState;
+	rasterizationState.backFaceCulling = true;
+	rasterizationState.depthBiased = true;
+	DepthStencilState depthStencilState;
+	depthStencilState.depthRead = true;
+	depthStencilState.depthWrite = true;
+	depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS;
+
+	CreatePipeline( viState,
+		shaderState,
 		RT_EXTENT_SHADOW,
 		shadowRenderPass->vk_renderpass,
 		shadowPipelineLayout,
-		true,
-		true,
-		true,
+		rasterizationState,
+		depthStencilState,
 		false,
-		true,
 		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-		VK_COMPARE_OP_LESS,
 		&shadowPipeline);
 }
 

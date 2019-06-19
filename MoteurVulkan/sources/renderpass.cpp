@@ -3,30 +3,24 @@
 #include "vk_shader.h"
 
 void CreatePipeline(
-	const VkVertexInputBindingDescription * vibDescription,
-	uint32_t vibDescriptionsCount,
-	const VkVertexInputAttributeDescription* visDescriptions,
-	uint32_t visDescriptionsCount,
-	std::vector<char>& vertShaderCode, std::vector<char>& fragShaderCode,
+	const VICreation& viCreation,
+	const std::vector<ShaderCreation>& shaders,
 	VkExtent2D framebufferExtent,
 	VkRenderPass renderPass,
 	VkPipelineLayout pipelineLayout,
-	bool depthBiased,
-	bool depthRead,
-	bool depthWrite,
+	RasterizationState rasterizationState,
+	DepthStencilState depthStencilState,
 	bool blendEnabled,
-	bool backFaceCulling,
 	VkPrimitiveTopology primitiveTopology,
-	VkCompareOp depthCompareOp,
 	VkPipeline* o_pipeline)
 {
 
 	VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
 	vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertex_input_info.vertexBindingDescriptionCount = vibDescriptionsCount;
-	vertex_input_info.pVertexBindingDescriptions = vibDescription; // Optional
-	vertex_input_info.vertexAttributeDescriptionCount = visDescriptionsCount;
-	vertex_input_info.pVertexAttributeDescriptions = visDescriptions; // Optional
+	vertex_input_info.vertexBindingDescriptionCount = viCreation.vibDescriptionsCount;
+	vertex_input_info.pVertexBindingDescriptions = viCreation.vibDescription; // Optional
+	vertex_input_info.vertexAttributeDescriptionCount = viCreation.visDescriptionsCount;
+	vertex_input_info.pVertexAttributeDescriptions = viCreation.visDescriptions; // Optional
 
 																				   //Input assembly
 	VkPipelineInputAssemblyStateCreateInfo input_assembly = {};
@@ -34,31 +28,17 @@ void CreatePipeline(
 	input_assembly.topology = primitiveTopology;
 	input_assembly.primitiveRestartEnable = VK_FALSE;
 
-	VkPipelineShaderStageCreateInfo shader_stages[2];
+	VkPipelineShaderStageCreateInfo shader_stages[8];
 	uint32_t shadersCount = 0;
 
-	VkShaderModule vert_shader_module = VK_NULL_HANDLE;
-	if (!vertShaderCode.empty())
+	for( uint8_t i = 0; i < shaders.size(); ++i )
 	{
-		vert_shader_module = create_shader_module(vertShaderCode.data(), vertShaderCode.size());
 		VkPipelineShaderStageCreateInfo& shaderStageInfo = shader_stages[shadersCount++];
 		shaderStageInfo = {};
 		shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		shaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-		shaderStageInfo.module = vert_shader_module;
-		shaderStageInfo.pName = "main";
-	}
-
-	VkShaderModule frag_shader_module = VK_NULL_HANDLE;
-	if (!fragShaderCode.empty())
-	{
-		frag_shader_module = create_shader_module(fragShaderCode.data(), fragShaderCode.size());
-		VkPipelineShaderStageCreateInfo& shaderStageInfo = shader_stages[shadersCount++];
-		shaderStageInfo = {};
-		shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		shaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		shaderStageInfo.module = frag_shader_module;
-		shaderStageInfo.pName = "main";		
+		shaderStageInfo.stage = shaders[i].flags;
+		shaderStageInfo.module = create_shader_module( shaders[i].code, shaders[i].length );
+		shaderStageInfo.pName = shaders[i].entryPoint;
 	}
 
 	//Rasterizer
@@ -68,12 +48,12 @@ void CreatePipeline(
 	rasterizer.rasterizerDiscardEnable = VK_FALSE;
 	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterizer.lineWidth = 1.0f;
-	rasterizer.cullMode = backFaceCulling ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE;
+	rasterizer.cullMode = rasterizationState.backFaceCulling ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE;
 	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-	rasterizer.depthBiasEnable = depthBiased;
-	rasterizer.depthBiasConstantFactor = depthBiased ? 1.25f : 0.0f; // Optional
+	rasterizer.depthBiasEnable = rasterizationState.depthBiased;
+	rasterizer.depthBiasConstantFactor = rasterizationState.depthBiased ? 1.25f : 0.0f; // Optional
 	rasterizer.depthBiasClamp = 0.0f; // Optional
-	rasterizer.depthBiasSlopeFactor = depthBiased ? 1.75f : 0.0f; // Optional
+	rasterizer.depthBiasSlopeFactor = rasterizationState.depthBiased ? 1.75f : 0.0f; // Optional
 
 	VkPipelineMultisampleStateCreateInfo multisampling = {};
 	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -86,9 +66,9 @@ void CreatePipeline(
 
 	VkPipelineDepthStencilStateCreateInfo depthStencil = {};
 	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-	depthStencil.depthTestEnable = depthRead;
-	depthStencil.depthWriteEnable = depthWrite;
-	depthStencil.depthCompareOp = depthCompareOp,
+	depthStencil.depthTestEnable = depthStencilState.depthRead;
+	depthStencil.depthWriteEnable = depthStencilState.depthWrite;
+	depthStencil.depthCompareOp = depthStencilState.depthCompareOp,
 	depthStencil.depthBoundsTestEnable = VK_FALSE;
 	depthStencil.minDepthBounds = 0.0f; // Optional
 	depthStencil.maxDepthBounds = 1.0f; // Optional
@@ -183,10 +163,9 @@ void CreatePipeline(
 	if (vkCreateGraphicsPipelines(g_vk.device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, o_pipeline) != VK_SUCCESS)
 		throw std::runtime_error("failed to create graphics pipeline!");
 
-	if(vert_shader_module != VK_NULL_HANDLE)
-		vkDestroyShaderModule(g_vk.device, vert_shader_module, nullptr);
-	if(frag_shader_module != VK_NULL_HANDLE)
-		vkDestroyShaderModule(g_vk.device, frag_shader_module, nullptr);
+
+	for( uint8_t i = 0; i < shadersCount; ++i )
+		vkDestroyShaderModule( g_vk.device, shader_stages[i].module, nullptr);
 }
 
 void BeginRenderPass(VkCommandBuffer commandBuffer, const RenderPass& renderpass, VkFramebuffer framebuffer, VkExtent2D extent)

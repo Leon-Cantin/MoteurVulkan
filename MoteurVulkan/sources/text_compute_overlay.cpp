@@ -55,8 +55,8 @@ static void CreateComputePipeline(std::vector<char>& shaderCode, VkDescriptorSet
 	if (vkCreatePipelineLayout(g_vk.device, &pipeline_layout_info, nullptr, o_pipelineLayout) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
-
-	VkShaderModule shaderModule = create_shader_module(shaderCode.data(), shaderCode.size());
+	//TODO: dangerous cast due to alligment
+	VkShaderModule shaderModule = create_shader_module(reinterpret_cast<uint32_t*>(shaderCode.data()), shaderCode.size());
 
 	VkPipelineShaderStageCreateInfo stageCreateInfo = {};
 	stageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

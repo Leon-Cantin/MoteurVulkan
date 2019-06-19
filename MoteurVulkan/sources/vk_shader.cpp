@@ -1,12 +1,12 @@
 #include "vk_shader.h"
 
-VkShaderModule create_shader_module(char* byte_code, size_t size)
+VkShaderModule create_shader_module(const uint32_t* byte_code, size_t size)
 {
 	VkShaderModuleCreateInfo create_info = {};
 	create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	create_info.codeSize = size;
 	//vector should ensure that we are aligned correctly
-	create_info.pCode = reinterpret_cast<const uint32_t*>(byte_code);
+	create_info.pCode = byte_code;
 
 	VkShaderModule shader_module;
 	if (vkCreateShaderModule(g_vk.device, &create_info, nullptr, &shader_module) != VK_SUCCESS)

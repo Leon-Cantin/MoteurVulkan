@@ -68,22 +68,29 @@ void CreateTextGraphicsPipeline( VkExtent2D extent)
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
 
+	VICreation viState = { &bindingDescription, 1, attributeDescriptions.data(), static_cast< uint32_t >(attributeDescriptions.size()) };
+	//TODO: these cast are dangerous for alligment
+	std::vector<ShaderCreation> shaderState = {
+		{ reinterpret_cast< uint32_t* >(vertShaderCode.data()), vertShaderCode.size(), "main", VK_SHADER_STAGE_VERTEX_BIT },
+		{ reinterpret_cast< uint32_t* >(fragShaderCode.data()), fragShaderCode.size(), "main", VK_SHADER_STAGE_FRAGMENT_BIT } };
+	RasterizationState rasterizationState;
+	rasterizationState.backFaceCulling = false;
+	rasterizationState.depthBiased = false;
+	DepthStencilState depthStencilState;
+	depthStencilState.depthRead = false;
+	depthStencilState.depthWrite = false;
+	depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS;
+
 	CreatePipeline(
-		&bindingDescription,
-		1,
-		attributeDescriptions.data(), 
-		static_cast<uint32_t>(attributeDescriptions.size()), 
-		vertShaderCode, fragShaderCode,
+		viState,
+		shaderState,
 		extent,
 		textRenderPass->vk_renderpass,
 		textPipelineLayout,
-		false,
-		false,
-		false,
+		rasterizationState,
+		depthStencilState,
 		true,
-		false,
 		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-		VK_COMPARE_OP_LESS,
 		&textGraphicsPipeline);
 }
 

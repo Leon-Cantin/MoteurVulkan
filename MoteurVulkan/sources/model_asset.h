@@ -19,7 +19,7 @@ enum class eVIDataElementType : uint8_t
 	FLOAT,
 	ELEMENT_TYPE_COUNT
 };
-const char COMPONENT_TYPE_SIZES[] = { 1, 1, 2, 2, 4, 4 };
+static const char COMPONENT_TYPE_SIZES[] = { 1, 1, 2, 2, 4, 4 };
 
 enum class eVIDataType : uint8_t
 {
@@ -51,13 +51,13 @@ struct VIBinding
 	unsigned char location;
 };
 
-static const VIBinding positionBinding	= { eVIDataType::POSITION, eVIDataElementType::FLOAT, 3, 0 };
-static const VIBinding normalBinding	= { eVIDataType::NORMAL, eVIDataElementType::FLOAT, 3, 3 };
-static const VIBinding tangentBinding	= { eVIDataType::TANGENT, eVIDataElementType::FLOAT, 3, 4 };
-static const VIBinding colorBinding		= { eVIDataType::COLOR, eVIDataElementType::FLOAT, 3, 1 };
-static const VIBinding texCoordBinding	= { eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2, 2 };
-
-static const VIBinding VIBindings[] = { positionBinding, colorBinding, texCoordBinding, normalBinding, tangentBinding };
+static const VIBinding VIBindings[] = { 
+	{ eVIDataType::POSITION, eVIDataElementType::FLOAT, 3, 0 }, 
+	{ eVIDataType::COLOR, eVIDataElementType::FLOAT, 3, 1 }, 
+	{ eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2, 2 },
+	{ eVIDataType::NORMAL, eVIDataElementType::FLOAT, 3, 3 },
+	{ eVIDataType::TANGENT, eVIDataElementType::FLOAT, 3, 4 }
+};
 static const uint32_t viBindingCount = 5;
 void get_binding_description( const VIBinding * bindingsDescs, uint32_t count, VkVertexInputBindingDescription* VIBDescs, VkVertexInputAttributeDescription* VIADescs );
 uint32_t GetBindingDescription( VkVertexInputBindingDescription* VIBDescs, VkVertexInputAttributeDescription* VIADescs );
