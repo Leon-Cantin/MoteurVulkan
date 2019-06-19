@@ -70,8 +70,9 @@ void CmdEndShadowPass(VkCommandBuffer commandBuffer)
 
 void CreateShadowGraphicPipeline()
 {
-	auto bindingDescription = GfxModel::get_binding_description();
-	auto attributeDescriptions = GfxModel::get_attribute_descriptions();
+	VkVertexInputBindingDescription bindingDescriptions[5];
+	VkVertexInputAttributeDescription attributeDescriptions[5];
+	uint32_t bindingCount = GetBindingDescription( bindingDescriptions, attributeDescriptions );
 
 	std::vector<char> vertShaderCode = FS::readFile("shaders/shadows.vert.spv");
 	std::vector<char> fragShaderCode;// = readFile("shaders/shadows.frag.spv"); no shadow frag
@@ -88,10 +89,10 @@ void CreateShadowGraphicPipeline()
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
 
-	CreatePipeline(bindingDescription.data(),
-		static_cast< uint32_t >(bindingDescription.size()),
-		attributeDescriptions.data(),
-		static_cast<uint32_t>(attributeDescriptions.size()),
+	CreatePipeline( bindingDescriptions,
+		bindingCount,
+		attributeDescriptions,
+		bindingCount,
 		vertShaderCode,
 		fragShaderCode,
 		RT_EXTENT_SHADOW,

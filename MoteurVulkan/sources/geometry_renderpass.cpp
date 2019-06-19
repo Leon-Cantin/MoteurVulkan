@@ -22,8 +22,9 @@ std::array<VkDescriptorSet, SIMULTANEOUS_FRAMES> geoInstanceDescriptorSet;
 
 void createGeoGraphicPipeline( VkExtent2D extent )
 {
-	auto bindingDescription = Vertex::get_binding_description();
-	auto attributeDescriptions = Vertex::get_attribute_descriptions();
+	VkVertexInputBindingDescription bindingDescriptions[5];
+	VkVertexInputAttributeDescription attributeDescriptions[5];
+	uint32_t bindingCount = GetBindingDescription( bindingDescriptions, attributeDescriptions );
 
 	std::vector<char> vertShaderCode = FS::readFile("shaders/triangle.vert.spv");
 	std::vector<char> fragShaderCode = FS::readFile("shaders/triangle.frag.spv");
@@ -46,10 +47,10 @@ void createGeoGraphicPipeline( VkExtent2D extent )
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
 
-	CreatePipeline(bindingDescription.data(),
-		static_cast< uint32_t >(bindingDescription.size()),
-		attributeDescriptions.data(),
-		static_cast<uint32_t>(attributeDescriptions.size()),
+	CreatePipeline( bindingDescriptions,
+		bindingCount,
+		attributeDescriptions,
+		bindingCount,
 		vertShaderCode, fragShaderCode,
 		extent,
 		geometryRenderPass->vk_renderpass,

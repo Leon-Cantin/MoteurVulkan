@@ -13,25 +13,6 @@
 #include <assimp/scene.h>           // Output data structure
 #include <assimp/postprocess.h>     // Post processing flags
 
-/*
-const std::vector<Vertex> static_cube_vertices = {
-//Top
-{ { -0.5f, 0.5f, -0.5f },{ 0.5f, 0.0f, 0.0f },{ 0.0f, 0.0f } },
-{ { -0.5f, 0.5f, 0.5f },{ 0.5f, 0.5f, 0.5f },{ 0.0f, 1.0f } },
-{ { 0.5f, 0.5f, 0.5f },{ 0.0f, 0.0f, 0.5f},{ 1.0f, 1.0f } },
-{ { 0.5f, 0.5f, -0.5f },{ 0.0f, 0.5f, 0.0f },{ 1.0f, 0.0f } },
-
-//Bottom
-{ { -0.5f, -0.5f, -0.5f },{ 0.5f, 0.0f, 0.0f },{ 0.0f, 1.0f } },
-{ { -0.5f, -0.5f, 0.5f },{ 0.5f, 0.5f, 0.5f},{ 0.0f, 0.0f } },
-{ { 0.5f, -0.5f, 0.5f },{ 0.0f, 0.0f, 0.5f},{ 1.0f, 0.0f } },
-{ { 0.5f, -0.5f, -0.5f },{ 0.0f, 0.5f, 0.0f },{ 1.0f, 1.0f } }
-};*/
-
-const std::vector<uint32_t> static_cube_indices = {
-	0, 1, 2, 2, 3, 0,   1, 5, 2, 5, 6, 2,   3, 7, 0, 7, 4, 0,
-	6, 5, 4, 4, 7, 6,   2, 6, 3, 6, 7, 3,   0, 4, 1, 4, 5, 1
-};
 
 void CreateGfxModel( const std::vector<glm::vec3>& vertPos,
 	const std::vector<glm::vec3>& vertNormal,
@@ -128,4 +109,46 @@ void DestroyGfxModel(GfxModel& o_modelAsset)
 
 	vkDestroyBuffer(g_vk.device, o_modelAsset.indexBuffer, nullptr);
 	vkFreeMemory(g_vk.device, o_modelAsset.indicesMemory, nullptr);
+}
+
+static uint32_t GetBindingSize( const VIBinding* binding )
+{
+	return COMPONENT_TYPE_SIZES[( uint8_t )binding->elementType] * binding->elementsCount;
+}
+
+static VkFormat GetBindingFormat( const VIBinding* binding )
+{
+	if( binding->elementType == eVIDataElementType::FLOAT )
+	{
+		//A bit dangerous, there's 3 elements to reach the next float definition
+		return static_cast< VkFormat >(static_cast< uint32_t >(VK_FORMAT_R32_SFLOAT) + (binding->elementsCount - 1) * 3);
+	}
+	else
+	{
+		throw std::runtime_error( "Unimplemented" );
+	}
+}
+
+void get_binding_description( const VIBinding * bindingsDescs, uint32_t count, VkVertexInputBindingDescription* VIBDescs, VkVertexInputAttributeDescription* VIADescs )
+{
+	for( uint32_t i = 0; i < count; ++i )
+	{
+		VIBDescs[i].binding = i;
+		VIBDescs[i].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		VIBDescs[i].stride = GetBindingSize( &bindingsDescs[i] );
+
+		VIADescs[i].binding = i;
+		VIADescs[i].format = GetBindingFormat( &bindingsDescs[i] );
+		VIADescs[i].location = bindingsDescs[i].location;
+		VIADescs[i].offset = 0;
+	}
+}
+
+uint32_t GetBindingDescription( VkVertexInputBindingDescription* VIBDescs, VkVertexInputAttributeDescription* VIADescs )
+{
+	uint32_t count = 5;
+
+	get_binding_description( VIBindings, 5, VIBDescs, VIADescs );
+
+	return count;
 }

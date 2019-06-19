@@ -79,7 +79,13 @@ void EndCommandBufferRecording(VkCommandBuffer commandBuffer)
 
 void CmdDrawIndexed(VkCommandBuffer commandBuffer, const GfxModel& modelAsset)
 {
-	VkBuffer vertexBuffers[] = { modelAsset.vertPosBuffer, modelAsset.vertColorBuffer,  modelAsset.vertTexCoordBuffer, modelAsset.vertNormalBuffer, modelAsset.vertTangentBuffer };
+	//TODO: shouldn't know the number of buffers
+	VkBuffer vertexBuffers[5];
+	vertexBuffers[VIBindingOrder[( uint8_t )eVIDataType::POSITION]] = modelAsset.vertPosBuffer;
+	vertexBuffers[VIBindingOrder[( uint8_t )eVIDataType::NORMAL]] = modelAsset.vertNormalBuffer;
+	vertexBuffers[VIBindingOrder[( uint8_t )eVIDataType::TANGENT]] = modelAsset.vertTangentBuffer;
+	vertexBuffers[VIBindingOrder[( uint8_t )eVIDataType::TEX_COORD]] = modelAsset.vertTexCoordBuffer;
+	vertexBuffers[VIBindingOrder[( uint8_t )eVIDataType::COLOR]] = modelAsset.vertColorBuffer;
 	VkDeviceSize offsets[] = { 0, 0, 0, 0, 0 };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 5, vertexBuffers, offsets);
 	vkCmdBindIndexBuffer(commandBuffer, modelAsset.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
