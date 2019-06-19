@@ -255,6 +255,29 @@ namespace glTF_L
 			indexes_32[i] = GetType<unsigned short>( indexes, i, 0, SCALAR, UNSIGNED_SHORT );
 		}
 
-		CreateGfxModel( vertPos, vertNormals, vertTangents, vertColor, vertTexCoord, indexes_32, *model );
+
+		std::vector<GfxModelCreationData> modelCreationData;
+		modelCreationData.resize( 5 );
+		modelCreationData[0].data = reinterpret_cast< uint8_t* >(vertPos.data());
+		modelCreationData[0].vertexCount = vertPos.size();
+		modelCreationData[0].desc = { eVIDataType::POSITION, eVIDataElementType::FLOAT, 3 };
+
+		modelCreationData[1].data = reinterpret_cast< uint8_t* >(vertNormals.data());
+		modelCreationData[1].vertexCount = vertNormals.size();
+		modelCreationData[1].desc = { eVIDataType::NORMAL, eVIDataElementType::FLOAT, 3 };
+
+		modelCreationData[2].data = reinterpret_cast< uint8_t* >(vertTangents.data());
+		modelCreationData[2].vertexCount = vertTangents.size();
+		modelCreationData[2].desc = { eVIDataType::TANGENT, eVIDataElementType::FLOAT, 3 };
+
+		modelCreationData[3].data = reinterpret_cast< uint8_t* >(vertColor.data());
+		modelCreationData[3].vertexCount = vertColor.size();
+		modelCreationData[3].desc = { eVIDataType::COLOR, eVIDataElementType::FLOAT, 3 };
+
+		modelCreationData[4].data = reinterpret_cast< uint8_t* >(vertTexCoord.data());
+		modelCreationData[4].vertexCount = vertTexCoord.size();
+		modelCreationData[4].desc = { eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2 };
+
+		CreateGfxModel( modelCreationData, indexes_32, *model );
 	}
 }

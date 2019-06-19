@@ -8,8 +8,6 @@
 #include <vector>
 
 //TODO: a lot of this should be in the material
-//TODO: How do we deal with the different types. Number of elements and data type.
-//TODO: use this VIBindingOrder to know where to bind each attribute. They should be an array at the position said by VIDataType.
 //TODO: copied from glTF_loader.cpp
 enum class eVIDataElementType : uint8_t
 {
@@ -33,11 +31,23 @@ enum class eVIDataType : uint8_t
 	VI_DATA_TYPE_COUNT
 };
 
-struct VIBinding
+struct VIDesc
 {
 	eVIDataType dataType;
 	eVIDataElementType elementType;
 	unsigned char elementsCount;
+
+	inline bool operator==( const VIDesc& other ) const
+	{
+		return this->dataType == other.dataType &&
+		this->elementsCount == other.elementsCount &&
+		this->elementType == other.elementType;
+	}
+};
+
+struct VIBinding
+{
+	VIDesc desc;
 	unsigned char location;
 };
 
@@ -48,23 +58,20 @@ static const VIBinding colorBinding		= { eVIDataType::COLOR, eVIDataElementType:
 static const VIBinding texCoordBinding	= { eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2, 2 };
 
 static const VIBinding VIBindings[] = { positionBinding, colorBinding, texCoordBinding, normalBinding, tangentBinding };
-static const uint8_t VIBindingOrder[] = { 0, 3, 4, 1, 2 };
-
+static const uint32_t viBindingCount = 5;
 void get_binding_description( const VIBinding * bindingsDescs, uint32_t count, VkVertexInputBindingDescription* VIBDescs, VkVertexInputAttributeDescription* VIADescs );
 uint32_t GetBindingDescription( VkVertexInputBindingDescription* VIBDescs, VkVertexInputAttributeDescription* VIADescs );
 
-struct GfxModel 
+struct GfxModelVertexInput
 {
-	VkBuffer vertPosBuffer;
-	VkBuffer vertNormalBuffer;
-	VkBuffer vertTangentBuffer;
-	VkBuffer vertColorBuffer;
-	VkBuffer vertTexCoordBuffer;
-	VkDeviceMemory vertPosMem;
-	VkDeviceMemory vertNormalMem;
-	VkDeviceMemory vertTangentMem;
-	VkDeviceMemory vertColorMem;
-	VkDeviceMemory vertTexCoordMem;
+	VIDesc desc;
+	VkBuffer vertAttribBuffers;
+	VkDeviceMemory vertAttribBuffersMemory;
+};
+
+struct GfxModel
+{
+	GfxModelVertexInput vertAttribBuffers[(uint8_t)eVIDataType::VI_DATA_TYPE_COUNT];
 	uint32_t vertexCount;
 
 	VkBuffer indexBuffer;
@@ -72,12 +79,13 @@ struct GfxModel
 	uint32_t indexCount;
 };
 
-void CreateGfxModel(const std::vector<glm::vec3>& vertPos,
-	const std::vector<glm::vec3>& vertNormal,
-	const std::vector<glm::vec3>& vertTangent,
-	const std::vector<glm::vec3>& vertColor,
-	const std::vector<glm::vec2>& vertTexCoord,
-	const std::vector<uint32_t>& indices,
-	GfxModel& o_modelAsset);
+struct GfxModelCreationData
+{
+	VIDesc desc;
+	uint8_t* data;
+	uint64_t vertexCount;
+};
+
+void CreateGfxModel( const std::vector<GfxModelCreationData>& creationData, const std::vector<uint32_t>& indices, GfxModel& o_modelAsset);
 void LoadGenericModel(const char * filename, GfxModel& o_modelAsset, size_t hackModelIndex);
 void DestroyGfxModel(GfxModel& o_modelAsset);
