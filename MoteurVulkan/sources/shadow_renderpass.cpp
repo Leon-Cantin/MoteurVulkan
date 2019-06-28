@@ -11,24 +11,113 @@
 #include "vk_buffer.h"
 #include "scene_instance.h"
 #include "..\shaders\shadersCommon.h"
+#include "material.h"
 
 #include <vector>
 #include <array>
 
-VkDescriptorSetLayout shadowDescriptorSetLayout;
-VkDescriptorSetLayout shadowInstanceDescriptorSetLayout;
 const RenderPass* shadowRenderPass;
-VkPipelineLayout shadowPipelineLayout;
-VkPipeline shadowPipeline;
 
 //TODO: this is redundant, also found in frame graph
 constexpr VkFormat RT_FORMAT_SHADOW_DEPTH = VK_FORMAT_D32_SFLOAT;
 constexpr VkExtent2D RT_EXTENT_SHADOW = { 1024, 1024 };
 
-std::array<VkDescriptorSet, SIMULTANEOUS_FRAMES> shadowDescriptorSets;
-std::array<VkDescriptorSet, SIMULTANEOUS_FRAMES> shadowInstanceDescriptorSet;
-
 PerFrameBuffer shadowSceneUniformBuffer;
+GfxMaterial shadowMaterial;
+
+enum class eTechniqueDataEntryName
+{
+	INSTANCE_DATA = 0,
+	SHADOW_DATA,
+	COUNT
+};
+
+struct TechniqueDataEntry
+{
+	eTechniqueDataEntryName name;
+	VkDescriptorType descriptorType;
+};
+
+const TechniqueDataEntry techniqueDataEntries[static_cast< size_t >(eTechniqueDataEntryName::COUNT)] =
+{
+	{
+		eTechniqueDataEntryName::INSTANCE_DATA,
+		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC
+	},
+	{
+		eTechniqueDataEntryName::SHADOW_DATA,
+		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
+	},
+};
+
+struct TechniqueDataBinding
+{
+	eTechniqueDataEntryName name;
+	uint32_t binding;	
+	VkShaderStageFlags stageFlags;
+};
+
+struct TechniqueDescriptorSet
+{
+	std::array< TechniqueDataBinding, 8 > dataBindings;
+	uint32_t count;
+};
+
+struct InputBuffers
+{
+	std::array<VkBuffer, static_cast< size_t >(eTechniqueDataEntryName::COUNT)> data;
+};
+
+inline VkBuffer GetBuffer( const InputBuffers* buffers, eTechniqueDataEntryName name )
+{
+	return buffers->data[static_cast< size_t >(name)];
+}
+
+void CreateDescriptorSetLayout(const TechniqueDescriptorSet * desc, VkDescriptorSetLayout * o_setLayout)
+{
+	std::array<VkDescriptorSetLayoutBinding, 8> tempBindings;
+
+	for( size_t i = 0; i < desc->count; ++i )
+	{
+		const TechniqueDataBinding* dataBinding = &desc->dataBindings[i];
+		tempBindings[i].binding = dataBinding->binding;
+		tempBindings[i].descriptorCount = 1;
+		tempBindings[i].descriptorType = techniqueDataEntries[static_cast<size_t>(dataBinding->name)].descriptorType;
+		tempBindings[i].stageFlags = dataBinding->stageFlags;
+		tempBindings[i].pImmutableSamplers = nullptr;
+	}
+
+	CreateDesciptorSetLayout( tempBindings.data(), desc->count, o_setLayout );
+}
+
+void CreateDescriptorSet( const InputBuffers* buffers, const TechniqueDescriptorSet* descriptorSetDesc, VkDescriptorSetLayout descriptorSetLayout, VkDescriptorPool descriptorPool, VkDescriptorSet* o_descriptorSet )
+{
+
+	DescriptorSet geoDescriptorSet;
+	geoDescriptorSet.descriptors.resize( descriptorSetDesc->count );
+	for( size_t i = 0; i < descriptorSetDesc->count; ++i )
+		geoDescriptorSet.descriptors[i] = { {GetBuffer(buffers, descriptorSetDesc->dataBindings[i].name ), 0, VK_WHOLE_SIZE}, {}, techniqueDataEntries[ static_cast<size_t>(descriptorSetDesc->dataBindings[i].name) ].descriptorType , descriptorSetDesc->dataBindings[i].binding };
+	geoDescriptorSet.layout = descriptorSetLayout;
+
+	createDescriptorSets( descriptorPool, 1, &geoDescriptorSet );
+	*o_descriptorSet = geoDescriptorSet.set;
+}
+
+TechniqueDescriptorSet shadowPassSet =
+{
+	{
+		{ eTechniqueDataEntryName::SHADOW_DATA, 0, VK_SHADER_STAGE_VERTEX_BIT }
+	},
+	1
+};
+
+TechniqueDescriptorSet shadowInstanceSet =
+{
+	{
+		{ eTechniqueDataEntryName::INSTANCE_DATA, 0, VK_SHADER_STAGE_VERTEX_BIT }
+	},
+	1
+};
 
 void computeShadowMatrix(const glm::vec3& light_location, glm::mat4* view, glm::mat4* projection)
 {
@@ -47,36 +136,44 @@ void UpdateShadowUniformBuffers(size_t currentFrame, const SceneMatricesUniform*
 	UpdatePerFrameBuffer(&shadowSceneUniformBuffer, sceneUniforms, sizeof(SceneMatricesUniform), currentFrame);
 }
 
-void CmdBeginShadowPass(VkCommandBuffer commandBuffer, size_t currentFrame)
+static void CmdBeginShadowPass(VkCommandBuffer commandBuffer, size_t currentFrame)
 {
 	CmdBeginVkLabel(commandBuffer, "Shadow Renderpass", glm::vec4(0.5f, 0.2f, 0.4f, 1.0f));
 	BeginRenderPass(commandBuffer, *shadowRenderPass, shadowRenderPass->frameBuffer.frameBuffer, shadowRenderPass->frameBuffer.extent);
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowPipeline);
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowPipelineLayout, RENDERPASS_SET, 1, &shadowDescriptorSets[currentFrame], 0, nullptr);
+
+	BeginTechnique( commandBuffer, &shadowMaterial.techniques[0], currentFrame );
 }
 
-void CmdDrawShadowPass(VkCommandBuffer commandBuffer, const SceneInstanceSet* instanceSet, const GfxModel* modelAsset, uint32_t currentFrame)
+static void CmdDrawModel(VkCommandBuffer commandBuffer, const SceneInstanceSet* instanceSet, const GfxModel* modelAsset, uint32_t currentFrame)
 {
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowPipelineLayout, INSTANCE_SET, 1,
-		&shadowInstanceDescriptorSet[currentFrame], 1, &instanceSet->geometryBufferOffsets[currentFrame]);
-	CmdDrawIndexed(commandBuffer, *modelAsset);
+	const Technique* technique = &shadowMaterial.techniques[0];
+	vkCmdBindDescriptorSets( commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, INSTANCE_SET, 1,
+		&technique->instance_descriptor[currentFrame], 1, &instanceSet->geometryBufferOffsets[currentFrame] );
+	CmdDrawIndexed( commandBuffer, *modelAsset );
 }
 
-void CmdEndShadowPass(VkCommandBuffer commandBuffer)
+static void CmdEndShadowPass(VkCommandBuffer commandBuffer)
 {
 	EndRenderPass(commandBuffer);
 	CmdEndVkLabel(commandBuffer);
 }
 
-void CreateShadowGraphicPipeline()
+static void CreateDescritorSetLayout( Technique* technique )
 {
+	CreateDescriptorSetLayout( &shadowPassSet, &technique->renderpass_descriptor_layout );
+	CreateDescriptorSetLayout( &shadowInstanceSet, &technique->instance_descriptor_layout );
+}
+
+static void CreateShadowTechnique( const RenderPass* renderpass, Technique* technique )
+{
+	//Create pipeline layout
 	VkVertexInputBindingDescription bindingDescriptions[5];
 	VkVertexInputAttributeDescription attributeDescriptions[5];
 	uint32_t bindingCount = GetBindingDescription( bindingDescriptions, attributeDescriptions );
 
-	std::vector<char> vertShaderCode = FS::readFile("shaders/shadows.vert.spv");
+	std::vector<char> vertShaderCode = FS::readFile( "shaders/shadows.vert.spv" );
 
-	VkDescriptorSetLayout descriptorSetLayouts[] = { shadowDescriptorSetLayout, shadowInstanceDescriptorSetLayout };
+	VkDescriptorSetLayout descriptorSetLayouts[] = { technique->renderpass_descriptor_layout, technique->instance_descriptor_layout };
 	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
 	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipeline_layout_info.setLayoutCount = 2; // Optional
@@ -84,10 +181,11 @@ void CreateShadowGraphicPipeline()
 	pipeline_layout_info.pushConstantRangeCount = 0; // Optional
 	pipeline_layout_info.pPushConstantRanges = nullptr; // Optional
 
-	if (vkCreatePipelineLayout(g_vk.device, &pipeline_layout_info, nullptr, &shadowPipelineLayout) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create pipeline layout!");
+	if( vkCreatePipelineLayout( g_vk.device, &pipeline_layout_info, nullptr, &technique->pipelineLayout ) != VK_SUCCESS ) {
+		throw std::runtime_error( "failed to create pipeline layout!" );
 	}
 
+	//Create the PSO
 	VICreation viState = { bindingDescriptions, bindingCount, attributeDescriptions, bindingCount };
 	//TODO: these cast are dangerous for alligment
 	std::vector<ShaderCreation> shaderState = {
@@ -103,58 +201,37 @@ void CreateShadowGraphicPipeline()
 	CreatePipeline( viState,
 		shaderState,
 		RT_EXTENT_SHADOW,
-		shadowRenderPass->vk_renderpass,
-		shadowPipelineLayout,
+		renderpass->vk_renderpass,
+		technique->pipelineLayout,
 		rasterizationState,
 		depthStencilState,
 		false,
 		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-		&shadowPipeline);
+		&technique->pipeline );
 }
 
 void CreateShadowDescriptorSet(VkDescriptorPool descriptorPool, const VkBuffer*instanceUniformBuffer)
 {
-	std::array<DescriptorSet, SIMULTANEOUS_FRAMES> descriptorSets;
+	//TODO: build this outside
+	std::array< InputBuffers, SIMULTANEOUS_FRAMES> inputBuffers;
+	for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
+	{
+		inputBuffers[i].data[static_cast< size_t >(eTechniqueDataEntryName::INSTANCE_DATA)] = instanceUniformBuffer[i];
+		inputBuffers[i].data[static_cast< size_t >(eTechniqueDataEntryName::SHADOW_DATA)] = shadowSceneUniformBuffer.buffers[i];
+	}
 
+	Technique* technique = &shadowMaterial.techniques[0];
 	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
 	{
-		DescriptorSet& geoDescriptorSet = descriptorSets[i] = {};
-		geoDescriptorSet.descriptors.resize(1);
-		geoDescriptorSet.descriptors[0] = { {shadowSceneUniformBuffer.buffers[i], 0, VK_WHOLE_SIZE}, {}, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0 };
-		geoDescriptorSet.layout = shadowDescriptorSetLayout;
+		CreateDescriptorSet( &inputBuffers[i], &shadowPassSet, technique->renderpass_descriptor_layout, descriptorPool, &technique->renderPass_descriptor[i] );
+		CreateDescriptorSet( &inputBuffers[i], &shadowInstanceSet, technique->instance_descriptor_layout, descriptorPool, &technique->instance_descriptor[i] );
 	}
-	createDescriptorSets(descriptorPool, descriptorSets.size(), descriptorSets.data());
-	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
-		shadowDescriptorSets[i] = descriptorSets[i].set;
-
-	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
-	{
-		DescriptorSet& geoDescriptorSet = descriptorSets[i] = {};
-		geoDescriptorSet.descriptors.resize(1);
-		geoDescriptorSet.descriptors[0] = { {instanceUniformBuffer[i], 0, VK_WHOLE_SIZE}, {}, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 0 };
-		geoDescriptorSet.layout = shadowInstanceDescriptorSetLayout;
-	}
-	createDescriptorSets(descriptorPool, descriptorSets.size(), descriptorSets.data());
-	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
-		shadowInstanceDescriptorSet[i] = descriptorSets[i].set;
-}
-
-void CreateShadowDescriptorSetLayout()
-{
-	const VkDescriptorSetLayoutBinding sceneLayoutBinding = { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER , 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr };
-
-	const std::array<VkDescriptorSetLayoutBinding, 1> bindings = { sceneLayoutBinding };
-	CreateDesciptorSetLayout(bindings.data(), static_cast<uint32_t>(bindings.size()), &shadowDescriptorSetLayout);
-
-	const VkDescriptorSetLayoutBinding instanceLayoutBinding = { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr };
-	const std::array<VkDescriptorSetLayoutBinding, 1> instanceBindings = { instanceLayoutBinding };
-	CreateDesciptorSetLayout(instanceBindings.data(), static_cast<uint32_t>(instanceBindings.size()), &shadowInstanceDescriptorSetLayout);
 }
 
 static void CreateShadowPass()
 {
-	CreateShadowDescriptorSetLayout();
-	CreateShadowGraphicPipeline();
+	CreateDescritorSetLayout( &shadowMaterial.techniques[0] );
+	CreateShadowTechnique( shadowRenderPass, &shadowMaterial.techniques[0] );
 
 	CreatePerFrameBuffer(sizeof(SceneMatricesUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		&shadowSceneUniformBuffer);
@@ -162,11 +239,7 @@ static void CreateShadowPass()
 
 void CleanupShadowPass()
 {
-	vkDestroyPipeline(g_vk.device, shadowPipeline, nullptr);
-	vkDestroyPipelineLayout(g_vk.device, shadowPipelineLayout, nullptr);
-	vkDestroyDescriptorSetLayout(g_vk.device, shadowDescriptorSetLayout, nullptr);
-	vkDestroyDescriptorSetLayout(g_vk.device, shadowInstanceDescriptorSetLayout, nullptr);
-
+	Destroy( &shadowMaterial );
 	DestroyPerFrameBuffer(&shadowSceneUniformBuffer);
 }
 
@@ -182,7 +255,7 @@ void ShadowRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData*
 	for (size_t i = 0; i < frameData->renderableAssets.size(); ++i)
 	{
 		const SceneRenderableAsset* renderable = frameData->renderableAssets[i];
-		CmdDrawShadowPass(graphicsCommandBuffer, renderable->descriptorSet, renderable->modelAsset, currentFrame);
+		CmdDrawModel(graphicsCommandBuffer, renderable->descriptorSet, renderable->modelAsset, currentFrame);
 	}
 	CmdEndShadowPass(graphicsCommandBuffer);
 }

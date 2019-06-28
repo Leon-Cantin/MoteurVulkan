@@ -182,6 +182,7 @@
     <ClCompile Include="sources\geometry_renderpass.cpp" />
     <ClCompile Include="sources\glTF_loader.cpp" />
     <ClCompile Include="sources\input.cpp" />
+    <ClCompile Include="sources\material.cpp" />
     <ClCompile Include="sources\profile.cpp" />
     <ClCompile Include="sources\renderer.cpp" />
     <ClCompile Include="sources\scene2D_renderer_imp.cpp" />
@@ -228,6 +229,7 @@
     <ClInclude Include="sources\glTF_loader.h" />
     <ClInclude Include="sources\input.h" />
     <ClInclude Include="sources\inputs_def.h" />
+    <ClInclude Include="sources\material.h" />
     <ClInclude Include="sources\renderer.h" />
     <ClInclude Include="sources\Scene2DGame.h" />
     <ClInclude Include="sources\scene2D_renderer_imp.h" />

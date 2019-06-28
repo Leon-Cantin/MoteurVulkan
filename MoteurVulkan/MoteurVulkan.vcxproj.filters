@@ -144,6 +144,9 @@
     <ClCompile Include="sources\glTF_loader.cpp">
       <Filter>sources\glTF</Filter>
     </ClCompile>
+    <ClCompile Include="sources\material.cpp">
+      <Filter>sources\renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\triangle.frag">
@@ -288,6 +291,9 @@
     </ClInclude>
     <ClInclude Include="sources\glTF_loader.h">
       <Filter>sources\glTF</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\material.h">
+      <Filter>sources\renderer</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

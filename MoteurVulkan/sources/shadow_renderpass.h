@@ -16,7 +16,4 @@ void ShadowRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData*
 void CreateShadowDescriptorSet(VkDescriptorPool descriptorPool, const VkBuffer*instanceUniformBuffer);
 
 void UpdateShadowUniformBuffers(size_t currentFrame, const SceneMatricesUniform* sceneMatrices);
-void CmdBeginShadowPass(VkCommandBuffer commandBuffer, size_t currentFrame);
-void CmdDrawShadowPass(VkCommandBuffer commandBuffer, const SceneInstanceSet* instanceSet, const GfxModel* modelAsset, uint32_t currentFrame);
-void CmdEndShadowPass(VkCommandBuffer commandBuffer);
 void computeShadowMatrix(const glm::vec3& light_location, glm::mat4* view, glm::mat4* projection);
