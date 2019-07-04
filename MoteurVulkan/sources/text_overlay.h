@@ -59,10 +59,8 @@ void CleanupTextRenderPassAfterSwapchain();
 void CleanupTextRenderPass();
 void TextRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent);
 
-void CreateTextGraphicsPipeline(VkExtent2D extent);
 void CmdDrawText(VkCommandBuffer commandBuffer, VkExtent2D extent, size_t frameIndex);
 void CreateTextVertexBuffer( size_t maxCharCount);
 void UpdateText( const TextZone * textZones, size_t textZonesCount, VkExtent2D surfaceExtent);
 void LoadFontTexture();
-void CreateTextDescriptorSetLayout();
 void CreateTextDescriptorSet(VkDescriptorPool descriptorPool, VkSampler trilinearSampler);

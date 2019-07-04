@@ -9,12 +9,10 @@
 #include "swapchain.h"
 #include "vk_debug.h"
 #include "console_command.h"
+#include "material.h"
 
-VkDescriptorSetLayout textDescriptorSetLayout = VK_NULL_HANDLE;
-VkPipelineLayout textPipelineLayout = VK_NULL_HANDLE;
+GfxMaterial textMaterial;
 const RenderPass* textRenderPass;
-VkPipeline textGraphicsPipeline = VK_NULL_HANDLE;
-VkDescriptorSet textDescriptorSet;
 VkBuffer textVertexBuffer = VK_NULL_HANDLE;
 VkDeviceMemory textVertexBufferMemory = VK_NULL_HANDLE;
 VkBuffer textIndexBuffer = VK_NULL_HANDLE;
@@ -30,43 +28,46 @@ typedef uint32_t Index_t;
 const uint32_t verticesPerChar = 4;
 const uint32_t indexesPerChar = 6;
 
-void CreateTextDescriptorSetLayout()
+static void CreateTextDescriptorSetLayout(Technique* technique)
 {
 	const VkDescriptorSetLayoutBinding samplerLayoutBinding = { 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };
 
 	const std::array<VkDescriptorSetLayoutBinding, 1> bindings = { samplerLayoutBinding };
-	CreateDesciptorSetLayout(bindings.data(), static_cast<uint32_t>(bindings.size()), &textDescriptorSetLayout);
+	CreateDesciptorSetLayout(bindings.data(), static_cast<uint32_t>(bindings.size()), &technique->renderpass_descriptor_layout);
 }
 
 void CreateTextDescriptorSet(VkDescriptorPool descriptorPool, VkSampler trilinearSampler)
 {
+	Technique* technique = &textMaterial.techniques[0];
 	DescriptorSet descriptorSet = {};
 	descriptorSet.descriptors.resize(1);
 	descriptorSet.descriptors[0] = { {}, { trilinearSampler, g_fontImage.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0 };
-	descriptorSet.layout = textDescriptorSetLayout;
+	descriptorSet.layout = technique->renderpass_descriptor_layout;
 	createDescriptorSets(descriptorPool, 1, &descriptorSet);
 
-	textDescriptorSet = descriptorSet.set;
+	technique->renderPass_descriptor[0] = descriptorSet.set;
 }
 
-void CreateTextGraphicsPipeline( VkExtent2D extent)
+static void CreateTextTechnique( VkExtent2D extent, Technique* technique)
 {
+	//Create layout
+	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
+	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipeline_layout_info.setLayoutCount = 1; // Optional
+	pipeline_layout_info.pSetLayouts = &technique->renderpass_descriptor_layout; // Optional
+	pipeline_layout_info.pushConstantRangeCount = 0; // Optional
+	pipeline_layout_info.pPushConstantRanges = nullptr; // Optional
+
+	if( vkCreatePipelineLayout( g_vk.device, &pipeline_layout_info, nullptr, &technique->pipelineLayout ) != VK_SUCCESS ) {
+		throw std::runtime_error( "failed to create pipeline layout!" );
+	}
+
+	//Create PSO
 	auto bindingDescription = TextVertex::get_binding_description();
 	auto attributeDescriptions = TextVertex::get_attribute_descriptions();
 
 	std::vector<char> vertShaderCode = FS::readFile("shaders/text.vert.spv");
 	std::vector<char> fragShaderCode = FS::readFile("shaders/text.frag.spv");
-
-	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
-	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipeline_layout_info.setLayoutCount = 1; // Optional
-	pipeline_layout_info.pSetLayouts = &textDescriptorSetLayout; // Optional
-	pipeline_layout_info.pushConstantRangeCount = 0; // Optional
-	pipeline_layout_info.pPushConstantRanges = nullptr; // Optional
-
-	if (vkCreatePipelineLayout(g_vk.device, &pipeline_layout_info, nullptr, &textPipelineLayout) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create pipeline layout!");
-	}
 
 	VICreation viState = { &bindingDescription, 1, attributeDescriptions.data(), static_cast< uint32_t >(attributeDescriptions.size()) };
 	//TODO: these cast are dangerous for alligment
@@ -86,12 +87,12 @@ void CreateTextGraphicsPipeline( VkExtent2D extent)
 		shaderState,
 		extent,
 		textRenderPass->vk_renderpass,
-		textPipelineLayout,
+		technique->pipelineLayout,
 		rasterizationState,
 		depthStencilState,
 		true,
 		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-		&textGraphicsPipeline);
+		&technique->pipeline );
 }
 
 void CmdDrawText( VkCommandBuffer commandBuffer, VkExtent2D extent, size_t frameIndex)
@@ -99,8 +100,9 @@ void CmdDrawText( VkCommandBuffer commandBuffer, VkExtent2D extent, size_t frame
 	CmdBeginVkLabel(commandBuffer, "Text overlay Renderpass", glm::vec4(0.6f, 0.6f, 0.6f, 1.0f));
 	BeginRenderPass(commandBuffer, *textRenderPass, textRenderPass->outputFrameBuffer[frameIndex].frameBuffer, extent);
 
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, textGraphicsPipeline);
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, textPipelineLayout, 0, 1, &textDescriptorSet, 0, nullptr);
+	Technique* technique = &textMaterial.techniques[0];
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipeline );
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, 0, 1, &technique->renderPass_descriptor[0], 0, nullptr);
 
 	VkBuffer vertexBuffers[] = { textVertexBuffer };
 	VkDeviceSize offsets[] = { 0 };
@@ -211,26 +213,30 @@ void LoadFontTexture()
 
 static void CreateTextPipeline(const Swapchain& swapchain)
 {
-	CreateTextDescriptorSetLayout();
-	CreateTextGraphicsPipeline(swapchain.extent);
+	Technique* technique = &textMaterial.techniques[0];
+	CreateTextDescriptorSetLayout( technique );
+	CreateTextTechnique( swapchain.extent, technique );
 }
 
 void RecreateTextRenderPassAfterSwapchain(const Swapchain* swapchain)
 {
-	CreateTextGraphicsPipeline(swapchain->extent);
+	Technique* technique = &textMaterial.techniques[0];
+	CreateTextTechnique( swapchain->extent, technique );
 	//TODO:destroy and recreate the render pass after the swapchain is recreated in case the format changes
 }
 
 void CleanupTextRenderPassAfterSwapchain()
 {
-	vkDestroyPipeline(g_vk.device, textGraphicsPipeline, nullptr);
-	vkDestroyPipelineLayout(g_vk.device, textPipelineLayout, nullptr);
+	Technique* technique = &textMaterial.techniques[0];
+	vkDestroyPipeline(g_vk.device, technique->pipeline, nullptr);
+	vkDestroyPipelineLayout(g_vk.device, technique->pipelineLayout, nullptr);
 }
 
 void CleanupTextRenderPass()
 {
+	Technique* technique = &textMaterial.techniques[0];
 	DestroyImage(g_fontImage);
-	vkDestroyDescriptorSetLayout(g_vk.device, textDescriptorSetLayout, nullptr);
+	vkDestroyDescriptorSetLayout(g_vk.device, technique->renderpass_descriptor_layout, nullptr);
 	vkDestroyBuffer(g_vk.device, textVertexBuffer, nullptr);
 	vkFreeMemory(g_vk.device, textVertexBufferMemory, nullptr);
 	vkDestroyBuffer(g_vk.device, textIndexBuffer, nullptr);

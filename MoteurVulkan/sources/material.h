@@ -27,3 +27,92 @@ struct GfxMaterial
 void BeginTechnique( VkCommandBuffer commandBuffer, const Technique* technique, size_t currentFrame );
 void CmdDrawTechnique( VkCommandBuffer commandBuffer, const Technique* technique, const SceneInstanceSet* instanceSet, const GfxModel* modelAsset, uint32_t currentFrame );
 void Destroy( GfxMaterial* material );
+
+
+enum class eTechniqueDataEntryName
+{
+	INSTANCE_DATA = 0,
+	SHADOW_DATA,
+	SCENE_DATA,
+	LIGHT_DATA,
+	COUNT
+};
+
+enum class eTechniqueDataEntryImageName
+{
+	ALBEDOS = 0,
+	NORMALS,
+	SHADOWS,
+	COUNT
+};
+
+struct TechniqueDataEntry
+{
+	eTechniqueDataEntryName name;
+	VkDescriptorType descriptorType;
+	uint32_t count;
+};
+
+struct TechniqueDataEntryImage
+{
+	eTechniqueDataEntryImageName name;
+	VkDescriptorType descriptorType;
+	uint32_t count;
+};
+
+static const TechniqueDataEntry techniqueDataEntries[static_cast< size_t >(eTechniqueDataEntryName::COUNT)] =
+{
+	{ eTechniqueDataEntryName::INSTANCE_DATA, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1 },
+	{ eTechniqueDataEntryName::SHADOW_DATA,	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
+	{ eTechniqueDataEntryName::SCENE_DATA,	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
+	{ eTechniqueDataEntryName::LIGHT_DATA,	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
+};
+
+static const TechniqueDataEntryImage techniqueDataEntryImages[static_cast< size_t >(eTechniqueDataEntryImageName::COUNT)] =
+{
+	{ eTechniqueDataEntryImageName::ALBEDOS, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5 },
+	{ eTechniqueDataEntryImageName::NORMALS, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
+	{ eTechniqueDataEntryImageName::SHADOWS, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
+};
+
+struct TechniqueDataBinding
+{
+	eTechniqueDataEntryName name;
+	uint32_t binding;
+	VkShaderStageFlags stageFlags;
+};
+
+struct TechniqueDataImageBinding
+{
+	eTechniqueDataEntryImageName name;
+	uint32_t binding;
+	VkShaderStageFlags stageFlags;
+};
+
+struct TechniqueDescriptorSetDesc
+{
+	TechniqueDataBinding dataBindings [8];
+	uint32_t buffersCount;
+
+	TechniqueDataImageBinding dataImageBindings [8];
+	uint32_t imagesCount;
+};
+
+struct InputBuffers
+{
+	std::array<VkBuffer* , static_cast< size_t >(eTechniqueDataEntryName::COUNT)> data;
+	std::array<VkDescriptorImageInfo*, static_cast< size_t >(eTechniqueDataEntryImageName::COUNT)> dataImages;
+};
+
+inline VkBuffer* GetBuffer( const InputBuffers* buffers, eTechniqueDataEntryName name )
+{
+	return buffers->data[static_cast< size_t >(name)];
+}
+
+inline VkDescriptorImageInfo* GetImage( const InputBuffers* buffers, eTechniqueDataEntryImageName name )
+{
+	return buffers->dataImages[static_cast< size_t >(name)];
+}
+
+void CreateDescriptorSetLayout( const TechniqueDescriptorSetDesc * desc, VkDescriptorSetLayout * o_setLayout );
+void CreateDescriptorSet( const InputBuffers* buffers, const TechniqueDescriptorSetDesc* descriptorSetDesc, VkDescriptorSetLayout descriptorSetLayout, VkDescriptorPool descriptorPool, VkDescriptorSet* o_descriptorSet );

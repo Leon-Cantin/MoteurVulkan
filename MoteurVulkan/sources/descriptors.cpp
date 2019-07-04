@@ -35,16 +35,9 @@ void createDescriptorSets(VkDescriptorPool descriptorPool, size_t count, Descrip
 	for (size_t i = 0; i < count; ++i)
 		layouts[i] = descriptorSets[i].layout;
 
-	VkDescriptorSetAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = descriptorPool;
-	allocInfo.descriptorSetCount = static_cast<uint32_t>(count);
-	allocInfo.pSetLayouts = layouts.data();
-
 	std::vector<VkDescriptorSet> vkDescriptorSets;
-	vkDescriptorSets.resize(count);
-	if (vkAllocateDescriptorSets(g_vk.device, &allocInfo, vkDescriptorSets.data()) != VK_SUCCESS)
-		throw std::runtime_error("failed to allocate descriptor sets!");
+	vkDescriptorSets.resize( count );
+	CreateDescriptorSets( descriptorPool, count, layouts.data(), vkDescriptorSets.data() );
 
 	//TODO: seperate the creation of sets and the update, could copy what's already on the GPU
 	//Put descriptors into output struct and update it
@@ -93,16 +86,9 @@ void createDescriptorSets2(VkDescriptorPool descriptorPool, size_t count, Descri
 	for (size_t i = 0; i < count; ++i)
 		layouts[i] = descriptorSets[i].layout;
 
-	VkDescriptorSetAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = descriptorPool;
-	allocInfo.descriptorSetCount = static_cast<uint32_t>(count);
-	allocInfo.pSetLayouts = layouts.data();
-
 	std::vector<VkDescriptorSet> vkDescriptorSets;
-	vkDescriptorSets.resize(count);
-	if (vkAllocateDescriptorSets(g_vk.device, &allocInfo, vkDescriptorSets.data()) != VK_SUCCESS)
-		throw std::runtime_error("failed to allocate descriptor sets!");
+	vkDescriptorSets.resize( count );
+	CreateDescriptorSets( descriptorPool, count, layouts.data(), vkDescriptorSets.data() );
 
 	//TODO: seperate the creation of sets and the update, could copy what's already on the GPU
 	//Put descriptors into output struct and update it
@@ -124,16 +110,8 @@ void createDescriptorSets2(VkDescriptorPool descriptorPool, size_t count, Descri
 			writeDescriptorSet.dstArrayElement = 0;
 			writeDescriptorSet.descriptorType = descriptor.type;
 			writeDescriptorSet.descriptorCount = descriptor.count;
-			if (descriptor.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER || descriptor.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC)
-			{
-				writeDescriptorSet.pBufferInfo = descriptor.bufferInfos;
-				writeDescriptorSet.pImageInfo = nullptr;
-			}
-			else if (descriptor.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || descriptor.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
-			{
-				writeDescriptorSet.pBufferInfo = nullptr;
-				writeDescriptorSet.pImageInfo = descriptor.imageInfos;
-			}
+			writeDescriptorSet.pBufferInfo = descriptor.bufferInfos;
+			writeDescriptorSet.pImageInfo = descriptor.imageInfos;
 			writeDescriptorSet.pTexelBufferView = nullptr; // Optional
 
 			descriptorWrites.push_back(writeDescriptorSet);
@@ -143,7 +121,47 @@ void createDescriptorSets2(VkDescriptorPool descriptorPool, size_t count, Descri
 	vkUpdateDescriptorSets(g_vk.device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 }
 
-void CreateDesciptorSetLayout(const VkDescriptorSetLayoutBinding* bindings, uint32_t count, VkDescriptorSetLayout* o_layout)
+void CreateDescriptorSets( VkDescriptorPool descriptorPool, size_t count, VkDescriptorSetLayout * descriptorSetLayouts, VkDescriptorSet* o_descriptorSets)
+{
+	VkDescriptorSetAllocateInfo allocInfo = {};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = descriptorPool;
+	allocInfo.descriptorSetCount = static_cast< uint32_t >(count);
+	allocInfo.pSetLayouts = descriptorSetLayouts;
+
+	if( vkAllocateDescriptorSets( g_vk.device, &allocInfo, o_descriptorSets ) != VK_SUCCESS )
+		throw std::runtime_error( "failed to allocate descriptor sets!" );
+}
+
+void UpdateDescriptorSets( size_t writeDescriptorSetsCount, const WriteDescriptorSet* writeDescriptorSets, VkDescriptorSet* descriptorSets )
+{
+	std::vector<VkWriteDescriptorSet> vkWriteDescriptorSets;
+	for( uint32_t i = 0; i < writeDescriptorSetsCount; ++i )
+	{
+		VkDescriptorSet descriptorSet = descriptorSets[i];
+		const WriteDescriptorSet* writeDescriptorSet = &writeDescriptorSets[i];
+		for( uint32_t j = 0; j < writeDescriptorSet->count; ++j )
+		{
+			const WriteDescriptor* writeDescriptor = &writeDescriptorSet->writeDescriptors[j];
+			VkWriteDescriptorSet writeDescriptorSet = {};
+			writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptorSet.dstSet = descriptorSet;
+			writeDescriptorSet.dstBinding = writeDescriptor->dstBinding;
+			writeDescriptorSet.dstArrayElement = 0;
+			writeDescriptorSet.descriptorType = writeDescriptor->type;
+			writeDescriptorSet.descriptorCount = writeDescriptor->count;
+			writeDescriptorSet.pBufferInfo = writeDescriptor->pBufferInfos;
+			writeDescriptorSet.pImageInfo = writeDescriptor->pImageInfos;
+			writeDescriptorSet.pTexelBufferView = nullptr; // Optional
+
+			vkWriteDescriptorSets.push_back( writeDescriptorSet );
+		}
+	}
+
+	vkUpdateDescriptorSets( g_vk.device, static_cast< uint32_t >(vkWriteDescriptorSets.size()), vkWriteDescriptorSets.data(), 0, nullptr );
+}
+
+void CreateDesciptorSetLayout( const VkDescriptorSetLayoutBinding* bindings, uint32_t count, VkDescriptorSetLayout* o_layout )
 {
 	VkDescriptorSetLayoutCreateInfo layoutInfo = {};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;

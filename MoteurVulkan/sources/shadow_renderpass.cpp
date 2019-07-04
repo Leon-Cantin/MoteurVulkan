@@ -25,85 +25,7 @@ constexpr VkExtent2D RT_EXTENT_SHADOW = { 1024, 1024 };
 PerFrameBuffer shadowSceneUniformBuffer;
 GfxMaterial shadowMaterial;
 
-enum class eTechniqueDataEntryName
-{
-	INSTANCE_DATA = 0,
-	SHADOW_DATA,
-	COUNT
-};
-
-struct TechniqueDataEntry
-{
-	eTechniqueDataEntryName name;
-	VkDescriptorType descriptorType;
-};
-
-const TechniqueDataEntry techniqueDataEntries[static_cast< size_t >(eTechniqueDataEntryName::COUNT)] =
-{
-	{
-		eTechniqueDataEntryName::INSTANCE_DATA,
-		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC
-	},
-	{
-		eTechniqueDataEntryName::SHADOW_DATA,
-		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
-	},
-};
-
-struct TechniqueDataBinding
-{
-	eTechniqueDataEntryName name;
-	uint32_t binding;	
-	VkShaderStageFlags stageFlags;
-};
-
-struct TechniqueDescriptorSet
-{
-	std::array< TechniqueDataBinding, 8 > dataBindings;
-	uint32_t count;
-};
-
-struct InputBuffers
-{
-	std::array<VkBuffer, static_cast< size_t >(eTechniqueDataEntryName::COUNT)> data;
-};
-
-inline VkBuffer GetBuffer( const InputBuffers* buffers, eTechniqueDataEntryName name )
-{
-	return buffers->data[static_cast< size_t >(name)];
-}
-
-void CreateDescriptorSetLayout(const TechniqueDescriptorSet * desc, VkDescriptorSetLayout * o_setLayout)
-{
-	std::array<VkDescriptorSetLayoutBinding, 8> tempBindings;
-
-	for( size_t i = 0; i < desc->count; ++i )
-	{
-		const TechniqueDataBinding* dataBinding = &desc->dataBindings[i];
-		tempBindings[i].binding = dataBinding->binding;
-		tempBindings[i].descriptorCount = 1;
-		tempBindings[i].descriptorType = techniqueDataEntries[static_cast<size_t>(dataBinding->name)].descriptorType;
-		tempBindings[i].stageFlags = dataBinding->stageFlags;
-		tempBindings[i].pImmutableSamplers = nullptr;
-	}
-
-	CreateDesciptorSetLayout( tempBindings.data(), desc->count, o_setLayout );
-}
-
-void CreateDescriptorSet( const InputBuffers* buffers, const TechniqueDescriptorSet* descriptorSetDesc, VkDescriptorSetLayout descriptorSetLayout, VkDescriptorPool descriptorPool, VkDescriptorSet* o_descriptorSet )
-{
-
-	DescriptorSet geoDescriptorSet;
-	geoDescriptorSet.descriptors.resize( descriptorSetDesc->count );
-	for( size_t i = 0; i < descriptorSetDesc->count; ++i )
-		geoDescriptorSet.descriptors[i] = { {GetBuffer(buffers, descriptorSetDesc->dataBindings[i].name ), 0, VK_WHOLE_SIZE}, {}, techniqueDataEntries[ static_cast<size_t>(descriptorSetDesc->dataBindings[i].name) ].descriptorType , descriptorSetDesc->dataBindings[i].binding };
-	geoDescriptorSet.layout = descriptorSetLayout;
-
-	createDescriptorSets( descriptorPool, 1, &geoDescriptorSet );
-	*o_descriptorSet = geoDescriptorSet.set;
-}
-
-TechniqueDescriptorSet shadowPassSet =
+TechniqueDescriptorSetDesc shadowPassSet =
 {
 	{
 		{ eTechniqueDataEntryName::SHADOW_DATA, 0, VK_SHADER_STAGE_VERTEX_BIT }
@@ -111,7 +33,7 @@ TechniqueDescriptorSet shadowPassSet =
 	1
 };
 
-TechniqueDescriptorSet shadowInstanceSet =
+TechniqueDescriptorSetDesc shadowInstanceSet =
 {
 	{
 		{ eTechniqueDataEntryName::INSTANCE_DATA, 0, VK_SHADER_STAGE_VERTEX_BIT }
@@ -167,12 +89,6 @@ static void CreateDescritorSetLayout( Technique* technique )
 static void CreateShadowTechnique( const RenderPass* renderpass, Technique* technique )
 {
 	//Create pipeline layout
-	VkVertexInputBindingDescription bindingDescriptions[5];
-	VkVertexInputAttributeDescription attributeDescriptions[5];
-	uint32_t bindingCount = GetBindingDescription( bindingDescriptions, attributeDescriptions );
-
-	std::vector<char> vertShaderCode = FS::readFile( "shaders/shadows.vert.spv" );
-
 	VkDescriptorSetLayout descriptorSetLayouts[] = { technique->renderpass_descriptor_layout, technique->instance_descriptor_layout };
 	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
 	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -186,6 +102,12 @@ static void CreateShadowTechnique( const RenderPass* renderpass, Technique* tech
 	}
 
 	//Create the PSO
+	VkVertexInputBindingDescription bindingDescriptions[5];
+	VkVertexInputAttributeDescription attributeDescriptions[5];
+	uint32_t bindingCount = GetBindingDescription( bindingDescriptions, attributeDescriptions );
+
+	std::vector<char> vertShaderCode = FS::readFile( "shaders/shadows.vert.spv" );
+
 	VICreation viState = { bindingDescriptions, bindingCount, attributeDescriptions, bindingCount };
 	//TODO: these cast are dangerous for alligment
 	std::vector<ShaderCreation> shaderState = {
@@ -210,14 +132,14 @@ static void CreateShadowTechnique( const RenderPass* renderpass, Technique* tech
 		&technique->pipeline );
 }
 
-void CreateShadowDescriptorSet(VkDescriptorPool descriptorPool, const VkBuffer*instanceUniformBuffer)
+void CreateShadowDescriptorSet(VkDescriptorPool descriptorPool, VkBuffer*instanceUniformBuffer)
 {
 	//TODO: build this outside
 	std::array< InputBuffers, SIMULTANEOUS_FRAMES> inputBuffers;
 	for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 	{
-		inputBuffers[i].data[static_cast< size_t >(eTechniqueDataEntryName::INSTANCE_DATA)] = instanceUniformBuffer[i];
-		inputBuffers[i].data[static_cast< size_t >(eTechniqueDataEntryName::SHADOW_DATA)] = shadowSceneUniformBuffer.buffers[i];
+		inputBuffers[i].data[static_cast< size_t >(eTechniqueDataEntryName::INSTANCE_DATA)] = &instanceUniformBuffer[i];
+		inputBuffers[i].data[static_cast< size_t >(eTechniqueDataEntryName::SHADOW_DATA)] = &shadowSceneUniformBuffer.buffers[i];
 	}
 
 	Technique* technique = &shadowMaterial.techniques[0];

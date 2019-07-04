@@ -12,18 +12,34 @@
 const RenderPass* geometryRenderPass;
 GfxMaterial m_geoMaterial;
 
+TechniqueDescriptorSetDesc geoPassSetDesc =
+{
+	{
+		{ eTechniqueDataEntryName::SCENE_DATA, 0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
+		{ eTechniqueDataEntryName::LIGHT_DATA, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
+	},
+	2,
+	{
+		{ eTechniqueDataEntryImageName::ALBEDOS, 2, VK_SHADER_STAGE_FRAGMENT_BIT },
+		{ eTechniqueDataEntryImageName::NORMALS, 3, VK_SHADER_STAGE_FRAGMENT_BIT },
+		{ eTechniqueDataEntryImageName::SHADOWS, 4, VK_SHADER_STAGE_FRAGMENT_BIT },
+	},
+	3
+};
+
+TechniqueDescriptorSetDesc geoInstanceSetDesc =
+{
+	{
+		{ eTechniqueDataEntryName::INSTANCE_DATA, 0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
+	},
+	1
+};
+
 static void createGeoTechnique( VkExtent2D extent, Technique* technique )
 {
-	VkVertexInputBindingDescription bindingDescriptions[5];
-	VkVertexInputAttributeDescription attributeDescriptions[5];
-	uint32_t bindingCount = GetBindingDescription( bindingDescriptions, attributeDescriptions );
-
-	std::vector<char> vertShaderCode = FS::readFile("shaders/triangle.vert.spv");
-	std::vector<char> fragShaderCode = FS::readFile("shaders/triangle.frag.spv");
-
 	VkPushConstantRange pushConstantRange = {};
 	pushConstantRange.offset = 0;
-	pushConstantRange.size = sizeof(uint32_t);
+	pushConstantRange.size = sizeof( uint32_t );
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	//Pipeline layout
@@ -35,9 +51,16 @@ static void createGeoTechnique( VkExtent2D extent, Technique* technique )
 	pipeline_layout_info.pushConstantRangeCount = 1;
 	pipeline_layout_info.pPushConstantRanges = &pushConstantRange;
 
-	if (vkCreatePipelineLayout(g_vk.device, &pipeline_layout_info, nullptr, &technique->pipelineLayout) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create pipeline layout!");
+	if( vkCreatePipelineLayout( g_vk.device, &pipeline_layout_info, nullptr, &technique->pipelineLayout ) != VK_SUCCESS ) {
+		throw std::runtime_error( "failed to create pipeline layout!" );
 	}
+	
+	VkVertexInputBindingDescription bindingDescriptions[5];
+	VkVertexInputAttributeDescription attributeDescriptions[5];
+	uint32_t bindingCount = GetBindingDescription( bindingDescriptions, attributeDescriptions );
+
+	std::vector<char> vertShaderCode = FS::readFile("shaders/triangle.vert.spv");
+	std::vector<char> fragShaderCode = FS::readFile("shaders/triangle.frag.spv");
 
 	VICreation viState = { bindingDescriptions, bindingCount, attributeDescriptions, bindingCount};
 	//TODO: these cast are dangerous for alligment
@@ -68,65 +91,41 @@ void CreateGeometryDescriptorSet( VkDescriptorPool descriptorPool, VkBuffer* sce
 	VkImageView normalTextureView, VkSampler sampler, VkImageView shadowTextureView, VkSampler shadowSampler )
 {
 	Technique* technique = &m_geoMaterial.techniques[0];
-	std::array<DescriptorSet2, SIMULTANEOUS_FRAMES> descriptorSets2;
 
-	VkDescriptorBufferInfo sceneUbos[] = { {sceneUniformBuffers[0], 0, VK_WHOLE_SIZE}, {sceneUniformBuffers[1], 0, VK_WHOLE_SIZE} };
-	VkDescriptorBufferInfo lightUbos[] = { { lightBuffers[0], 0, VK_WHOLE_SIZE }, { lightBuffers[1], 0, VK_WHOLE_SIZE } };
-
-	//TODO fix this mess
+	//TODO: build this outside
 	VkDescriptorImageInfo albedos[] = { { sampler, textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
-	{ sampler, textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
-	{ sampler, textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
-	{ sampler, textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
-	{ sampler, textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL } };
+										{ sampler, textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
+										{ sampler, textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
+										{ sampler, textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
+										{ sampler, textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL } };
 	VkDescriptorImageInfo normalTextures[] = { { sampler, normalTextureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL } };
 	VkDescriptorImageInfo shadowTextures[] = { { shadowSampler, shadowTextureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL } };
-	//Per render pass descriptor est
-	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
+
+	std::array< InputBuffers, SIMULTANEOUS_FRAMES> inputBuffers;
+	for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 	{
-		DescriptorSet2& geoDescriptorSet = descriptorSets2[i] = {};
-		geoDescriptorSet.descriptors.resize(5);
-		geoDescriptorSet.descriptors[0] = { &sceneUbos[i], {}, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0 };
-		geoDescriptorSet.descriptors[1] = { &lightUbos[i], {}, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 };
-		geoDescriptorSet.descriptors[2] = { {}, albedos, 5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2 };
-		geoDescriptorSet.descriptors[3] = { {}, normalTextures, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3 };
-		geoDescriptorSet.descriptors[4] = { {}, shadowTextures, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4 };
-		geoDescriptorSet.layout = technique->renderpass_descriptor_layout;
+		inputBuffers[i].data[static_cast< size_t >(eTechniqueDataEntryName::INSTANCE_DATA)] = &instanceUniformBuffers[i];
+		inputBuffers[i].data[static_cast< size_t >(eTechniqueDataEntryName::SCENE_DATA)] = &sceneUniformBuffers[i];
+		inputBuffers[i].data[static_cast< size_t >(eTechniqueDataEntryName::LIGHT_DATA)] = &lightBuffers[i];
+
+
+		inputBuffers[i].dataImages[static_cast< size_t >(eTechniqueDataEntryImageName::ALBEDOS)] = albedos;
+		inputBuffers[i].dataImages[static_cast< size_t >(eTechniqueDataEntryImageName::NORMALS)] = normalTextures;
+		inputBuffers[i].dataImages[static_cast< size_t >(eTechniqueDataEntryImageName::SHADOWS)] = shadowTextures;
 	}
-	createDescriptorSets2(descriptorPool, descriptorSets2.size(), descriptorSets2.data());
 
-	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
-		technique->renderPass_descriptor[i] = descriptorSets2[i].set;
-
-	std::array<DescriptorSet, SIMULTANEOUS_FRAMES> descriptorSets;
-	//Per instance descriptor set
-	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
+	for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 	{
-		DescriptorSet& geoDescriptorSet = descriptorSets[i] = {};
-		geoDescriptorSet.descriptors.resize(1);
-		geoDescriptorSet.descriptors[0] = { {instanceUniformBuffers[i], 0, VK_WHOLE_SIZE}, {}, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 0 };
-		geoDescriptorSet.layout = technique->instance_descriptor_layout;
+		CreateDescriptorSet( &inputBuffers[i], &geoPassSetDesc, technique->renderpass_descriptor_layout, descriptorPool, &technique->renderPass_descriptor[i] );
+		CreateDescriptorSet( &inputBuffers[i], &geoInstanceSetDesc, technique->instance_descriptor_layout, descriptorPool, &technique->instance_descriptor[i] );
 	}
-	createDescriptorSets(descriptorPool, descriptorSets.size(), descriptorSets.data());
-
-	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
-		technique->instance_descriptor[i] = descriptorSets[i].set;
 }
+
 
 void createGeoDescriptorSetLayout( Technique * technique )
 {
-	const VkDescriptorSetLayoutBinding uboLayoutBinding = { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER , 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };
-	const VkDescriptorSetLayoutBinding lightLayoutBinding = { 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };
-	const VkDescriptorSetLayoutBinding samplerLayoutBinding = { 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };	
-	const VkDescriptorSetLayoutBinding normalSamplerLayoutBinding = { 3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };
-	const VkDescriptorSetLayoutBinding shadowSamplerLayoutBinding = { 4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };
-
-	const std::array<VkDescriptorSetLayoutBinding, 5> bindings = { uboLayoutBinding, samplerLayoutBinding, lightLayoutBinding, normalSamplerLayoutBinding, shadowSamplerLayoutBinding };
-	CreateDesciptorSetLayout(bindings.data(), static_cast<uint32_t>(bindings.size()), &technique->renderpass_descriptor_layout );
-
-	const VkDescriptorSetLayoutBinding instanceUboLayoutBinding = { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC , 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };
-	const std::array<VkDescriptorSetLayoutBinding, 1> bindings2 = { instanceUboLayoutBinding };
-	CreateDesciptorSetLayout(bindings2.data(), static_cast<uint32_t>(bindings2.size()), &technique->instance_descriptor_layout );
+	CreateDescriptorSetLayout( &geoPassSetDesc, &technique->renderpass_descriptor_layout );
+	CreateDescriptorSetLayout( &geoInstanceSetDesc, &technique->instance_descriptor_layout );
 }
 
 void CreateGeometryPipeline(const Swapchain& swapchain)
