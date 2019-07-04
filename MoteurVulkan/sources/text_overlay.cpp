@@ -28,24 +28,29 @@ typedef uint32_t Index_t;
 const uint32_t verticesPerChar = 4;
 const uint32_t indexesPerChar = 6;
 
-static void CreateTextDescriptorSetLayout(Technique* technique)
+TechniqueDescriptorSetDesc textPassSet =
 {
-	const VkDescriptorSetLayoutBinding samplerLayoutBinding = { 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };
-
-	const std::array<VkDescriptorSetLayoutBinding, 1> bindings = { samplerLayoutBinding };
-	CreateDesciptorSetLayout(bindings.data(), static_cast<uint32_t>(bindings.size()), &technique->renderpass_descriptor_layout);
-}
+	{},
+	0,
+	{
+		{ eTechniqueDataEntryImageName::TEXT, 0, VK_SHADER_STAGE_FRAGMENT_BIT }
+	},
+	1
+};
 
 void CreateTextDescriptorSet(VkDescriptorPool descriptorPool, VkSampler trilinearSampler)
 {
-	Technique* technique = &textMaterial.techniques[0];
-	DescriptorSet descriptorSet = {};
-	descriptorSet.descriptors.resize(1);
-	descriptorSet.descriptors[0] = { {}, { trilinearSampler, g_fontImage.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0 };
-	descriptorSet.layout = technique->renderpass_descriptor_layout;
-	createDescriptorSets(descriptorPool, 1, &descriptorSet);
+	//TODO: build this outside
+	VkDescriptorImageInfo textTextures[] = { { trilinearSampler, g_fontImage.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL } };
 
-	technique->renderPass_descriptor[0] = descriptorSet.set;
+	std::array< InputBuffers, SIMULTANEOUS_FRAMES> inputBuffers;
+	for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
+	{
+		inputBuffers[i].dataImages[static_cast< size_t >(eTechniqueDataEntryImageName::TEXT)] = textTextures;
+	}
+
+	Technique* technique = &textMaterial.techniques[0];
+	CreateDescriptorSet( &inputBuffers[0], &textPassSet, technique->renderpass_descriptor_layout, descriptorPool, &technique->renderPass_descriptor[0] );
 }
 
 static void CreateTextTechnique( VkExtent2D extent, Technique* technique)
@@ -186,6 +191,7 @@ void UpdateText( const TextZone * textZones, size_t textZonesCount, VkExtent2D s
 	vkFlushMappedMemoryRanges(g_vk.device, 1, &indexMemoryRange);*/
 }
 
+//TODO: Use the system for vertex buffers
 void CreateTextVertexBuffer(size_t maxCharCount)
 {
 	maxTextCharCount = static_cast<uint32_t>(maxCharCount);
@@ -211,10 +217,15 @@ void LoadFontTexture()
 	Load2DTexture(&font24pixels[0][0], fontWidth, fontHeight, 1, 1, VK_FORMAT_R8_UNORM, g_fontImage);
 }
 
+static void CreateDescritorSetLayout( Technique* technique )
+{
+	CreateDescriptorSetLayout( &textPassSet, &technique->renderpass_descriptor_layout );
+}
+
 static void CreateTextPipeline(const Swapchain& swapchain)
 {
 	Technique* technique = &textMaterial.techniques[0];
-	CreateTextDescriptorSetLayout( technique );
+	CreateDescritorSetLayout( technique );
 	CreateTextTechnique( swapchain.extent, technique );
 }
 

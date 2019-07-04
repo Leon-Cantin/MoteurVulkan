@@ -21,32 +21,41 @@ struct SkyboxUniformBufferObject {
 	glm::mat4 inv_view_matrix;
 };
 
+TechniqueDescriptorSetDesc skyboxPassSetDesc =
+{
+	{
+		{ eTechniqueDataEntryName::SKYBOX_DATA, 0, VK_SHADER_STAGE_VERTEX_BIT },
+	},
+	1,
+	{
+		{ eTechniqueDataEntryImageName::SKYBOX, 1, VK_SHADER_STAGE_FRAGMENT_BIT },
+	},
+	1
+};
+
 static void createSkyboxDescriptorSetLayout(Technique* technique)
 {
-	const VkDescriptorSetLayoutBinding uboLayoutBinding = { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER , 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr };
-	const VkDescriptorSetLayoutBinding samplerLayoutBinding = { 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr };
-
-	const std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
-	CreateDesciptorSetLayout(bindings.data(), static_cast<uint32_t>(bindings.size()), &technique->renderpass_descriptor_layout);
+	CreateDescriptorSetLayout( &skyboxPassSetDesc, &technique->renderpass_descriptor_layout );
 }
 
 void CreateSkyboxDescriptorSet(VkDescriptorPool descriptorPool, VkImageView skyboxImageView, VkSampler trilinearSampler)
 {
 	Technique* technique = &skyboxMaterial.techniques[0];
 
-	std::array<DescriptorSet, SIMULTANEOUS_FRAMES> descriptorSets;
-	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
-	{
-		DescriptorSet& descriptorSet = descriptorSets[i] = {};
-		descriptorSet.descriptors.resize(2);
-		descriptorSet.descriptors[0] = { {skyboxUniformBuffer.buffers[i], 0, VK_WHOLE_SIZE}, {}, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0 };
-		descriptorSet.descriptors[1] = { {}, {trilinearSampler, skyboxImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 };
-		descriptorSet.layout = technique->renderpass_descriptor_layout;
+	//TODO: build this outside
+	VkDescriptorImageInfo skyboxImages[] { { trilinearSampler, skyboxImageView } };
 
+	std::array< InputBuffers, SIMULTANEOUS_FRAMES> inputBuffers;
+	for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
+	{
+		SetBuffers( &inputBuffers[i], eTechniqueDataEntryName::SKYBOX_DATA, &skyboxUniformBuffer.buffers[i] );
+		SetImages( &inputBuffers[i], eTechniqueDataEntryImageName::SKYBOX, skyboxImages );
 	}
-	createDescriptorSets(descriptorPool, descriptorSets.size(), descriptorSets.data());
-	for(uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
-		technique->renderPass_descriptor[i] = descriptorSets[i].set;
+
+	for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
+	{
+		CreateDescriptorSet( &inputBuffers[i], &skyboxPassSetDesc, technique->renderpass_descriptor_layout, descriptorPool, &technique->renderPass_descriptor[i] );
+	}
 }
 
 static void CreateSkyboxTechnique(VkExtent2D extent, Technique* technique)

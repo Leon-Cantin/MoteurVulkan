@@ -35,6 +35,7 @@ enum class eTechniqueDataEntryName
 	SHADOW_DATA,
 	SCENE_DATA,
 	LIGHT_DATA,
+	SKYBOX_DATA,
 	COUNT
 };
 
@@ -43,6 +44,8 @@ enum class eTechniqueDataEntryImageName
 	ALBEDOS = 0,
 	NORMALS,
 	SHADOWS,
+	TEXT,
+	SKYBOX,
 	COUNT
 };
 
@@ -66,6 +69,7 @@ static const TechniqueDataEntry techniqueDataEntries[static_cast< size_t >(eTech
 	{ eTechniqueDataEntryName::SHADOW_DATA,	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
 	{ eTechniqueDataEntryName::SCENE_DATA,	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
 	{ eTechniqueDataEntryName::LIGHT_DATA,	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
+	{ eTechniqueDataEntryName::SKYBOX_DATA,	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
 };
 
 static const TechniqueDataEntryImage techniqueDataEntryImages[static_cast< size_t >(eTechniqueDataEntryImageName::COUNT)] =
@@ -73,6 +77,8 @@ static const TechniqueDataEntryImage techniqueDataEntryImages[static_cast< size_
 	{ eTechniqueDataEntryImageName::ALBEDOS, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5 },
 	{ eTechniqueDataEntryImageName::NORMALS, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
 	{ eTechniqueDataEntryImageName::SHADOWS, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
+	{ eTechniqueDataEntryImageName::TEXT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
+	{ eTechniqueDataEntryImageName::SKYBOX, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
 };
 
 struct TechniqueDataBinding
@@ -103,6 +109,16 @@ struct InputBuffers
 	std::array<VkBuffer* , static_cast< size_t >(eTechniqueDataEntryName::COUNT)> data;
 	std::array<VkDescriptorImageInfo*, static_cast< size_t >(eTechniqueDataEntryImageName::COUNT)> dataImages;
 };
+
+inline void SetBuffers( InputBuffers* buffers, eTechniqueDataEntryName name, VkBuffer* input )
+{
+	buffers->data[static_cast< size_t >(name)] = input;
+}
+
+inline void SetImages( InputBuffers* buffers, eTechniqueDataEntryImageName name, VkDescriptorImageInfo* input )
+{
+	buffers->dataImages[static_cast< size_t >(name)] = input;
+}
 
 inline VkBuffer* GetBuffer( const InputBuffers* buffers, eTechniqueDataEntryName name )
 {
