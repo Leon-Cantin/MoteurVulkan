@@ -9,9 +9,9 @@ struct LightUniform {
 	glm::vec3 position;
 	float intensity;
 };
-void InitSkybox(const GfxImage* skyboxImage);
+
 SceneInstanceSet*  CreateGeometryInstanceDescriptorSet();
-void CreateGeometryRenderpassDescriptorSet(const GfxImage* albedoImage, const GfxImage* normalImage);
+void CreateDescriptorSets(const GfxImage* albedoImage, const GfxImage* normalImage, const GfxImage* skyboxImage );
 void UpdateGeometryUniformBuffer(const SceneInstance* sceneInstance, const SceneInstanceSet* sceneInstanceDescriptorSet, uint32_t currentFrame);
 void UpdateLightUniformBuffer(const SceneMatricesUniform* shadowSceneMatrices, LightUniform* light, uint32_t currentFrame);
 void UpdateSceneUniformBuffer(const glm::mat4& world_view_matrix, VkExtent2D extent, uint32_t currentFrame);

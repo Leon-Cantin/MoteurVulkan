@@ -1,4 +1,4 @@
-#pragma once
+/*#pragma once
 
 #include "vk_globals.h"
 #include "swapchain.h"
@@ -14,3 +14,4 @@ void createTextComputeDescriptorSetLayout();
 void CreateTextComputePipeline();
 void CreateTextComputeDescriptorSet(VkDescriptorPool descriptorPool, const Swapchain& swapchain, VkSampler trilinearSampler);
 void CmdDispatchTextOverlay();
+*/

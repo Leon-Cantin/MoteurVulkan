@@ -58,28 +58,6 @@ void UpdateShadowUniformBuffers(size_t currentFrame, const SceneMatricesUniform*
 	UpdatePerFrameBuffer(&shadowSceneUniformBuffer, sceneUniforms, sizeof(SceneMatricesUniform), currentFrame);
 }
 
-static void CmdBeginShadowPass(VkCommandBuffer commandBuffer, size_t currentFrame)
-{
-	CmdBeginVkLabel(commandBuffer, "Shadow Renderpass", glm::vec4(0.5f, 0.2f, 0.4f, 1.0f));
-	BeginRenderPass(commandBuffer, *shadowRenderPass, shadowRenderPass->frameBuffer.frameBuffer, shadowRenderPass->frameBuffer.extent);
-
-	BeginTechnique( commandBuffer, &shadowMaterial.techniques[0], currentFrame );
-}
-
-static void CmdDrawModel(VkCommandBuffer commandBuffer, const SceneInstanceSet* instanceSet, const GfxModel* modelAsset, uint32_t currentFrame)
-{
-	const Technique* technique = &shadowMaterial.techniques[0];
-	vkCmdBindDescriptorSets( commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, INSTANCE_SET, 1,
-		&technique->instance_descriptor[currentFrame], 1, &instanceSet->geometryBufferOffsets[currentFrame] );
-	CmdDrawIndexed( commandBuffer, *modelAsset );
-}
-
-static void CmdEndShadowPass(VkCommandBuffer commandBuffer)
-{
-	EndRenderPass(commandBuffer);
-	CmdEndVkLabel(commandBuffer);
-}
-
 static void CreateDescritorSetLayout( Technique* technique )
 {
 	CreateDescriptorSetLayout( &shadowPassSet, &technique->renderpass_descriptor_layout );
@@ -169,6 +147,32 @@ void InitializeShadowPass(const RenderPass* renderpass, const Swapchain* swapcha
 {
 	shadowRenderPass = renderpass;
 	CreateShadowPass();
+}
+
+/*
+	Draw stuff
+*/
+
+static void CmdBeginShadowPass( VkCommandBuffer commandBuffer, size_t currentFrame )
+{
+	CmdBeginVkLabel( commandBuffer, "Shadow Renderpass", glm::vec4( 0.5f, 0.2f, 0.4f, 1.0f ) );
+	BeginRenderPass( commandBuffer, *shadowRenderPass, shadowRenderPass->frameBuffer.frameBuffer, shadowRenderPass->frameBuffer.extent );
+
+	BeginTechnique( commandBuffer, &shadowMaterial.techniques[0], currentFrame );
+}
+
+static void CmdDrawModel( VkCommandBuffer commandBuffer, const SceneInstanceSet* instanceSet, const GfxModel* modelAsset, uint32_t currentFrame )
+{
+	const Technique* technique = &shadowMaterial.techniques[0];
+	vkCmdBindDescriptorSets( commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, INSTANCE_SET, 1,
+		&technique->instance_descriptor[currentFrame], 1, &instanceSet->geometryBufferOffsets[currentFrame] );
+	CmdDrawIndexed( commandBuffer, *modelAsset );
+}
+
+static void CmdEndShadowPass( VkCommandBuffer commandBuffer )
+{
+	EndRenderPass( commandBuffer );
+	CmdEndVkLabel( commandBuffer );
 }
 
 void ShadowRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent)

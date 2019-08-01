@@ -166,55 +166,53 @@ namespace Scene2DGame
 
 	void Init()
 	{
-		InitFramework(WIDTH, HEIGHT, "2D game");
+		InitFramework( WIDTH, HEIGHT, "2D game" );
 
 		//Input callbacks
 		IH::InitInputs();
-		IH::RegisterAction("console", IH::Pressed, &ConCom::OpenConsole);
-		IH::BindInputToAction("console", IH::TILD);
-		IH::RegisterAction("forward", IH::Pressed, &ForwardCallback);
-		IH::BindInputToAction("forward", IH::W);
-		IH::RegisterAction("backward", IH::Pressed, &BackwardCallback);
-		IH::BindInputToAction("backward", IH::S);
-		IH::RegisterAction("left", IH::Pressed, &MoveLeftCallback);
-		IH::BindInputToAction("left", IH::A);
-		IH::RegisterAction("right", IH::Pressed, &MoveRightCallback);
-		IH::BindInputToAction("right", IH::D);
+		IH::RegisterAction( "console", IH::Pressed, &ConCom::OpenConsole );
+		IH::BindInputToAction( "console", IH::TILD );
+		IH::RegisterAction( "forward", IH::Pressed, &ForwardCallback );
+		IH::BindInputToAction( "forward", IH::W );
+		IH::RegisterAction( "backward", IH::Pressed, &BackwardCallback );
+		IH::BindInputToAction( "backward", IH::S );
+		IH::RegisterAction( "left", IH::Pressed, &MoveLeftCallback );
+		IH::BindInputToAction( "left", IH::A );
+		IH::RegisterAction( "right", IH::Pressed, &MoveRightCallback );
+		IH::BindInputToAction( "right", IH::D );
 
 		//TODO
 		//glfwSetCursorPosCallback(g_window, onMouseMove);
 
 		//Console commands callback (need IH)
 		ConCom::Init();
-		ConCom::RegisterCommand("light", &LightCallback);
-		ConCom::RegisterCommand("reloadshaders", &ReloadShadersCallback);
+		ConCom::RegisterCommand( "light", &LightCallback );
+		ConCom::RegisterCommand( "reloadshaders", &ReloadShadersCallback );
 
 		//Objects update callbacks
-		RegisterTickFunction(&TickObjectCallback);
+		RegisterTickFunction( &TickObjectCallback );
 
 		//Init renderer stuff
 		InitRendererImp();
 
 		//LoadAssets
-		GfxImage* skyboxTexture = AL::LoadCubeTexture("SkyboxTexture", "assets/mountaincube.ktx");
+		GfxImage* skyboxTexture = AL::LoadCubeTexture( "SkyboxTexture", "assets/mountaincube.ktx" );
 
-		GfxImage* albedoTexture = AL::CreateSolidColorTexture("ModelAlbedoTexture", glm::vec4(0.8f, 0.8f, 0.8f, 1.0f));
-		GfxImage* normalTexture = AL::CreateSolidColorTexture("ModelNormalTexture", glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
+		GfxImage* albedoTexture = AL::CreateSolidColorTexture( "ModelAlbedoTexture", glm::vec4( 0.8f, 0.8f, 0.8f, 1.0f ) );
+		GfxImage* normalTexture = AL::CreateSolidColorTexture( "ModelNormalTexture", glm::vec4( 0.0f, 0.0f, 1.0f, 0.0f ) );
 
-		GfxModel* planeModelAsset = AL::Load3DModel("Plane", "assets/plane.obj", 0);
+		GfxModel* planeModelAsset = AL::Load3DModel( "Plane", "assets/plane.obj", 0 );
 		GfxModel* cubeModelAsset = AL::LoadglTf3DModel( "Cube", "assets/cube2.glb" );
 
-		InitSkybox(skyboxTexture);
+		CreateDescriptorSets( albedoTexture, normalTexture, skyboxTexture );
 
-		CreateGeometryRenderpassDescriptorSet(albedoTexture, normalTexture);
+		planeSceneInstance = { glm::vec3( 0.0f, -0.5f, 0.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 10.0f };
+		cubeSceneInstance = { glm::vec3( 0.0f, 1.0f, 2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 0.5f };
+		cameraSceneInstance = { glm::vec3( 0.0f, 0.0f, -2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 1.0f };
+		g_light = { glm::mat4( 1.0f ), {3.0f, 3.0f, -3.0f}, 1.0f };
 
-		planeSceneInstance = { glm::vec3(0.0f, -0.5f, 0.0f), glm::angleAxis(glm::radians(0.0f), glm::vec3{0.0f, 1.0f, 0.0f}), 10.0f };
-		cubeSceneInstance = { glm::vec3(0.0f, 0.0f, 2.0f), glm::angleAxis(glm::radians(0.0f), glm::vec3{0.0f, 1.0f, 0.0f}), 0.5f };
-		cameraSceneInstance = { glm::vec3(0.0f, 0.0f, -2.0f), glm::angleAxis(glm::radians(0.0f), glm::vec3{0.0f, 1.0f, 0.0f}), 1.0f };
-		g_light = { glm::mat4(1.0f), {3.0f, 3.0f, -3.0f}, 1.0f };
-
-		CreateRenderable(planeModelAsset, 0, 0, &planeRenderable);
-		CreateRenderable(cubeModelAsset, 0, 0, &cubeRenderable);
+		CreateRenderable( planeModelAsset, 0, 0, &planeRenderable );
+		CreateRenderable( cubeModelAsset, 0, 0, &cubeRenderable );
 	}
 
 	void cleanup() 

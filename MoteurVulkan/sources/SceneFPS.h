@@ -310,9 +310,7 @@ namespace SceneFPS
 		GfxModel* planeModelAsset = AL::Load3DModel("Plane", "assets/plane.obj", 0);
 		GfxModel* cubeModelAsset = AL::Load3DModel("Cube", "assets/cube.obj", 0);
 
-		InitSkybox(skyboxTexture);
-
-		CreateGeometryRenderpassDescriptorSet(albedoTexture, normalTexture);
+		CreateDescriptorSets(albedoTexture, normalTexture, skyboxTexture);
 
 		CreateRenderable(wandererModelAsset, 0, 0, &wandererRenderable);
 		CreateRenderable(planeModelAsset, 0, 0, &planeRenderable);

@@ -1,4 +1,4 @@
-#pragma once
+/*
 #include "text_compute_overlay.h"
 
 #include "descriptors.h"
@@ -113,9 +113,10 @@ void CleanupTextCompute()
 	vkDestroyDescriptorSetLayout(g_vk.device, textComputeDescriptorSetLayout, nullptr);
 }
 
+
 void CmdDispatchTextOverlay()
 {
-	/*g_computeCommandBuffers.resize(g_outputFramebuffer.size());
+	g_computeCommandBuffers.resize(g_outputFramebuffer.size());
 	allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.commandPool = g_vk.computeCommandPool;
@@ -136,10 +137,10 @@ void CmdDispatchTextOverlay()
 		transitionImageLayout(computeCommandBuffer, g_swapchain.images[i].image, g_swapchain.images[i].format, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 1, 1);
 
 		EndCommandBufferRecording(computeCommandBuffer);
-	}*/
+	}
 }
 
-/*//Compute
+//Compute
 VkSubmitInfo computeSubmitInfo = {};
 computeSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 

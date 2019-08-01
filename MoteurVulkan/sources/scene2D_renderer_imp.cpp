@@ -38,7 +38,7 @@ static void CreateGeometryUniformBuffer()
 	CreatePerFrameBuffer(sizeof(LightUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &lightUniformBuffer);
 }
 
-void CreateGeometryRenderpassDescriptorSet(const GfxImage* albedoImage, const GfxImage* normalImage)
+void CreateDescriptorSets(const GfxImage* albedoImage, const GfxImage* normalImage, const GfxImage* skyboxImage )
 {
 	const GfxImage *shadowImages = FG::GetRenderTarget(RT_SHADOW_MAP);
 
@@ -46,6 +46,8 @@ void CreateGeometryRenderpassDescriptorSet(const GfxImage* albedoImage, const Gf
 		shadowImages->imageView, GetSampler(Samplers::Shadow));
 
 	CreateShadowDescriptorSet(descriptorPool, instanceMatricesBuffer.buffers.data());
+
+	CreateSkyboxDescriptorSet( descriptorPool, skyboxImage->imageView, GetSampler( Samplers::Trilinear ) );
 }
 
 SceneInstanceSet*  CreateGeometryInstanceDescriptorSet()
@@ -65,11 +67,6 @@ void UpdateGeometryUniformBuffer(const SceneInstance* sceneInstance, const Scene
 	vkMapMemory(g_vk.device, instanceMatricesBuffer.memory, sceneInstanceDescriptorSet->geometryBufferOffsets[currentFrame] + frameMemoryOffset, sizeof(InstanceMatrices), 0, &data);
 	memcpy(data, &instanceMatrices, sizeof(InstanceMatrices));
 	vkUnmapMemory(g_vk.device, instanceMatricesBuffer.memory);
-}
-
-void InitSkybox(const GfxImage* skyboxImage)
-{
-	CreateSkyboxDescriptorSet(descriptorPool, skyboxImage->imageView, GetSampler(Samplers::Trilinear));
 }
 
 /*
