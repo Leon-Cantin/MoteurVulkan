@@ -3,6 +3,7 @@
 #include "renderpass.h"
 #include "swapchain.h"
 #include "scene_frame_data.h"
+#include "material.h"
 
 namespace FG
 {
@@ -11,11 +12,13 @@ namespace FG
 
 	struct FrameGraphNode
 	{
-		void(*Initialize)(const RenderPass*, const Swapchain* swapchain);
+		void(*Initialize)(const RenderPass*, const Swapchain* swapchain, Technique&& technique);
 		void(*CleanupAfterSwapchain)();
 		void(*RecreateAfterSwapchain)(const Swapchain* swapchain);
 		void(*Cleanup)();
 		void(*RecordDrawCommands)(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent);
+		TechniqueDescriptorSetDesc* passSet;
+		TechniqueDescriptorSetDesc* instanceSet;
 	};
 
 	struct RenderPassCreationData
@@ -43,7 +46,8 @@ namespace FG
 		bool swapChainSized = false;
 	};
 
-	void CreateGraph(const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<RenderTargetCreationData> *inRtCreationData, uint32_t backbufferId);
+	void CreateGraph( const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<RenderTargetCreationData> *inRtCreationData, uint32_t backbufferId, VkDescriptorPool descriptorPool,
+		void( *createTechniqueCallback )(const RenderPassCreationData*, Technique* technique) );
 	const RenderPass* GetRenderPass(uint32_t id);
 	const GfxImage* GetRenderTarget(uint32_t render_target_id);
 	void RecreateAfterSwapchain(const Swapchain* swapchain);

@@ -272,7 +272,8 @@ namespace FG
 		}
 	}
 
-	void CreateGraph(const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<RenderTargetCreationData> *inRtCreationData, uint32_t backbufferId)
+	void CreateGraph(const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<RenderTargetCreationData> *inRtCreationData, uint32_t backbufferId, VkDescriptorPool descriptorPool,
+		void(*createTechniqueCallback)(const RenderPassCreationData*, Technique* technique) )
 	{
 		//Setup resources
 		RENDERTARGETS_COUNT = inRtCreationData->size();
@@ -287,8 +288,15 @@ namespace FG
 
 		for (uint32_t i = 0; i < _rpCreationData.size(); ++i)
 		{
-			CreateRenderPass(_rpCreationData[i], _rpCreationData[i].name, &_render_passes[_render_passes_count++]);
-			_rpCreationData[i].frame_graph_node.Initialize(GetRenderPass(i), swapchain);
+			//Create the pass
+			RenderPassCreationData* rpCreationData = &_rpCreationData[i];
+			CreateRenderPass( *rpCreationData, rpCreationData->name, &_render_passes[_render_passes_count++] );
+
+			//Create the descriptor set and layout
+			Technique technique;
+			createTechniqueCallback( rpCreationData, &technique );
+
+			_rpCreationData[i].frame_graph_node.Initialize( GetRenderPass( i ), swapchain, std::move( technique ) );
 		}
 	}
 

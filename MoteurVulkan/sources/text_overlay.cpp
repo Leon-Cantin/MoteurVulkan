@@ -28,29 +28,9 @@ typedef uint32_t Index_t;
 const uint32_t verticesPerChar = 4;
 const uint32_t indexesPerChar = 6;
 
-TechniqueDescriptorSetDesc textPassSet =
+const GfxImage* GetTextImage()
 {
-	{},
-	0,
-	{
-		{ eTechniqueDataEntryImageName::TEXT, 0, VK_SHADER_STAGE_FRAGMENT_BIT }
-	},
-	1
-};
-
-void CreateTextDescriptorSet(VkDescriptorPool descriptorPool, VkSampler trilinearSampler)
-{
-	//TODO: build this outside
-	VkDescriptorImageInfo textTextures[] = { { trilinearSampler, g_fontImage.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL } };
-
-	std::array< InputBuffers, SIMULTANEOUS_FRAMES> inputBuffers;
-	for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
-	{
-		inputBuffers[i].dataImages[static_cast< size_t >(eTechniqueDataEntryImageName::TEXT)] = textTextures;
-	}
-
-	Technique* technique = &textMaterial.techniques[0];
-	CreateDescriptorSet( &inputBuffers[0], &textPassSet, technique->renderpass_descriptor_layout, descriptorPool, &technique->renderPass_descriptor[0] );
+	return &g_fontImage;
 }
 
 static void CreateTextTechnique( VkExtent2D extent, Technique* technique)
@@ -217,18 +197,6 @@ void LoadFontTexture()
 	Load2DTexture(&font24pixels[0][0], fontWidth, fontHeight, 1, 1, VK_FORMAT_R8_UNORM, g_fontImage);
 }
 
-static void CreateDescritorSetLayout( Technique* technique )
-{
-	CreateDescriptorSetLayout( &textPassSet, &technique->renderpass_descriptor_layout );
-}
-
-static void CreateTextPipeline(const Swapchain& swapchain)
-{
-	Technique* technique = &textMaterial.techniques[0];
-	CreateDescritorSetLayout( technique );
-	CreateTextTechnique( swapchain.extent, technique );
-}
-
 void RecreateTextRenderPassAfterSwapchain(const Swapchain* swapchain)
 {
 	Technique* technique = &textMaterial.techniques[0];
@@ -254,10 +222,11 @@ void CleanupTextRenderPass()
 	vkFreeMemory(g_vk.device, textIndexBufferMemory, nullptr);
 }
 
-void InitializeTextRenderPass(const RenderPass* renderpass, const Swapchain* swapchain)
+void InitializeTextRenderPass(const RenderPass* renderpass, const Swapchain* swapchain, Technique&& technique)
 {
+	textMaterial.techniques[0] = std::move( technique );
 	textRenderPass = renderpass;
-	CreateTextPipeline(*swapchain);
+	CreateTextTechnique( swapchain->extent, &textMaterial.techniques[0] );
 }
 
 void TextRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent)

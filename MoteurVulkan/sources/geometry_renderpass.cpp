@@ -5,35 +5,12 @@
 #include "descriptors.h"
 #include "vk_commands.h"
 #include "vk_debug.h"
-#include "material.h"
 
 #include <vector>
 
 const RenderPass* geometryRenderPass;
 GfxMaterial m_geoMaterial;
 
-TechniqueDescriptorSetDesc geoPassSetDesc =
-{
-	{
-		{ eTechniqueDataEntryName::SCENE_DATA, 0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
-		{ eTechniqueDataEntryName::LIGHT_DATA, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
-	},
-	2,
-	{
-		{ eTechniqueDataEntryImageName::ALBEDOS, 2, VK_SHADER_STAGE_FRAGMENT_BIT },
-		{ eTechniqueDataEntryImageName::NORMALS, 3, VK_SHADER_STAGE_FRAGMENT_BIT },
-		{ eTechniqueDataEntryImageName::SHADOWS, 4, VK_SHADER_STAGE_FRAGMENT_BIT },
-	},
-	3
-};
-
-TechniqueDescriptorSetDesc geoInstanceSetDesc =
-{
-	{
-		{ eTechniqueDataEntryName::INSTANCE_DATA, 0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
-	},
-	1
-};
 
 static void createGeoTechnique( VkExtent2D extent, Technique* technique )
 {
@@ -87,50 +64,8 @@ static void createGeoTechnique( VkExtent2D extent, Technique* technique )
 		&technique->pipeline);
 }
 
-void CreateGeometryDescriptorSet( VkDescriptorPool descriptorPool, VkBuffer* sceneUniformBuffers, VkBuffer* instanceUniformBuffers, VkBuffer* lightBuffers, VkImageView textureView,
-	VkImageView normalTextureView, VkSampler sampler, VkImageView shadowTextureView, VkSampler shadowSampler )
-{
-	Technique* technique = &m_geoMaterial.techniques[0];
-
-	//TODO: build this outside
-	VkDescriptorImageInfo albedos[] = { { sampler, textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
-										{ sampler, textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
-										{ sampler, textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
-										{ sampler, textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
-										{ sampler, textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL } };
-	VkDescriptorImageInfo normalTextures[] = { { sampler, normalTextureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL } };
-	VkDescriptorImageInfo shadowTextures[] = { { shadowSampler, shadowTextureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL } };
-
-	std::array< InputBuffers, SIMULTANEOUS_FRAMES> inputBuffers;
-	for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
-	{
-		inputBuffers[i].data[static_cast< size_t >(eTechniqueDataEntryName::INSTANCE_DATA)] = &instanceUniformBuffers[i];
-		inputBuffers[i].data[static_cast< size_t >(eTechniqueDataEntryName::SCENE_DATA)] = &sceneUniformBuffers[i];
-		inputBuffers[i].data[static_cast< size_t >(eTechniqueDataEntryName::LIGHT_DATA)] = &lightBuffers[i];
-
-
-		inputBuffers[i].dataImages[static_cast< size_t >(eTechniqueDataEntryImageName::ALBEDOS)] = albedos;
-		inputBuffers[i].dataImages[static_cast< size_t >(eTechniqueDataEntryImageName::NORMALS)] = normalTextures;
-		inputBuffers[i].dataImages[static_cast< size_t >(eTechniqueDataEntryImageName::SHADOWS)] = shadowTextures;
-	}
-
-	for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
-	{
-		CreateDescriptorSet( &inputBuffers[i], &geoPassSetDesc, technique->renderpass_descriptor_layout, descriptorPool, &technique->renderPass_descriptor[i] );
-		CreateDescriptorSet( &inputBuffers[i], &geoInstanceSetDesc, technique->instance_descriptor_layout, descriptorPool, &technique->instance_descriptor[i] );
-	}
-}
-
-
-void createGeoDescriptorSetLayout( Technique * technique )
-{
-	CreateDescriptorSetLayout( &geoPassSetDesc, &technique->renderpass_descriptor_layout );
-	CreateDescriptorSetLayout( &geoInstanceSetDesc, &technique->instance_descriptor_layout );
-}
-
 void CreateGeometryPipeline(const Swapchain& swapchain)
 {
-	createGeoDescriptorSetLayout( &m_geoMaterial.techniques[0] );
 	createGeoTechnique( swapchain.extent, &m_geoMaterial.techniques[0] );
 }
 
@@ -184,8 +119,9 @@ void CleanupGeometryRenderpass()
 	vkDestroyDescriptorSetLayout(g_vk.device, technique->instance_descriptor_layout, nullptr);
 }
 
-void InitializeGeometryRenderPass(const RenderPass* renderpass, const Swapchain* swapchain)
+void InitializeGeometryRenderPass(const RenderPass* renderpass, const Swapchain* swapchain, Technique&& technique)
 {
+	m_geoMaterial.techniques[0] = std::move( technique );
 	geometryRenderPass = renderpass;
 	CreateGeometryPipeline(*swapchain);
 }

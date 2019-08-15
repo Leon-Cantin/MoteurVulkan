@@ -8,12 +8,11 @@
 #include "renderpass.h"
 #include "swapchain.h"
 #include "scene_frame_data.h"
+#include "material.h"
 
-void InitializeShadowPass(const RenderPass* renderpass, const Swapchain* swapchain);
+void InitializeShadowPass( const RenderPass* renderpass, const Swapchain* swapchain, Technique &&technique );
 void CleanupShadowPass();
-void ShadowRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent);
+void ShadowRecordDrawCommandsBuffer( uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent );
 
-void CreateShadowDescriptorSet(VkDescriptorPool descriptorPool, VkBuffer*instanceUniformBuffer);
-
-void UpdateShadowUniformBuffers(size_t currentFrame, const SceneMatricesUniform* sceneMatrices);
-void computeShadowMatrix(const glm::vec3& light_location, glm::mat4* view, glm::mat4* projection);
+void UpdateShadowUniformBuffers( PerFrameBuffer* shadowSceneUniformBuffer, size_t currentFrame, const SceneMatricesUniform* sceneUniforms );
+void computeShadowMatrix( const glm::vec3& light_location, glm::mat4* view, glm::mat4* projection );

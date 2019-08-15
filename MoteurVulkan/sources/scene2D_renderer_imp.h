@@ -11,7 +11,7 @@ struct LightUniform {
 };
 
 SceneInstanceSet*  CreateGeometryInstanceDescriptorSet();
-void CreateDescriptorSets(const GfxImage* albedoImage, const GfxImage* normalImage, const GfxImage* skyboxImage );
+void CompileScene( const GfxImage* albedoImage, const GfxImage* normalImage, const GfxImage* skyboxImage );
 void UpdateGeometryUniformBuffer(const SceneInstance* sceneInstance, const SceneInstanceSet* sceneInstanceDescriptorSet, uint32_t currentFrame);
 void UpdateLightUniformBuffer(const SceneMatricesUniform* shadowSceneMatrices, LightUniform* light, uint32_t currentFrame);
 void UpdateSceneUniformBuffer(const glm::mat4& world_view_matrix, VkExtent2D extent, uint32_t currentFrame);

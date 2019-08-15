@@ -12,51 +12,6 @@
 
 GfxMaterial skyboxMaterial;
 const RenderPass* skyboxRenderPass;
-PerFrameBuffer skyboxUniformBuffer;
-
-//TODO I want to use a mat3 but the mem requirement size is at 48 instead of 36, it ends up broken
-// when received by the shader
-// https://www.khronos.org/registry/vulkan/specs/1.0-extensions/html/vkspec.html#interfaces-resources  14.5.4
-struct SkyboxUniformBufferObject {
-	glm::mat4 inv_view_matrix;
-};
-
-TechniqueDescriptorSetDesc skyboxPassSetDesc =
-{
-	{
-		{ eTechniqueDataEntryName::SKYBOX_DATA, 0, VK_SHADER_STAGE_VERTEX_BIT },
-	},
-	1,
-	{
-		{ eTechniqueDataEntryImageName::SKYBOX, 1, VK_SHADER_STAGE_FRAGMENT_BIT },
-	},
-	1
-};
-
-static void createSkyboxDescriptorSetLayout(Technique* technique)
-{
-	CreateDescriptorSetLayout( &skyboxPassSetDesc, &technique->renderpass_descriptor_layout );
-}
-
-void CreateSkyboxDescriptorSet(VkDescriptorPool descriptorPool, VkImageView skyboxImageView, VkSampler trilinearSampler)
-{
-	Technique* technique = &skyboxMaterial.techniques[0];
-
-	//TODO: build this outside
-	VkDescriptorImageInfo skyboxImages[] { { trilinearSampler, skyboxImageView } };
-
-	std::array< InputBuffers, SIMULTANEOUS_FRAMES> inputBuffers;
-	for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
-	{
-		SetBuffers( &inputBuffers[i], eTechniqueDataEntryName::SKYBOX_DATA, &skyboxUniformBuffer.buffers[i] );
-		SetImages( &inputBuffers[i], eTechniqueDataEntryImageName::SKYBOX, skyboxImages );
-	}
-
-	for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
-	{
-		CreateDescriptorSet( &inputBuffers[i], &skyboxPassSetDesc, technique->renderpass_descriptor_layout, descriptorPool, &technique->renderPass_descriptor[i] );
-	}
-}
 
 static void CreateSkyboxTechnique(VkExtent2D extent, Technique* technique)
 {
@@ -100,19 +55,12 @@ static void CreateSkyboxTechnique(VkExtent2D extent, Technique* technique)
 		&technique->pipeline );
 }
 
-void createSkyboxUniformBuffers()
-{
-	//TODO: do something so I can use mat3 instead of mat4
-	CreatePerFrameBuffer(sizeof(SkyboxUniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		&skyboxUniformBuffer);
-}
-
-void UpdateSkyboxUniformBuffers(size_t currentFrame, const glm::mat4& world_view_matrix)
+void UpdateSkyboxUniformBuffers( PerFrameBuffer* skyboxUniformBuffer, size_t currentFrame, const glm::mat4& world_view_matrix)
 {
 	SkyboxUniformBufferObject subo = {};
 	subo.inv_view_matrix = glm::mat3(glm::scale(transpose(world_view_matrix), glm::vec3(1.0f, -1.0f, 1.0f)));
 
-	UpdatePerFrameBuffer( &skyboxUniformBuffer, &subo, sizeof(subo), currentFrame);
+	UpdatePerFrameBuffer( skyboxUniformBuffer, &subo, sizeof(subo), currentFrame);
 }
 
 void CmdDrawSkybox(VkCommandBuffer commandBuffer, VkExtent2D extent, size_t currentFrame)
@@ -141,7 +89,6 @@ void CleanupSkybox()
 {
 	Technique* technique = &skyboxMaterial.techniques[0];
 	vkDestroyDescriptorSetLayout(g_vk.device, technique->renderpass_descriptor_layout, nullptr);
-	DestroyPerFrameBuffer(&skyboxUniformBuffer);
 }
 
 void ReloadSkyboxShaders(VkExtent2D extent)
@@ -151,23 +98,17 @@ void ReloadSkyboxShaders(VkExtent2D extent)
 	CreateSkyboxTechnique(extent, technique);
 }
 
-static void CreateSkyboxPipeline(const Swapchain& swapchain)
-{
-	Technique* technique = &skyboxMaterial.techniques[0];
-	createSkyboxDescriptorSetLayout( technique );
-	CreateSkyboxTechnique( swapchain.extent, technique );
-}
-
 void RecreateSkyboxAfterSwapchain(const Swapchain* swapchain)
 {
 	Technique* technique = &skyboxMaterial.techniques[0];
 	CreateSkyboxTechnique( swapchain->extent, technique );
 }
 
-void InitializeSkyboxRenderPass(const RenderPass* renderpass, const Swapchain* swapchain)
+void InitializeSkyboxRenderPass(const RenderPass* renderpass, const Swapchain* swapchain, Technique&& technique)
 {
+	skyboxMaterial.techniques[0] = std::move( technique );
 	skyboxRenderPass = renderpass;
-	CreateSkyboxPipeline( *swapchain);
+	CreateSkyboxTechnique( swapchain->extent, &skyboxMaterial.techniques[0] );
 }
 
 void SkyboxRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent)

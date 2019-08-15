@@ -126,7 +126,7 @@ void recreate_swap_chain()
 	CreateTransferCommandBuffer();
 }
 
-void InitRenderer(void (*FGScriptInitialize)(const Swapchain* swapchain))
+void InitRenderer()
 {
 	uint64_t width, height;
 	WH::GetFramebufferSize(&width, &height);
@@ -138,14 +138,17 @@ void InitRenderer(void (*FGScriptInitialize)(const Swapchain* swapchain))
 	CreateSingleUseCommandPool(queue_family_indices.graphics_family.value(), &g_vk.graphicsSingleUseCommandPool);
 	CreateSingleUseCommandPool(queue_family_indices.compute_family.value(), &g_vk.computeCommandPool);
 
-	InitSamplers();	
-
-	FGScriptInitialize( &g_swapchain );
+	InitSamplers();
 
 	CreateCommandBuffer();
 	create_sync_objects();
 
 	CreateTimeStampsQueryPool(SIMULTANEOUS_FRAMES);
+}
+
+void CompileFrameGraph( void( *FGScriptInitialize )(const Swapchain* swapchain) )
+{
+	FGScriptInitialize( &g_swapchain );
 }
 
 bool verify_swap_chain(VkResult result)

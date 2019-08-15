@@ -19,27 +19,9 @@
 const RenderPass* shadowRenderPass;
 
 //TODO: this is redundant, also found in frame graph
-constexpr VkFormat RT_FORMAT_SHADOW_DEPTH = VK_FORMAT_D32_SFLOAT;
 constexpr VkExtent2D RT_EXTENT_SHADOW = { 1024, 1024 };
 
-PerFrameBuffer shadowSceneUniformBuffer;
 GfxMaterial shadowMaterial;
-
-TechniqueDescriptorSetDesc shadowPassSet =
-{
-	{
-		{ eTechniqueDataEntryName::SHADOW_DATA, 0, VK_SHADER_STAGE_VERTEX_BIT }
-	},
-	1
-};
-
-TechniqueDescriptorSetDesc shadowInstanceSet =
-{
-	{
-		{ eTechniqueDataEntryName::INSTANCE_DATA, 0, VK_SHADER_STAGE_VERTEX_BIT }
-	},
-	1
-};
 
 void computeShadowMatrix(const glm::vec3& light_location, glm::mat4* view, glm::mat4* projection)
 {
@@ -51,17 +33,12 @@ void computeShadowMatrix(const glm::vec3& light_location, glm::mat4* view, glm::
 	//return light_projection_matrix * light_view_matrix;
 }
 
-void UpdateShadowUniformBuffers(size_t currentFrame, const SceneMatricesUniform* sceneUniforms)
+void UpdateShadowUniformBuffers(PerFrameBuffer* shadowSceneUniformBuffer, size_t currentFrame, const SceneMatricesUniform* sceneUniforms)
 {
+	//TODO don't pass in the perFrameBuffer but just the right one, doesn't need to know the frame
 	//per Instance data should be updated by the geometry render pass
 	//We only update the scene related data
-	UpdatePerFrameBuffer(&shadowSceneUniformBuffer, sceneUniforms, sizeof(SceneMatricesUniform), currentFrame);
-}
-
-static void CreateDescritorSetLayout( Technique* technique )
-{
-	CreateDescriptorSetLayout( &shadowPassSet, &technique->renderpass_descriptor_layout );
-	CreateDescriptorSetLayout( &shadowInstanceSet, &technique->instance_descriptor_layout );
+	UpdatePerFrameBuffer( shadowSceneUniformBuffer, sceneUniforms, sizeof( SceneMatricesUniform ), currentFrame );
 }
 
 static void CreateShadowTechnique( const RenderPass* renderpass, Technique* technique )
@@ -110,42 +87,20 @@ static void CreateShadowTechnique( const RenderPass* renderpass, Technique* tech
 		&technique->pipeline );
 }
 
-void CreateShadowDescriptorSet(VkDescriptorPool descriptorPool, VkBuffer*instanceUniformBuffer)
-{
-	//TODO: build this outside
-	std::array< InputBuffers, SIMULTANEOUS_FRAMES> inputBuffers;
-	for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
-	{
-		inputBuffers[i].data[static_cast< size_t >(eTechniqueDataEntryName::INSTANCE_DATA)] = &instanceUniformBuffer[i];
-		inputBuffers[i].data[static_cast< size_t >(eTechniqueDataEntryName::SHADOW_DATA)] = &shadowSceneUniformBuffer.buffers[i];
-	}
-
-	Technique* technique = &shadowMaterial.techniques[0];
-	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
-	{
-		CreateDescriptorSet( &inputBuffers[i], &shadowPassSet, technique->renderpass_descriptor_layout, descriptorPool, &technique->renderPass_descriptor[i] );
-		CreateDescriptorSet( &inputBuffers[i], &shadowInstanceSet, technique->instance_descriptor_layout, descriptorPool, &technique->instance_descriptor[i] );
-	}
-}
-
 static void CreateShadowPass()
 {
-	CreateDescritorSetLayout( &shadowMaterial.techniques[0] );
 	CreateShadowTechnique( shadowRenderPass, &shadowMaterial.techniques[0] );
-
-	CreatePerFrameBuffer(sizeof(SceneMatricesUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		&shadowSceneUniformBuffer);
 }
 
 void CleanupShadowPass()
 {
 	Destroy( &shadowMaterial );
-	DestroyPerFrameBuffer(&shadowSceneUniformBuffer);
 }
 
-void InitializeShadowPass(const RenderPass* renderpass, const Swapchain* swapchain)
+void InitializeShadowPass(const RenderPass* renderpass, const Swapchain* swapchain, Technique &&technique)
 {
 	shadowRenderPass = renderpass;
+	shadowMaterial.techniques[0] = std::move( technique );
 	CreateShadowPass();
 }
 

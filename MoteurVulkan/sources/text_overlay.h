@@ -10,6 +10,7 @@
 #include "vk_image.h"
 #include "swapchain.h"
 #include "scene_frame_data.h"
+#include "material.h"
 
 struct TextVertex {
 	glm::vec3 pos;
@@ -53,7 +54,7 @@ struct TextZone {
 };
 
 
-void InitializeTextRenderPass(const RenderPass* renderpass, const Swapchain* swapchain);
+void InitializeTextRenderPass(const RenderPass* renderpass, const Swapchain* swapchain, Technique&& technique);
 void RecreateTextRenderPassAfterSwapchain(const Swapchain* swapchain);
 void CleanupTextRenderPassAfterSwapchain();
 void CleanupTextRenderPass();
@@ -63,4 +64,4 @@ void CmdDrawText(VkCommandBuffer commandBuffer, VkExtent2D extent, size_t frameI
 void CreateTextVertexBuffer( size_t maxCharCount);
 void UpdateText( const TextZone * textZones, size_t textZonesCount, VkExtent2D surfaceExtent);
 void LoadFontTexture();
-void CreateTextDescriptorSet(VkDescriptorPool descriptorPool, VkSampler trilinearSampler);
+const GfxImage* GetTextImage();

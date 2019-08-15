@@ -121,7 +121,7 @@ namespace Scene2DGame
 
 	void ReloadShadersCallback(const std::string* params, uint32_t paramsCount)
 	{
-		ForceReloadShaders;
+		ForceReloadShaders();
 	}
 
 	void TickObjectCallback(float dt, void* unused)
@@ -204,7 +204,7 @@ namespace Scene2DGame
 		GfxModel* planeModelAsset = AL::Load3DModel( "Plane", "assets/plane.obj", 0 );
 		GfxModel* cubeModelAsset = AL::LoadglTf3DModel( "Cube", "assets/cube2.glb" );
 
-		CreateDescriptorSets( albedoTexture, normalTexture, skyboxTexture );
+		CompileScene( albedoTexture, normalTexture, skyboxTexture );
 
 		planeSceneInstance = { glm::vec3( 0.0f, -0.5f, 0.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 10.0f };
 		cubeSceneInstance = { glm::vec3( 0.0f, 1.0f, 2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 0.5f };

@@ -14,6 +14,8 @@
 PerFrameBuffer sceneUniformBuffer;
 PerFrameBuffer lightUniformBuffer;
 PerFrameBuffer instanceMatricesBuffer;
+PerFrameBuffer shadowSceneUniformBuffer;
+PerFrameBuffer skyboxUniformBuffer;
 
 VkDescriptorPool descriptorPool;
 
@@ -23,6 +25,7 @@ bool g_forceReloadShaders = false;
 
 SceneInstanceSet g_sceneInstanceDescriptorSets[5];
 size_t g_sceneInstancesCount = 0;
+std::array< InputBuffers, SIMULTANEOUS_FRAMES> inputBuffers;
 
 /*
 	Create Stuff
@@ -34,20 +37,10 @@ static void CreateInstanceMatricesBuffers(uint32_t maxModelsCount)
 
 static void CreateGeometryUniformBuffer()
 {
-	CreatePerFrameBuffer(sizeof(SceneMatricesUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &sceneUniformBuffer);
-	CreatePerFrameBuffer(sizeof(LightUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &lightUniformBuffer);
-}
-
-void CreateDescriptorSets(const GfxImage* albedoImage, const GfxImage* normalImage, const GfxImage* skyboxImage )
-{
-	const GfxImage *shadowImages = FG::GetRenderTarget(RT_SHADOW_MAP);
-
-	CreateGeometryDescriptorSet(descriptorPool, sceneUniformBuffer.buffers.data(), instanceMatricesBuffer.buffers.data(), lightUniformBuffer.buffers.data(), albedoImage->imageView, normalImage->imageView, GetSampler(Samplers::Trilinear),
-		shadowImages->imageView, GetSampler(Samplers::Shadow));
-
-	CreateShadowDescriptorSet(descriptorPool, instanceMatricesBuffer.buffers.data());
-
-	CreateSkyboxDescriptorSet( descriptorPool, skyboxImage->imageView, GetSampler( Samplers::Trilinear ) );
+	CreatePerFrameBuffer( sizeof( SceneMatricesUniform ), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &sceneUniformBuffer );
+	CreatePerFrameBuffer( sizeof( LightUniform ), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &lightUniformBuffer );
+	CreatePerFrameBuffer( sizeof( SceneMatricesUniform ), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &shadowSceneUniformBuffer );
+	CreatePerFrameBuffer( sizeof( SkyboxUniformBufferObject ), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &skyboxUniformBuffer );
 }
 
 SceneInstanceSet*  CreateGeometryInstanceDescriptorSet()
@@ -82,7 +75,7 @@ void UpdateLightUniformBuffer(const SceneMatricesUniform* shadowSceneMatrices, L
 	light->shadowMatrix = biasMat * shadowSceneMatrices->proj * shadowSceneMatrices->view;
 	UpdatePerFrameBuffer(&lightUniformBuffer, light, sizeof(LightUniform), currentFrame);
 
-	UpdateShadowUniformBuffers(currentFrame, shadowSceneMatrices);
+	UpdateShadowUniformBuffers( &shadowSceneUniformBuffer, currentFrame, shadowSceneMatrices);
 }
 
 void UpdateSceneUniformBuffer(const glm::mat4& world_view_matrix, VkExtent2D extent, uint32_t currentFrame)
@@ -102,9 +95,47 @@ void ReloadSceneShaders()
 	ReloadGeometryShaders(extent);
 }
 
+VkDescriptorImageInfo albedos[5];
+VkDescriptorImageInfo normalTextures[1];
+VkDescriptorImageInfo textTextures[1];
+VkDescriptorImageInfo skyboxImages[1];
+
+static void CreateBuffers( const GfxImage* albedoImage, const GfxImage* normalImage, const GfxImage* skyboxImage )
+{
+	CreateGeometryUniformBuffer();
+	CreateInstanceMatricesBuffers( 3 );
+	CreateTextVertexBuffer( 256 );
+
+	VkSampler sampler = GetSampler( Samplers::Trilinear );
+
+	albedos[0] = { sampler, albedoImage->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+	albedos[1] = { sampler, albedoImage->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+	albedos[2] = { sampler, albedoImage->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+	albedos[3] = { sampler, albedoImage->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+	albedos[4] = { sampler, albedoImage->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+	normalTextures[0] = { sampler, normalImage->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+	textTextures[0] = { sampler, GetTextImage()->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+	skyboxImages[0] = { sampler, skyboxImage->imageView };
+	
+	for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
+	{
+		inputBuffers[i].data[static_cast< size_t >(eTechniqueDataEntryName::INSTANCE_DATA)] = &instanceMatricesBuffer.buffers[i];
+		SetBuffers( &inputBuffers[i], eTechniqueDataEntryName::SHADOW_DATA, &shadowSceneUniformBuffer.buffers[i] );
+		inputBuffers[i].data[static_cast< size_t >(eTechniqueDataEntryName::SCENE_DATA)] = &sceneUniformBuffer.buffers[i];
+		inputBuffers[i].data[static_cast< size_t >(eTechniqueDataEntryName::LIGHT_DATA)] = &lightUniformBuffer.buffers[i];
+		SetBuffers( &inputBuffers[i], eTechniqueDataEntryName::SKYBOX_DATA, &skyboxUniformBuffer.buffers[i] );
+
+		inputBuffers[i].dataImages[static_cast< size_t >(eTechniqueDataEntryImageName::ALBEDOS)] = albedos;
+		inputBuffers[i].dataImages[static_cast< size_t >(eTechniqueDataEntryImageName::NORMALS)] = normalTextures;
+		inputBuffers[i].dataImages[static_cast< size_t >(eTechniqueDataEntryImageName::TEXT)] = textTextures;
+		SetImages( &inputBuffers[i], eTechniqueDataEntryImageName::SKYBOX, skyboxImages );
+	}
+}
+
 void InitRendererImp()
 {
-	InitRenderer(InitializeScript);
+	//TODO: séparer l'init du FG et du renderer pour charger les images en premier
+	InitRenderer();
 
 	const uint32_t geometryDescriptorSets = 2 * SIMULTANEOUS_FRAMES;
 	const uint32_t geometryBuffersCount = 2 * SIMULTANEOUS_FRAMES;
@@ -115,12 +146,12 @@ void InitRendererImp()
 	const uint32_t shadowBuffersCount = 2 * SIMULTANEOUS_FRAMES;
 	const uint32_t shadowDynamicBuffersCount = 1 * SIMULTANEOUS_FRAMES;
 
-	const uint32_t skyboxDescriptorSetsCount = 1 * SIMULTANEOUS_FRAMES;
-	const uint32_t skyboxBuffersCount = 1 * SIMULTANEOUS_FRAMES;
-	const uint32_t skyboxImageCount = 1 * SIMULTANEOUS_FRAMES;
+	const uint32_t skyboxDescriptorSetsCount = 2 * SIMULTANEOUS_FRAMES;
+	const uint32_t skyboxBuffersCount = 2 * SIMULTANEOUS_FRAMES;
+	const uint32_t skyboxImageCount = 2 * SIMULTANEOUS_FRAMES;
 
-	const uint32_t textDescriptorSetsCount = 1;
-	const uint32_t textImageCount = 1;
+	const uint32_t textDescriptorSetsCount = 2;
+	const uint32_t textImageCount = 2;
 
 	const uint32_t uniformBuffersCount = geometryBuffersCount + shadowBuffersCount + skyboxBuffersCount;
 	const uint32_t imageSamplersCount = geometryImageCount + skyboxImageCount + textImageCount;
@@ -131,21 +162,25 @@ void InitRendererImp()
 
 	createDescriptorPool(uniformBuffersCount, uniformBuffersDynamicCount, imageSamplersCount, storageImageCount, maxSets, &descriptorPool);
 
-	CreateGeometryUniformBuffer();
-	CreateInstanceMatricesBuffers(3);
-	createSkyboxUniformBuffers();
 	LoadFontTexture();
-	CreateTextVertexBuffer(256);
-	CreateTextDescriptorSet(descriptorPool, GetSampler(Samplers::Trilinear));
+}
+
+void CompileScene( const GfxImage* albedoImage, const GfxImage* normalImage, const GfxImage* skyboxImage )
+{
+	CreateBuffers( albedoImage, normalImage, skyboxImage );
+	SetInputBuffers( &inputBuffers, descriptorPool );
+	CompileFrameGraph( InitializeScript );
 }
 
 void CleanupRendererImp()
 {
 	CleanupRenderer();
 
-	DestroyPerFrameBuffer(&lightUniformBuffer);
-	DestroyPerFrameBuffer(&sceneUniformBuffer);
-	DestroyPerFrameBuffer(&instanceMatricesBuffer);
+	DestroyPerFrameBuffer( &lightUniformBuffer );
+	DestroyPerFrameBuffer( &sceneUniformBuffer );
+	DestroyPerFrameBuffer( &instanceMatricesBuffer );
+	DestroyPerFrameBuffer( &shadowSceneUniformBuffer );
+	DestroyPerFrameBuffer( &skyboxUniformBuffer );
 	
 	vkDestroyDescriptorPool(g_vk.device, descriptorPool, nullptr);
 }
@@ -184,7 +219,7 @@ static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cam
 
 	UpdateLightUniformBuffer(&shadowSceneMatrices, light, currentFrame);
 
-	UpdateSkyboxUniformBuffers(currentFrame, world_view_matrix);
+	UpdateSkyboxUniformBuffers( &skyboxUniformBuffer, currentFrame, world_view_matrix );
 
 	updateTextOverlayBuffer(currentFrame);
 }

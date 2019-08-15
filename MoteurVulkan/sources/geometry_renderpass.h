@@ -9,15 +9,13 @@
 #include "scene_instance.h"
 #include "swapchain.h"
 #include "scene_frame_data.h"
+#include "material.h"
 
-void InitializeGeometryRenderPass(const RenderPass* renderpass, const Swapchain* swapchain);
+void InitializeGeometryRenderPass(const RenderPass* renderpass, const Swapchain* swapchain, Technique&& technique);
 void CleanupGeometryRenderpassAfterSwapchain();
 void CleanupGeometryRenderpass();
 void RecreateGeometryAfterSwapChain( const Swapchain *swapchain);
 void GeometryRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent);
-
-void CreateGeometryDescriptorSet(VkDescriptorPool descriptorPool, VkBuffer* sceneUniformBuffers, VkBuffer* instanceUniformBuffers, VkBuffer* lightBuffers, VkImageView textureView,
-	VkImageView normalTextureView, VkSampler sampler, VkImageView shadowTextureView, VkSampler shadowSampler);
 
 void CmdBeginGeometryRenderPass(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t currentFrame);
 void CmdEndGeometryRenderPass(VkCommandBuffer vkCommandBuffer);
