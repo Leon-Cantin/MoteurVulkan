@@ -11,12 +11,6 @@
 #include <glm/vec4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-PerFrameBuffer sceneUniformBuffer;
-PerFrameBuffer lightUniformBuffer;
-PerFrameBuffer instanceMatricesBuffer;
-PerFrameBuffer shadowSceneUniformBuffer;
-PerFrameBuffer skyboxUniformBuffer;
-
 VkDescriptorPool descriptorPool;
 
 extern Swapchain g_swapchain;
@@ -25,23 +19,11 @@ bool g_forceReloadShaders = false;
 
 SceneInstanceSet g_sceneInstanceDescriptorSets[5];
 size_t g_sceneInstancesCount = 0;
-std::array< InputBuffers, SIMULTANEOUS_FRAMES> inputBuffers;
+std::array< InputBuffers, SIMULTANEOUS_FRAMES> _inputBuffers;
 
 /*
 	Create Stuff
 */
-static void CreateInstanceMatricesBuffers(uint32_t maxModelsCount)
-{
-	CreatePerFrameBuffer(sizeof(InstanceMatrices)*maxModelsCount, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &instanceMatricesBuffer);
-}
-
-static void CreateGeometryUniformBuffer()
-{
-	CreatePerFrameBuffer( sizeof( SceneMatricesUniform ), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &sceneUniformBuffer );
-	CreatePerFrameBuffer( sizeof( LightUniform ), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &lightUniformBuffer );
-	CreatePerFrameBuffer( sizeof( SceneMatricesUniform ), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &shadowSceneUniformBuffer );
-	CreatePerFrameBuffer( sizeof( SkyboxUniformBufferObject ), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &skyboxUniformBuffer );
-}
 
 SceneInstanceSet*  CreateGeometryInstanceDescriptorSet()
 {
@@ -50,22 +32,10 @@ SceneInstanceSet*  CreateGeometryInstanceDescriptorSet()
 	return sceneInstanceDescriptorSet;
 }
 
-void UpdateGeometryUniformBuffer(const SceneInstance* sceneInstance, const SceneInstanceSet* sceneInstanceDescriptorSet, uint32_t currentFrame)
-{
-	InstanceMatrices instanceMatrices = {};
-	instanceMatrices.model = ComputeSceneInstanceModelMatrix(*sceneInstance);
-
-	VkDeviceSize frameMemoryOffset = GetMemoryOffsetForFrame(&instanceMatricesBuffer, currentFrame);
-	void* data;
-	vkMapMemory(g_vk.device, instanceMatricesBuffer.memory, sceneInstanceDescriptorSet->geometryBufferOffsets[currentFrame] + frameMemoryOffset, sizeof(InstanceMatrices), 0, &data);
-	memcpy(data, &instanceMatrices, sizeof(InstanceMatrices));
-	vkUnmapMemory(g_vk.device, instanceMatricesBuffer.memory);
-}
-
 /*
 	Update Stuff
 */
-void UpdateLightUniformBuffer(const SceneMatricesUniform* shadowSceneMatrices, LightUniform* light, uint32_t currentFrame)
+static void UpdateLightUniformBuffer( const SceneMatricesUniform* shadowSceneMatrices, LightUniform* light, GpuBuffer* lightUniformBuffer, GpuBuffer* shadowSceneUniformBuffer )
 {
 	const glm::mat4 biasMat = {
 		0.5, 0.0, 0.0, 0.0,
@@ -73,18 +43,25 @@ void UpdateLightUniformBuffer(const SceneMatricesUniform* shadowSceneMatrices, L
 		0.0, 0.0, 1.0, 0.0,
 		0.5, 0.5, 0.0, 1.0 };
 	light->shadowMatrix = biasMat * shadowSceneMatrices->proj * shadowSceneMatrices->view;
-	UpdatePerFrameBuffer(&lightUniformBuffer, light, sizeof(LightUniform), currentFrame);
-
-	UpdateShadowUniformBuffers( &shadowSceneUniformBuffer, currentFrame, shadowSceneMatrices);
+	UpdateGpuBuffer( lightUniformBuffer, light, sizeof( LightUniform ), 0 );
+	UpdateShadowUniformBuffers( shadowSceneUniformBuffer, shadowSceneMatrices);
 }
 
-void UpdateSceneUniformBuffer(const glm::mat4& world_view_matrix, VkExtent2D extent, uint32_t currentFrame)
+static void UpdateSceneUniformBuffer(const glm::mat4& world_view_matrix, VkExtent2D extent, GpuBuffer* sceneUniformBuffer)
 {
 	SceneMatricesUniform sceneMatrices = {};
 	sceneMatrices.view = world_view_matrix;
 	sceneMatrices.proj = glm::perspective(glm::radians(45.0f), extent.width / (float)extent.height, 0.1f, 10.0f);
 	sceneMatrices.proj[1][1] *= -1;//Compensate for OpenGL Y coordinate being inverted
-	UpdatePerFrameBuffer(&sceneUniformBuffer, &sceneMatrices, sizeof(sceneMatrices), currentFrame);
+	UpdateGpuBuffer( sceneUniformBuffer, &sceneMatrices, sizeof( sceneMatrices ), 0 );
+}
+
+static void UpdateGeometryUniformBuffer( const SceneInstance* sceneInstance, const SceneInstanceSet* sceneInstanceDescriptorSet, GpuBuffer* geometryUniformBuffer )
+{
+	InstanceMatrices instanceMatrices = {};
+	instanceMatrices.model = ComputeSceneInstanceModelMatrix( *sceneInstance );
+
+	UpdateGpuBuffer( geometryUniformBuffer, &instanceMatrices, sizeof( InstanceMatrices ), sceneInstanceDescriptorSet->geometryBufferOffsets[0] );//TODO checking only 0 is stupid, why do I have one for each frame?
 }
 
 void ReloadSceneShaders()
@@ -102,8 +79,6 @@ VkDescriptorImageInfo skyboxImages[1];
 
 static void CreateBuffers( const GfxImage* albedoImage, const GfxImage* normalImage, const GfxImage* skyboxImage )
 {
-	CreateGeometryUniformBuffer();
-	CreateInstanceMatricesBuffers( 3 );
 	CreateTextVertexBuffer( 256 );
 
 	VkSampler sampler = GetSampler( Samplers::Trilinear );
@@ -119,16 +94,10 @@ static void CreateBuffers( const GfxImage* albedoImage, const GfxImage* normalIm
 	
 	for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 	{
-		inputBuffers[i].data[static_cast< size_t >(eTechniqueDataEntryName::INSTANCE_DATA)] = &instanceMatricesBuffer.buffers[i];
-		SetBuffers( &inputBuffers[i], eTechniqueDataEntryName::SHADOW_DATA, &shadowSceneUniformBuffer.buffers[i] );
-		inputBuffers[i].data[static_cast< size_t >(eTechniqueDataEntryName::SCENE_DATA)] = &sceneUniformBuffer.buffers[i];
-		inputBuffers[i].data[static_cast< size_t >(eTechniqueDataEntryName::LIGHT_DATA)] = &lightUniformBuffer.buffers[i];
-		SetBuffers( &inputBuffers[i], eTechniqueDataEntryName::SKYBOX_DATA, &skyboxUniformBuffer.buffers[i] );
-
-		inputBuffers[i].dataImages[static_cast< size_t >(eTechniqueDataEntryImageName::ALBEDOS)] = albedos;
-		inputBuffers[i].dataImages[static_cast< size_t >(eTechniqueDataEntryImageName::NORMALS)] = normalTextures;
-		inputBuffers[i].dataImages[static_cast< size_t >(eTechniqueDataEntryImageName::TEXT)] = textTextures;
-		SetImages( &inputBuffers[i], eTechniqueDataEntryImageName::SKYBOX, skyboxImages );
+		_inputBuffers[i].dataImages[static_cast< size_t >(eTechniqueDataEntryImageName::ALBEDOS)] = albedos;
+		_inputBuffers[i].dataImages[static_cast< size_t >(eTechniqueDataEntryImageName::NORMALS)] = normalTextures;
+		_inputBuffers[i].dataImages[static_cast< size_t >(eTechniqueDataEntryImageName::TEXT)] = textTextures;
+		SetImages( &_inputBuffers[i], eTechniqueDataEntryImageName::SKYBOX, skyboxImages );
 	}
 }
 
@@ -168,20 +137,13 @@ void InitRendererImp()
 void CompileScene( const GfxImage* albedoImage, const GfxImage* normalImage, const GfxImage* skyboxImage )
 {
 	CreateBuffers( albedoImage, normalImage, skyboxImage );
-	SetInputBuffers( &inputBuffers, descriptorPool );
+	SetInputBuffers( &_inputBuffers, descriptorPool );
 	CompileFrameGraph( InitializeScript );
 }
 
 void CleanupRendererImp()
 {
-	CleanupRenderer();
-
-	DestroyPerFrameBuffer( &lightUniformBuffer );
-	DestroyPerFrameBuffer( &sceneUniformBuffer );
-	DestroyPerFrameBuffer( &instanceMatricesBuffer );
-	DestroyPerFrameBuffer( &shadowSceneUniformBuffer );
-	DestroyPerFrameBuffer( &skyboxUniformBuffer );
-	
+	CleanupRenderer();	
 	vkDestroyDescriptorPool(g_vk.device, descriptorPool, nullptr);
 }
 
@@ -208,18 +170,20 @@ static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cam
 
 	VkExtent2D swapChainExtent = g_swapchain.extent;
 
+	InputBuffers inputbuffers = _inputBuffers[currentFrame];
+
 	//Update GeometryUniformBuffer
 	for( auto& drawNode : drawList )
-		UpdateGeometryUniformBuffer(drawNode.first, drawNode.second->descriptorSet, currentFrame);
+		UpdateGeometryUniformBuffer( drawNode.first, drawNode.second->descriptorSet, GetBuffer( &inputbuffers, eTechniqueDataEntryName::INSTANCE_DATA) );
 
-	UpdateSceneUniformBuffer(world_view_matrix, swapChainExtent, currentFrame);
+	UpdateSceneUniformBuffer(world_view_matrix, swapChainExtent, GetBuffer( &inputbuffers, eTechniqueDataEntryName::SCENE_DATA ) );
 
 	SceneMatricesUniform shadowSceneMatrices;
 	computeShadowMatrix(light->position, &shadowSceneMatrices.view, &shadowSceneMatrices.proj);
 
-	UpdateLightUniformBuffer(&shadowSceneMatrices, light, currentFrame);
+	UpdateLightUniformBuffer(&shadowSceneMatrices, light, GetBuffer( &inputbuffers, eTechniqueDataEntryName::LIGHT_DATA ), GetBuffer( &inputbuffers, eTechniqueDataEntryName::SHADOW_DATA ) );
 
-	UpdateSkyboxUniformBuffers( &skyboxUniformBuffer, currentFrame, world_view_matrix );
+	UpdateSkyboxUniformBuffers( GetBuffer( &inputbuffers, eTechniqueDataEntryName::SKYBOX_DATA ), world_view_matrix );
 
 	updateTextOverlayBuffer(currentFrame);
 }

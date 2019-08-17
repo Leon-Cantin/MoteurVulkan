@@ -49,11 +49,19 @@ enum class eTechniqueDataEntryImageName
 	COUNT
 };
 
+enum eTechniqueDataEntryFlags
+{
+	NONE = 1 << 0,
+	EXTERNAL = 1 << 1,
+};
+
 struct TechniqueDataEntry
 {
 	eTechniqueDataEntryName name;
 	VkDescriptorType descriptorType;
 	uint32_t count;
+	uint32_t flags;
+	uint32_t size;
 };
 
 struct TechniqueDataEntryImage
@@ -61,24 +69,6 @@ struct TechniqueDataEntryImage
 	eTechniqueDataEntryImageName name;
 	VkDescriptorType descriptorType;
 	uint32_t count;
-};
-
-static const TechniqueDataEntry techniqueDataEntries[static_cast< size_t >(eTechniqueDataEntryName::COUNT)] =
-{
-	{ eTechniqueDataEntryName::INSTANCE_DATA, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1 },
-	{ eTechniqueDataEntryName::SHADOW_DATA,	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
-	{ eTechniqueDataEntryName::SCENE_DATA,	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
-	{ eTechniqueDataEntryName::LIGHT_DATA,	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
-	{ eTechniqueDataEntryName::SKYBOX_DATA,	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
-};
-
-static const TechniqueDataEntryImage techniqueDataEntryImages[static_cast< size_t >(eTechniqueDataEntryImageName::COUNT)] =
-{
-	{ eTechniqueDataEntryImageName::ALBEDOS, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5 },
-	{ eTechniqueDataEntryImageName::NORMALS, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
-	{ eTechniqueDataEntryImageName::SHADOWS, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
-	{ eTechniqueDataEntryImageName::TEXT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
-	{ eTechniqueDataEntryImageName::SKYBOX, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
 };
 
 struct TechniqueDataBinding
@@ -106,11 +96,12 @@ struct TechniqueDescriptorSetDesc
 
 struct InputBuffers
 {
-	std::array<VkBuffer* , static_cast< size_t >(eTechniqueDataEntryName::COUNT)> data;
-	std::array<VkDescriptorImageInfo*, static_cast< size_t >(eTechniqueDataEntryImageName::COUNT)> dataImages;
+	//TODO the ptr here is kinda dangerous. Used for descriptors that contains multiple descriptors... mostly just for images
+	std::array<GpuBuffer* , static_cast< size_t >(eTechniqueDataEntryName::COUNT)> data;
+	std::array<VkDescriptorImageInfo* , static_cast< size_t >(eTechniqueDataEntryImageName::COUNT)> dataImages;
 };
 
-inline void SetBuffers( InputBuffers* buffers, eTechniqueDataEntryName name, VkBuffer* input )
+inline void SetBuffers( InputBuffers* buffers, eTechniqueDataEntryName name, GpuBuffer* input )
 {
 	buffers->data[static_cast< size_t >(name)] = input;
 }
@@ -120,7 +111,7 @@ inline void SetImages( InputBuffers* buffers, eTechniqueDataEntryImageName name,
 	buffers->dataImages[static_cast< size_t >(name)] = input;
 }
 
-inline VkBuffer* GetBuffer( const InputBuffers* buffers, eTechniqueDataEntryName name )
+inline GpuBuffer* GetBuffer( const InputBuffers* buffers, eTechniqueDataEntryName name )
 {
 	return buffers->data[static_cast< size_t >(name)];
 }

@@ -366,16 +366,14 @@ VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTil
 void copyImageToDeviceLocalMemory(void* pixels, VkDeviceSize imageSize, uint32_t texWidth, uint32_t texHeight, uint32_t layerCount, uint32_t mipLevel, VkFormat format, VkImage image)
 {
 	//TODO: Is using staging buffer for texture also better on AMD?
-	VkBuffer stagingBuffer;
-	VkDeviceMemory stagingBufferMemory;
+	GpuBuffer stagingBuffer;
 
-	create_buffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		stagingBuffer, stagingBufferMemory);
+	CreateCommitedGpuBuffer( imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer );
 
-	UpdateBuffer(stagingBufferMemory, pixels,imageSize);
+	UpdateGpuBuffer( &stagingBuffer, pixels, imageSize, 0 );
 
-	transitionImageLayout(image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevel, layerCount);
-	copyBufferToImage(stagingBuffer, image, texWidth, texHeight, layerCount);
+	transitionImageLayout( image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevel, layerCount );
+	copyBufferToImage( stagingBuffer.buffer, image, texWidth, texHeight, layerCount );
 
 	//TODO: mem requirement will be computed by memRequirement in create_image... I hope it's right
 	//GenerateMipmaps will do the transition, do it if we don't generate them
@@ -384,8 +382,7 @@ void copyImageToDeviceLocalMemory(void* pixels, VkDeviceSize imageSize, uint32_t
 	else
 		transitionImageLayout(image, format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevel, layerCount);
 
-	vkDestroyBuffer(g_vk.device, stagingBuffer, nullptr);
-	vkFreeMemory(g_vk.device, stagingBufferMemory, nullptr);
+	DestroyCommitedGpuBuffer( &stagingBuffer );
 }
 
 void Load3DTexture(const char* filename, GfxImage& o_image)

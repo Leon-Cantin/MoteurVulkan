@@ -14,5 +14,5 @@ void InitializeShadowPass( const RenderPass* renderpass, const Swapchain* swapch
 void CleanupShadowPass();
 void ShadowRecordDrawCommandsBuffer( uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent );
 
-void UpdateShadowUniformBuffers( PerFrameBuffer* shadowSceneUniformBuffer, size_t currentFrame, const SceneMatricesUniform* sceneUniforms );
+void UpdateShadowUniformBuffers( GpuBuffer* shadowSceneUniformBuffer, const SceneMatricesUniform* sceneUniforms );
 void computeShadowMatrix( const glm::vec3& light_location, glm::mat4* view, glm::mat4* projection );

@@ -33,12 +33,12 @@ void computeShadowMatrix(const glm::vec3& light_location, glm::mat4* view, glm::
 	//return light_projection_matrix * light_view_matrix;
 }
 
-void UpdateShadowUniformBuffers(PerFrameBuffer* shadowSceneUniformBuffer, size_t currentFrame, const SceneMatricesUniform* sceneUniforms)
+void UpdateShadowUniformBuffers(GpuBuffer* shadowSceneUniformBuffer, const SceneMatricesUniform* sceneUniforms)
 {
 	//TODO don't pass in the perFrameBuffer but just the right one, doesn't need to know the frame
 	//per Instance data should be updated by the geometry render pass
 	//We only update the scene related data
-	UpdatePerFrameBuffer( shadowSceneUniformBuffer, sceneUniforms, sizeof( SceneMatricesUniform ), currentFrame );
+	UpdateGpuBuffer( shadowSceneUniformBuffer, sceneUniforms, sizeof( SceneMatricesUniform ), 0 );
 }
 
 static void CreateShadowTechnique( const RenderPass* renderpass, Technique* technique )

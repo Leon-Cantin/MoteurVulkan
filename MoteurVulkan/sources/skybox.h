@@ -24,7 +24,7 @@ void CleanupSkybox();
 void SkyboxRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent);
 
 
-void UpdateSkyboxUniformBuffers( PerFrameBuffer* skyboxUniformBuffer, size_t currentFrame, const glm::mat4& world_view_matrix );
+void UpdateSkyboxUniformBuffers( GpuBuffer* skyboxUniformBuffer, const glm::mat4& world_view_matrix );
 void CmdDrawSkybox(VkCommandBuffer commandBuffer, VkExtent2D extent, size_t currentFrame);
 
 void ReloadSkyboxShaders(VkExtent2D extent);

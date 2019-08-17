@@ -55,12 +55,12 @@ static void CreateSkyboxTechnique(VkExtent2D extent, Technique* technique)
 		&technique->pipeline );
 }
 
-void UpdateSkyboxUniformBuffers( PerFrameBuffer* skyboxUniformBuffer, size_t currentFrame, const glm::mat4& world_view_matrix)
+void UpdateSkyboxUniformBuffers( GpuBuffer* skyboxUniformBuffer, const glm::mat4& world_view_matrix)
 {
 	SkyboxUniformBufferObject subo = {};
 	subo.inv_view_matrix = glm::mat3(glm::scale(transpose(world_view_matrix), glm::vec3(1.0f, -1.0f, 1.0f)));
 
-	UpdatePerFrameBuffer( skyboxUniformBuffer, &subo, sizeof(subo), currentFrame);
+	UpdateGpuBuffer( skyboxUniformBuffer, &subo, sizeof( subo ), 0 );
 }
 
 void CmdDrawSkybox(VkCommandBuffer commandBuffer, VkExtent2D extent, size_t currentFrame)

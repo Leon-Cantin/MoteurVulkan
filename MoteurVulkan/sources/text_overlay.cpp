@@ -13,10 +13,8 @@
 
 GfxMaterial textMaterial;
 const RenderPass* textRenderPass;
-VkBuffer textVertexBuffer = VK_NULL_HANDLE;
-VkDeviceMemory textVertexBufferMemory = VK_NULL_HANDLE;
-VkBuffer textIndexBuffer = VK_NULL_HANDLE;
-VkDeviceMemory textIndexBufferMemory = VK_NULL_HANDLE;
+GpuBuffer textVertexBuffer;
+GpuBuffer textIndexBuffer;
 uint32_t maxTextCharCount = 0;
 uint32_t currentTextCharCount = 0;
 
@@ -89,10 +87,10 @@ void CmdDrawText( VkCommandBuffer commandBuffer, VkExtent2D extent, size_t frame
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipeline );
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, 0, 1, &technique->renderPass_descriptor[0], 0, nullptr);
 
-	VkBuffer vertexBuffers[] = { textVertexBuffer };
+	VkBuffer vertexBuffers[] = { textVertexBuffer.buffer };
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, textIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+	vkCmdBindIndexBuffer(commandBuffer, textIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
 	vkCmdDrawIndexed(commandBuffer, currentTextCharCount * indexesPerChar, 1, 0, 0, 0);
 
@@ -145,30 +143,10 @@ void UpdateText( const TextZone * textZones, size_t textZonesCount, VkExtent2D s
 	}
 
 	VkDeviceSize bufferSize = sizeof(text_vertices[0]) * text_vertices.size();
-	UpdateBuffer( textVertexBufferMemory, text_vertices.data(), bufferSize);
-	//copyDataToDeviceLocalMemory( textVertexBuffer, text_vertices.data(), bufferSize);
-	/*VkMappedMemoryRange vertexMemoryRange = {};
-	vertexMemoryRange.memory = textVertexBufferMemory;
-	vertexMemoryRange.offset = 0;
-	vertexMemoryRange.size = bufferSize;
-	vertexMemoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-	void* vdata;
-	vkMapMemory(g_vk.device, textVertexBufferMemory, 0, bufferSize, 0, &vdata);
-	memcpy(vdata, text_vertices.data(), bufferSize);
-	vkFlushMappedMemoryRanges(g_vk.device, 1, &vertexMemoryRange);*/
+	UpdateGpuBuffer( &textVertexBuffer, text_vertices.data(), bufferSize, 0 );
 
 	bufferSize = sizeof(text_indices[0]) * text_indices.size();
-	UpdateBuffer(textIndexBufferMemory, text_indices.data(), bufferSize);
-	//copyDataToDeviceLocalMemory( textIndexBuffer, text_indices.data(), bufferSize);
-	/*VkMappedMemoryRange indexMemoryRange = {};
-	indexMemoryRange.memory = textIndexBufferMemory;
-	indexMemoryRange.offset = 0;
-	indexMemoryRange.size = bufferSize;
-	indexMemoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-	void* idata;
-	vkMapMemory(g_vk.device, textIndexBufferMemory, 0, bufferSize, 0, &idata);
-	memcpy(idata, text_indices.data(), bufferSize);
-	vkFlushMappedMemoryRanges(g_vk.device, 1, &indexMemoryRange);*/
+	UpdateGpuBuffer( &textIndexBuffer, text_indices.data(), bufferSize, 0 );
 }
 
 //TODO: Use the system for vertex buffers
@@ -178,12 +156,10 @@ void CreateTextVertexBuffer(size_t maxCharCount)
 
 	
 	VkDeviceSize bufferSize = sizeof(TextVertex) * maxCharCount * verticesPerChar;
-	create_buffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, textVertexBuffer, textVertexBufferMemory);
-	//createBufferToDeviceLocalMemory( bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &textVertexBuffer, &textVertexBufferMemory);
+	CreateCommitedGpuBuffer( bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &textVertexBuffer );
 
 	bufferSize = sizeof(Index_t) * maxCharCount * indexesPerChar;
-	create_buffer(bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, textIndexBuffer, textIndexBufferMemory);
-	//createBufferToDeviceLocalMemory( bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, &textIndexBuffer, &textIndexBufferMemory);
+	CreateCommitedGpuBuffer( bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &textIndexBuffer );
 }
 
 void LoadFontTexture()
@@ -216,10 +192,8 @@ void CleanupTextRenderPass()
 	Technique* technique = &textMaterial.techniques[0];
 	DestroyImage(g_fontImage);
 	vkDestroyDescriptorSetLayout(g_vk.device, technique->renderpass_descriptor_layout, nullptr);
-	vkDestroyBuffer(g_vk.device, textVertexBuffer, nullptr);
-	vkFreeMemory(g_vk.device, textVertexBufferMemory, nullptr);
-	vkDestroyBuffer(g_vk.device, textIndexBuffer, nullptr);
-	vkFreeMemory(g_vk.device, textIndexBufferMemory, nullptr);
+	DestroyCommitedGpuBuffer( &textVertexBuffer );
+	DestroyCommitedGpuBuffer( &textIndexBuffer );
 }
 
 void InitializeTextRenderPass(const RenderPass* renderpass, const Swapchain* swapchain, Technique&& technique)
