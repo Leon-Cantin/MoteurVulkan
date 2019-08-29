@@ -94,16 +94,15 @@ static void CreateBuffers( const GfxImage* albedoImage, const GfxImage* normalIm
 	
 	for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 	{
-		_inputBuffers[i].dataImages[static_cast< size_t >(eTechniqueDataEntryImageName::ALBEDOS)] = albedos;
-		_inputBuffers[i].dataImages[static_cast< size_t >(eTechniqueDataEntryImageName::NORMALS)] = normalTextures;
-		_inputBuffers[i].dataImages[static_cast< size_t >(eTechniqueDataEntryImageName::TEXT)] = textTextures;
+		SetImages( &_inputBuffers[i], eTechniqueDataEntryImageName::ALBEDOS, albedos);
+		SetImages( &_inputBuffers[i], eTechniqueDataEntryImageName::NORMALS, normalTextures);
+		SetImages( &_inputBuffers[i], eTechniqueDataEntryImageName::TEXT, textTextures);
 		SetImages( &_inputBuffers[i], eTechniqueDataEntryImageName::SKYBOX, skyboxImages );
 	}
 }
 
 void InitRendererImp()
 {
-	//TODO: séparer l'init du FG et du renderer pour charger les images en premier
 	InitRenderer();
 
 	const uint32_t geometryDescriptorSets = 2 * SIMULTANEOUS_FRAMES;

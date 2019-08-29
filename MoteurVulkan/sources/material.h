@@ -29,26 +29,6 @@ void CmdDrawTechnique( VkCommandBuffer commandBuffer, const Technique* technique
 void Destroy( GfxMaterial* material );
 
 
-enum class eTechniqueDataEntryName
-{
-	INSTANCE_DATA = 0,
-	SHADOW_DATA,
-	SCENE_DATA,
-	LIGHT_DATA,
-	SKYBOX_DATA,
-	COUNT
-};
-
-enum class eTechniqueDataEntryImageName
-{
-	ALBEDOS = 0,
-	NORMALS,
-	SHADOWS,
-	TEXT,
-	SKYBOX,
-	COUNT
-};
-
 enum eTechniqueDataEntryFlags
 {
 	NONE = 1 << 0,
@@ -57,7 +37,7 @@ enum eTechniqueDataEntryFlags
 
 struct TechniqueDataEntry
 {
-	eTechniqueDataEntryName name;
+	uint32_t id;
 	VkDescriptorType descriptorType;
 	uint32_t count;
 	uint32_t flags;
@@ -66,59 +46,59 @@ struct TechniqueDataEntry
 
 struct TechniqueDataEntryImage
 {
-	eTechniqueDataEntryImageName name;
+	uint32_t id;
 	VkDescriptorType descriptorType;
 	uint32_t count;
 };
 
+
 struct TechniqueDataBinding
 {
-	eTechniqueDataEntryName name;
-	uint32_t binding;
-	VkShaderStageFlags stageFlags;
-};
-
-struct TechniqueDataImageBinding
-{
-	eTechniqueDataEntryImageName name;
+	uint32_t id;
 	uint32_t binding;
 	VkShaderStageFlags stageFlags;
 };
 
 struct TechniqueDescriptorSetDesc
 {
-	TechniqueDataBinding dataBindings [8];
+	TechniqueDataBinding buffersBindings [8];
 	uint32_t buffersCount;
 
-	TechniqueDataImageBinding dataImageBindings [8];
+	TechniqueDataBinding imagesBindings [8];
 	uint32_t imagesCount;
 };
+
+constexpr size_t MAX_DATA_ENTRIES = 16;
 
 struct InputBuffers
 {
 	//TODO the ptr here is kinda dangerous. Used for descriptors that contains multiple descriptors... mostly just for images
-	std::array<GpuBuffer* , static_cast< size_t >(eTechniqueDataEntryName::COUNT)> data;
-	std::array<VkDescriptorImageInfo* , static_cast< size_t >(eTechniqueDataEntryImageName::COUNT)> dataImages;
+	std::array<GpuBuffer* , MAX_DATA_ENTRIES> data;
+	std::array<VkDescriptorImageInfo* , MAX_DATA_ENTRIES> dataImages;
 };
 
-inline void SetBuffers( InputBuffers* buffers, eTechniqueDataEntryName name, GpuBuffer* input )
+inline void SetBuffers( InputBuffers* buffers, uint32_t id, GpuBuffer* input )
 {
-	buffers->data[static_cast< size_t >(name)] = input;
+	assert( id < MAX_DATA_ENTRIES );
+	buffers->data[id] = input;
 }
 
-inline void SetImages( InputBuffers* buffers, eTechniqueDataEntryImageName name, VkDescriptorImageInfo* input )
+inline void SetImages( InputBuffers* buffers, uint32_t id, VkDescriptorImageInfo* input )
 {
-	buffers->dataImages[static_cast< size_t >(name)] = input;
+	assert( id < MAX_DATA_ENTRIES );
+	buffers->dataImages[id] = input;
 }
 
-inline GpuBuffer* GetBuffer( const InputBuffers* buffers, eTechniqueDataEntryName name )
+inline GpuBuffer* GetBuffer( const InputBuffers* buffers, uint32_t id )
 {
-	return buffers->data[static_cast< size_t >(name)];
+	assert( id < MAX_DATA_ENTRIES );
+	return buffers->data[id];
 }
 
-inline VkDescriptorImageInfo* GetImage( const InputBuffers* buffers, eTechniqueDataEntryImageName name )
+inline VkDescriptorImageInfo* GetImage( const InputBuffers* buffers, uint32_t id )
 {
-	return buffers->dataImages[static_cast< size_t >(name)];
+	assert( id < MAX_DATA_ENTRIES );
+	return buffers->dataImages[id];
 }
 
 void CreateDescriptorSetLayout( const TechniqueDescriptorSetDesc * desc, VkDescriptorSetLayout * o_setLayout );

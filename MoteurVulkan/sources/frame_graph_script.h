@@ -17,23 +17,63 @@ void SetInputBuffers( std::array< InputBuffers, SIMULTANEOUS_FRAMES>* pInputBuff
 	_descriptorPool = descriptorPool;
 }
 
+enum class eTechniqueDataEntryName
+{
+	INSTANCE_DATA = 0,
+	SHADOW_DATA,
+	SCENE_DATA,
+	LIGHT_DATA,
+	SKYBOX_DATA,
+	COUNT
+};
+
+enum class eTechniqueDataEntryImageName
+{
+	ALBEDOS = 0,
+	NORMALS,
+	SHADOWS,
+	TEXT,
+	SKYBOX,
+	COUNT
+};
+
+inline void SetBuffers( InputBuffers* buffers, eTechniqueDataEntryName id, GpuBuffer* input )
+{
+	SetBuffers( buffers, static_cast< uint32_t >(id), input );
+}
+
+inline void SetImages( InputBuffers* buffers, eTechniqueDataEntryImageName id, VkDescriptorImageInfo* input )
+{
+	SetImages( buffers, static_cast< uint32_t >(id), input );
+}
+
+inline GpuBuffer* GetBuffer( const InputBuffers* buffers, eTechniqueDataEntryName id )
+{
+	return GetBuffer( buffers, static_cast< uint32_t >(id) );
+}
+
+inline VkDescriptorImageInfo* GetImage( const InputBuffers* buffers, eTechniqueDataEntryImageName id )
+{
+	return GetImage( buffers, static_cast< uint32_t >(id) );
+}
+
 const uint32_t maxModelsCount = 5;
 static const TechniqueDataEntry techniqueDataEntries[static_cast< size_t >(eTechniqueDataEntryName::COUNT)] =
 {
-	{ eTechniqueDataEntryName::INSTANCE_DATA, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, eTechniqueDataEntryFlags::NONE, sizeof( InstanceMatrices ) * maxModelsCount},
-	{ eTechniqueDataEntryName::SHADOW_DATA,	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, eTechniqueDataEntryFlags::NONE, sizeof( SceneMatricesUniform )},
-	{ eTechniqueDataEntryName::SCENE_DATA,	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, eTechniqueDataEntryFlags::NONE, sizeof( SceneMatricesUniform )},
-	{ eTechniqueDataEntryName::LIGHT_DATA,	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, eTechniqueDataEntryFlags::NONE, sizeof( LightUniform )},
-	{ eTechniqueDataEntryName::SKYBOX_DATA,	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, eTechniqueDataEntryFlags::NONE, sizeof( SkyboxUniformBufferObject )},
+	{ static_cast< uint32_t >(eTechniqueDataEntryName::INSTANCE_DATA), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, eTechniqueDataEntryFlags::NONE, sizeof( InstanceMatrices ) * maxModelsCount},
+	{ static_cast< uint32_t >(eTechniqueDataEntryName::SHADOW_DATA),	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, eTechniqueDataEntryFlags::NONE, sizeof( SceneMatricesUniform )},
+	{ static_cast< uint32_t >(eTechniqueDataEntryName::SCENE_DATA),	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, eTechniqueDataEntryFlags::NONE, sizeof( SceneMatricesUniform )},
+	{ static_cast< uint32_t >(eTechniqueDataEntryName::LIGHT_DATA),	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, eTechniqueDataEntryFlags::NONE, sizeof( LightUniform )},
+	{ static_cast< uint32_t >(eTechniqueDataEntryName::SKYBOX_DATA),	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, eTechniqueDataEntryFlags::NONE, sizeof( SkyboxUniformBufferObject )},
 };
 
 static const TechniqueDataEntryImage techniqueDataEntryImages[static_cast< size_t >(eTechniqueDataEntryImageName::COUNT)] =
 {
-	{ eTechniqueDataEntryImageName::ALBEDOS, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5 },
-	{ eTechniqueDataEntryImageName::NORMALS, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
-	{ eTechniqueDataEntryImageName::SHADOWS, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
-	{ eTechniqueDataEntryImageName::TEXT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
-	{ eTechniqueDataEntryImageName::SKYBOX, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
+	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::ALBEDOS), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5 },
+	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::NORMALS), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
+	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::SHADOWS), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
+	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::TEXT), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
+	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::SKYBOX), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
 };
 
 std::array<PerFrameBuffer, 16> _allbuffers;
@@ -49,14 +89,14 @@ enum eRenderTarget : uint32_t
 TechniqueDescriptorSetDesc geoPassSetDesc =
 {
 	{
-		{ eTechniqueDataEntryName::SCENE_DATA, 0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
-		{ eTechniqueDataEntryName::LIGHT_DATA, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
+		{ static_cast< uint32_t >(eTechniqueDataEntryName::SCENE_DATA), 0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
+		{ static_cast< uint32_t >(eTechniqueDataEntryName::LIGHT_DATA), 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
 	},
 	2,
 	{
-		{ eTechniqueDataEntryImageName::ALBEDOS, 2, VK_SHADER_STAGE_FRAGMENT_BIT },
-		{ eTechniqueDataEntryImageName::NORMALS, 3, VK_SHADER_STAGE_FRAGMENT_BIT },
-		{ eTechniqueDataEntryImageName::SHADOWS, 4, VK_SHADER_STAGE_FRAGMENT_BIT },
+		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::ALBEDOS), 2, VK_SHADER_STAGE_FRAGMENT_BIT },
+		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::NORMALS), 3, VK_SHADER_STAGE_FRAGMENT_BIT },
+		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::SHADOWS), 4, VK_SHADER_STAGE_FRAGMENT_BIT },
 	},
 	3
 };
@@ -64,7 +104,7 @@ TechniqueDescriptorSetDesc geoPassSetDesc =
 TechniqueDescriptorSetDesc geoInstanceSetDesc =
 {
 	{
-		{ eTechniqueDataEntryName::INSTANCE_DATA, 0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
+		{ static_cast< uint32_t >(eTechniqueDataEntryName::INSTANCE_DATA), 0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
 	},
 	1
 };
@@ -95,7 +135,7 @@ static void FG_Geometry_CreateGraphNode(FG::RenderPassCreationData* renderPassCr
 TechniqueDescriptorSetDesc shadowPassSet =
 {
 	{
-		{ eTechniqueDataEntryName::SHADOW_DATA, 0, VK_SHADER_STAGE_VERTEX_BIT }
+		{ static_cast< uint32_t >(eTechniqueDataEntryName::SHADOW_DATA), 0, VK_SHADER_STAGE_VERTEX_BIT }
 	},
 	1
 };
@@ -103,7 +143,7 @@ TechniqueDescriptorSetDesc shadowPassSet =
 TechniqueDescriptorSetDesc shadowInstanceSet =
 {
 	{
-		{ eTechniqueDataEntryName::INSTANCE_DATA, 0, VK_SHADER_STAGE_VERTEX_BIT }
+		{ static_cast< uint32_t >(eTechniqueDataEntryName::INSTANCE_DATA), 0, VK_SHADER_STAGE_VERTEX_BIT }
 	},
 	1
 };
@@ -129,11 +169,11 @@ static void FG_Shadow_CreateGraphNode(FG::RenderPassCreationData* renderPassCrea
 TechniqueDescriptorSetDesc skyboxPassSetDesc =
 {
 	{
-		{ eTechniqueDataEntryName::SKYBOX_DATA, 0, VK_SHADER_STAGE_VERTEX_BIT },
+		{ static_cast< uint32_t >(eTechniqueDataEntryName::SKYBOX_DATA), 0, VK_SHADER_STAGE_VERTEX_BIT },
 	},
 	1,
 	{
-		{ eTechniqueDataEntryImageName::SKYBOX, 1, VK_SHADER_STAGE_FRAGMENT_BIT },
+		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::SKYBOX), 1, VK_SHADER_STAGE_FRAGMENT_BIT },
 	},
 	1
 };
@@ -163,7 +203,7 @@ TechniqueDescriptorSetDesc textPassSet =
 	{},
 	0,
 	{
-		{ eTechniqueDataEntryImageName::TEXT, 0, VK_SHADER_STAGE_FRAGMENT_BIT }
+		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::TEXT), 0, VK_SHADER_STAGE_FRAGMENT_BIT }
 	},
 	1
 };
@@ -195,8 +235,8 @@ static void CreateDescriptorSetLayout( const TechniqueDescriptorSetDesc * desc, 
 
 	for( uint32_t i = 0; i < desc->buffersCount; ++i, ++count )
 	{
-		const TechniqueDataBinding* dataBinding = &desc->dataBindings[i];
-		const TechniqueDataEntry* dataEntry = &techniqueDataEntries[static_cast< size_t >(dataBinding->name)];
+		const TechniqueDataBinding* dataBinding = &desc->buffersBindings[i];
+		const TechniqueDataEntry* dataEntry = &techniqueDataEntries[dataBinding->id];
 
 		tempBindings[count].binding = dataBinding->binding;
 		tempBindings[count].descriptorCount = dataEntry->count;
@@ -207,8 +247,8 @@ static void CreateDescriptorSetLayout( const TechniqueDescriptorSetDesc * desc, 
 
 	for( uint32_t i = 0; i < desc->imagesCount; ++i, ++count )
 	{
-		const TechniqueDataImageBinding* dataBinding = &desc->dataImageBindings[i];
-		const TechniqueDataEntryImage* dataEntry = &techniqueDataEntryImages[static_cast< size_t >(dataBinding->name)];
+		const TechniqueDataBinding* dataBinding = &desc->imagesBindings[i];
+		const TechniqueDataEntryImage* dataEntry = &techniqueDataEntryImages[dataBinding->id];
 
 		tempBindings[count].binding = dataBinding->binding;
 		tempBindings[count].descriptorCount = dataEntry->count;
@@ -234,9 +274,9 @@ static void CreateDescriptorSet( const InputBuffers* inputData, const TechniqueD
 	uint32_t descriptorBuffersInfosCount = 0;
 	for( uint32_t i = 0; i < descriptorSetDesc->buffersCount; ++i )
 	{
-		const TechniqueDataBinding* bufferBinding = &descriptorSetDesc->dataBindings[i];
-		const TechniqueDataEntry* techniqueDataEntry = &techniqueDataEntries[static_cast< size_t >(bufferBinding->name)];
-		GpuBuffer* buffers = GetBuffer( inputData, bufferBinding->name );
+		const TechniqueDataBinding* bufferBinding = &descriptorSetDesc->buffersBindings[i];
+		const TechniqueDataEntry* techniqueDataEntry = &techniqueDataEntries[bufferBinding->id];
+		GpuBuffer* buffers = GetBuffer( inputData, bufferBinding->id );
 		uint32_t bufferStart = descriptorBuffersInfosCount;
 		for( uint32_t descriptorIndex = 0; descriptorIndex < techniqueDataEntry->count; ++descriptorIndex )
 		{
@@ -251,14 +291,14 @@ static void CreateDescriptorSet( const InputBuffers* inputData, const TechniqueD
 	uint32_t descriptorImagesInfosCount = 0;
 	for( uint32_t i = 0; i < descriptorSetDesc->imagesCount; ++i )
 	{
-		const TechniqueDataImageBinding* imageBinding = &descriptorSetDesc->dataImageBindings[i];
-		const TechniqueDataEntryImage* techniqueDataEntry = &techniqueDataEntryImages[static_cast< size_t >(imageBinding->name)];
-		VkDescriptorImageInfo* images = GetImage( inputData, imageBinding->name );
+		const TechniqueDataBinding* imageBinding = &descriptorSetDesc->imagesBindings[i];
+		const TechniqueDataEntryImage* techniqueDataEntry = &techniqueDataEntryImages[imageBinding->id];
+		VkDescriptorImageInfo* images = GetImage( inputData, imageBinding->id );
 		uint32_t bufferStart = descriptorImagesInfosCount;
 		for( uint32_t descriptorIndex = 0; descriptorIndex < techniqueDataEntry->count; ++descriptorIndex )
 		{
 			assert( descriptorImagesInfosCount < 16 );
-			//TODO: HACK shouldn't pass in this struct in the input buffer
+			//TODO: HACK shouldn't pass in this struct in the input buffer, should be some wrapper or something
 			descriptorImagesInfos[descriptorImagesInfosCount++] = images[descriptorIndex];
 		}
 		writeDescriptors[writeDescriptorsCount++] = { imageBinding->binding, techniqueDataEntry->count, techniqueDataEntry->descriptorType, nullptr, &descriptorImagesInfos[bufferStart] };
@@ -271,48 +311,35 @@ static void CreateDescriptorSet( const InputBuffers* inputData, const TechniqueD
 constexpr VkFormat RT_FORMAT_SHADOW_DEPTH = VK_FORMAT_D32_SFLOAT;
 constexpr VkExtent2D RT_EXTENT_SHADOW = { 1024, 1024 };
 
+static void CreateBuffersIfNotCreated( std::array< InputBuffers, SIMULTANEOUS_FRAMES>* inputBuffers, const TechniqueDescriptorSetDesc* descriptorSetDesc )
+{
+	for( uint32_t i = 0; i < descriptorSetDesc->buffersCount; ++i )
+	{
+		const TechniqueDataEntry* dataEntry = &techniqueDataEntries[descriptorSetDesc->buffersBindings[i].id];
+		PerFrameBuffer* buffer = &_allbuffers[dataEntry->id];
+		//TODO: null the struct and destroy buffers before recreating everything
+		if( buffer->memory == VK_NULL_HANDLE )
+		{
+			CreatePerFrameBuffer( dataEntry->size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, buffer );
+			for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
+				SetBuffers( &(*inputBuffers)[i], dataEntry->id, &buffer->buffers[i] );
+		}
+	}
+}
+
 void CreateTechniqueCallback (const FG::RenderPassCreationData* passCreationData, Technique* technique)
 {
 	std::array< InputBuffers, SIMULTANEOUS_FRAMES>& inputBuffers = *_pInputBuffers;
 
 	//Create buffers if required
-	const TechniqueDescriptorSetDesc* descriptorSetDesc = passCreationData->frame_graph_node.passSet;
-	if( descriptorSetDesc )
-	{
-		for( uint32_t i = 0; i < descriptorSetDesc->buffersCount; ++i )
-		{
-			const TechniqueDataEntry* dataEntry = &techniqueDataEntries[static_cast< size_t >(descriptorSetDesc->dataBindings[i].name)];
-			PerFrameBuffer* buffer = &_allbuffers[static_cast< size_t >(dataEntry->name)];
-			//TODO: null the struct and destroy buffers before recreating everything
-			if( buffer->memory == VK_NULL_HANDLE )
-			{
-				CreatePerFrameBuffer( dataEntry->size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, buffer );
-				for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
-					SetBuffers( &inputBuffers[i], dataEntry->name, &buffer->buffers[i] );
-			}
-		}
-	}
+	if( passCreationData->frame_graph_node.passSet )
+		CreateBuffersIfNotCreated( &inputBuffers, passCreationData->frame_graph_node.passSet );
+	if( passCreationData->frame_graph_node.instanceSet )
+		CreateBuffersIfNotCreated( &inputBuffers, passCreationData->frame_graph_node.instanceSet );
 
-	descriptorSetDesc = passCreationData->frame_graph_node.instanceSet;
-	if( descriptorSetDesc )
-	{
-		for( uint32_t i = 0; i < descriptorSetDesc->buffersCount; ++i )
-		{
-			const TechniqueDataEntry* dataEntry = &techniqueDataEntries[static_cast< size_t >(descriptorSetDesc->dataBindings[i].name)];
-			PerFrameBuffer* buffer = &_allbuffers[static_cast< size_t >(dataEntry->name)];
-			//TODO: null the struct and destroy buffers before recreating everything
-			if( buffer->memory == VK_NULL_HANDLE )
-			{
-				CreatePerFrameBuffer( dataEntry->size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, buffer );
-				for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
-					SetBuffers( &inputBuffers[i], dataEntry->name, &buffer->buffers[i] );
-			}
-		}
-	}
 	//TODO: images? don't create stuff if it's external?
 
 	//Create descriptors
-
 	const GfxImage *shadowImages = FG::GetRenderTarget( RT_SHADOW_MAP );
 	VkDescriptorImageInfo shadowTextures[] = { { GetSampler( Samplers::Shadow ), shadowImages->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL } };
 	for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
