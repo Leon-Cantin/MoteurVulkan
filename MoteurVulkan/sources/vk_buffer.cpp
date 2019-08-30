@@ -99,6 +99,8 @@ void DestroyPerFrameBuffer(PerFrameBuffer * o_buffer)
 	for(uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
 		vkDestroyBuffer(g_vk.device, o_buffer->buffers[i].buffer, nullptr);		
 	vkFreeMemory(g_vk.device, o_buffer->memory, nullptr);
+
+	*o_buffer = {};
 }
 
 

@@ -12,13 +12,11 @@ namespace FG
 
 	struct FrameGraphNode
 	{
-		void(*Initialize)(const RenderPass*, const Swapchain* swapchain, Technique&& technique);
-		void(*CleanupAfterSwapchain)();
-		void(*RecreateAfterSwapchain)(const Swapchain* swapchain);
-		void(*Cleanup)();
-		void(*RecordDrawCommands)(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent);
+		void( *RecordDrawCommands )(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique);
 		TechniqueDescriptorSetDesc* passSet;
 		TechniqueDescriptorSetDesc* instanceSet;
+		GpuPipelineLayout gpuPipelineLayout;
+		GpuPipelineState gpuPipelineState;
 	};
 
 	struct RenderPassCreationData
@@ -47,7 +45,7 @@ namespace FG
 	};
 
 	void CreateGraph( const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<RenderTargetCreationData> *inRtCreationData, uint32_t backbufferId, VkDescriptorPool descriptorPool,
-		void( *createTechniqueCallback )(const RenderPassCreationData*, Technique* technique) );
+		void( *createTechniqueCallback )(const RenderPass*, const RenderPassCreationData*, Technique*) );
 	const RenderPass* GetRenderPass(uint32_t id);
 	const GfxImage* GetRenderTarget(uint32_t render_target_id);
 	void RecreateAfterSwapchain(const Swapchain* swapchain);

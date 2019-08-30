@@ -78,6 +78,15 @@ static const TechniqueDataEntryImage techniqueDataEntryImages[static_cast< size_
 
 std::array<PerFrameBuffer, 16> _allbuffers;
 
+void HACKCleanUpFrameGraphScriptResources()
+{
+	for( uint32_t i = 0; i < _allbuffers.size(); ++i )
+	{
+		if( _allbuffers[i].memory )
+			DestroyPerFrameBuffer( &_allbuffers[i] );
+	}
+}
+
 enum eRenderTarget : uint32_t
 {
 	RT_SCENE_COLOR = 0,
@@ -123,10 +132,9 @@ static void FG_Geometry_CreateGraphNode(FG::RenderPassCreationData* renderPassCr
 
 	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData->frame_graph_node;
 
-	frameGraphNode->Initialize = InitializeGeometryRenderPass;
-	frameGraphNode->RecreateAfterSwapchain = RecreateGeometryAfterSwapChain;
-	frameGraphNode->CleanupAfterSwapchain = CleanupGeometryRenderpassAfterSwapchain;
-	frameGraphNode->Cleanup = CleanupGeometryRenderpass;
+	frameGraphNode->gpuPipelineLayout = GetGeoPipelineLayout();
+	frameGraphNode->gpuPipelineState = GetGeoPipelineState();
+
 	frameGraphNode->RecordDrawCommands = GeometryRecordDrawCommandsBuffer;
 	frameGraphNode->instanceSet = &geoInstanceSetDesc;
 	frameGraphNode->passSet = &geoPassSetDesc;
@@ -157,10 +165,8 @@ static void FG_Shadow_CreateGraphNode(FG::RenderPassCreationData* renderPassCrea
 
 	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData->frame_graph_node;
 
-	frameGraphNode->Initialize = InitializeShadowPass;
-	frameGraphNode->RecreateAfterSwapchain = nullptr;
-	frameGraphNode->CleanupAfterSwapchain = nullptr;
-	frameGraphNode->Cleanup = CleanupShadowPass;
+	frameGraphNode->gpuPipelineLayout = GetShadowPipelineLayout();
+	frameGraphNode->gpuPipelineState = GetShadowPipelineState();
 	frameGraphNode->RecordDrawCommands = ShadowRecordDrawCommandsBuffer;
 	frameGraphNode->instanceSet = &shadowInstanceSet;
 	frameGraphNode->passSet = &shadowPassSet;
@@ -189,10 +195,8 @@ static void FG_Skybox_CreateGraphNode(FG::RenderPassCreationData* renderPassCrea
 
 	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData->frame_graph_node;
 
-	frameGraphNode->Initialize = InitializeSkyboxRenderPass;
-	frameGraphNode->RecreateAfterSwapchain = RecreateSkyboxAfterSwapchain;
-	frameGraphNode->CleanupAfterSwapchain = CleanupSkyboxAfterSwapchain;
-	frameGraphNode->Cleanup = CleanupSkybox;
+	frameGraphNode->gpuPipelineLayout = GetSkyboxPipelineLayout();
+	frameGraphNode->gpuPipelineState = GetSkyboxPipelineState();
 	frameGraphNode->RecordDrawCommands = SkyboxRecordDrawCommandsBuffer;
 	frameGraphNode->instanceSet = nullptr;
 	frameGraphNode->passSet = &skyboxPassSetDesc;
@@ -218,10 +222,8 @@ static void FG_TextOverlay_CreateGraphNode(FG::RenderPassCreationData* renderPas
 
 	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData->frame_graph_node;
 
-	frameGraphNode->Initialize = InitializeTextRenderPass;
-	frameGraphNode->RecreateAfterSwapchain = RecreateTextRenderPassAfterSwapchain;
-	frameGraphNode->CleanupAfterSwapchain = CleanupTextRenderPassAfterSwapchain;
-	frameGraphNode->Cleanup = CleanupTextRenderPass;
+	frameGraphNode->gpuPipelineLayout = GetTextPipelineLayout();
+	frameGraphNode->gpuPipelineState = GetTextPipelineState();
 	frameGraphNode->RecordDrawCommands = TextRecordDrawCommandsBuffer;
 	frameGraphNode->instanceSet = nullptr;
 	//TODO: we don't need one set per frame for this one
@@ -317,7 +319,6 @@ static void CreateBuffersIfNotCreated( std::array< InputBuffers, SIMULTANEOUS_FR
 	{
 		const TechniqueDataEntry* dataEntry = &techniqueDataEntries[descriptorSetDesc->buffersBindings[i].id];
 		PerFrameBuffer* buffer = &_allbuffers[dataEntry->id];
-		//TODO: null the struct and destroy buffers before recreating everything
 		if( buffer->memory == VK_NULL_HANDLE )
 		{
 			CreatePerFrameBuffer( dataEntry->size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, buffer );
@@ -327,7 +328,7 @@ static void CreateBuffersIfNotCreated( std::array< InputBuffers, SIMULTANEOUS_FR
 	}
 }
 
-void CreateTechniqueCallback (const FG::RenderPassCreationData* passCreationData, Technique* technique)
+void CreateTechniqueCallback (const RenderPass* renderpass, const FG::RenderPassCreationData* passCreationData, Technique* technique)
 {
 	std::array< InputBuffers, SIMULTANEOUS_FRAMES>& inputBuffers = *_pInputBuffers;
 
@@ -364,6 +365,35 @@ void CreateTechniqueCallback (const FG::RenderPassCreationData* passCreationData
 		for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 			CreateDescriptorSet( &inputBuffers[i], instanceSet, technique->instance_descriptor_layout, _descriptorPool, &technique->instance_descriptor[i] );
 	}
+
+	//Create pipeline layout
+	uint32_t dscriptorSetLayoutsCount = 0;
+	std::array< VkDescriptorSetLayout, 2 > descriptorSetLayouts;
+	if( passSet )
+		descriptorSetLayouts[dscriptorSetLayoutsCount++] = technique->renderpass_descriptor_layout;
+	if( instanceSet )
+		descriptorSetLayouts[dscriptorSetLayoutsCount++] = technique->instance_descriptor_layout;
+
+	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
+	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipeline_layout_info.setLayoutCount = dscriptorSetLayoutsCount;
+	pipeline_layout_info.pSetLayouts = descriptorSetLayouts.data();
+	pipeline_layout_info.pushConstantRangeCount = passCreationData->frame_graph_node.gpuPipelineLayout.pushConstantRanges.size();
+	pipeline_layout_info.pPushConstantRanges = passCreationData->frame_graph_node.gpuPipelineLayout.pushConstantRanges.data();
+
+	if( vkCreatePipelineLayout( g_vk.device, &pipeline_layout_info, nullptr, &technique->pipelineLayout ) != VK_SUCCESS ) {
+		throw std::runtime_error( "failed to create pipeline layout!" );
+	}
+
+	//TODO: temp hack to get a relative size;
+	GpuPipelineState pipelineState = passCreationData->frame_graph_node.gpuPipelineState;
+	if( pipelineState.framebufferExtent.width == 0 && pipelineState.framebufferExtent.height == 0 )
+		pipelineState.framebufferExtent = renderpass->outputFrameBuffer[0].extent;
+
+	CreatePipeline( pipelineState,
+		renderpass->vk_renderpass,
+		technique->pipelineLayout,
+		&technique->pipeline );
 }
 
 void InitializeScript(const Swapchain* swapchain)

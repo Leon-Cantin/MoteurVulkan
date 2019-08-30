@@ -10,24 +10,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <array>
 
-GfxMaterial skyboxMaterial;
-const RenderPass* skyboxRenderPass;
-
-static void CreateSkyboxTechnique(VkExtent2D extent, Technique* technique)
+GpuPipelineLayout GetSkyboxPipelineLayout()
 {
-	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
-	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipeline_layout_info.setLayoutCount = 1; // Optional
-	pipeline_layout_info.pSetLayouts = &technique->renderpass_descriptor_layout; // Optional
-	pipeline_layout_info.pushConstantRangeCount = 0; // Optional
-	pipeline_layout_info.pPushConstantRanges = nullptr; // Optional
+	return GpuPipelineLayout();
+}
 
-	if( vkCreatePipelineLayout( g_vk.device, &pipeline_layout_info, nullptr, &technique->pipelineLayout ) != VK_SUCCESS ) {
-		throw std::runtime_error( "failed to create pipeline layout!" );
-	}
-
+GpuPipelineState GetSkyboxPipelineState()
+{
 	GpuPipelineState gpuPipelineState = {};
-
 	gpuPipelineState.shaders = {
 		{ FS::readFile( "shaders/skybox.vert.spv" ), "main", VK_SHADER_STAGE_VERTEX_BIT },
 		{ FS::readFile( "shaders/skybox.frag.spv" ), "main", VK_SHADER_STAGE_FRAGMENT_BIT } };
@@ -39,14 +29,11 @@ static void CreateSkyboxTechnique(VkExtent2D extent, Technique* technique)
 	gpuPipelineState.depthStencilState.depthWrite = false;
 	gpuPipelineState.depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 
-	gpuPipelineState.framebufferExtent = extent;
+	gpuPipelineState.framebufferExtent = { 0,0 }; // swapchain sized
 	gpuPipelineState.blendEnabled = false;
 	gpuPipelineState.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 
-	CreatePipeline( gpuPipelineState,
-		skyboxRenderPass->vk_renderpass, 
-		technique->pipelineLayout,
-		&technique->pipeline );
+	return gpuPipelineState;
 }
 
 void UpdateSkyboxUniformBuffers( GpuBuffer* skyboxUniformBuffer, const glm::mat4& world_view_matrix)
@@ -57,11 +44,10 @@ void UpdateSkyboxUniformBuffers( GpuBuffer* skyboxUniformBuffer, const glm::mat4
 	UpdateGpuBuffer( skyboxUniformBuffer, &subo, sizeof( subo ), 0 );
 }
 
-void CmdDrawSkybox(VkCommandBuffer commandBuffer, VkExtent2D extent, size_t currentFrame)
+static void CmdDrawSkybox(VkCommandBuffer commandBuffer, VkExtent2D extent, size_t currentFrame, const RenderPass * renderpass, const Technique * technique )
 {
-	Technique* technique = &skyboxMaterial.techniques[0];
 	CmdBeginVkLabel( commandBuffer, "Skybox Renderpass", glm::vec4( 0.2f, 0.2f, 0.9f, 1.0f ) );
-	BeginRenderPass( commandBuffer, *skyboxRenderPass, skyboxRenderPass->outputFrameBuffer[currentFrame].frameBuffer, extent );
+	BeginRenderPass( commandBuffer, *renderpass, renderpass->outputFrameBuffer[currentFrame].frameBuffer, extent );
 
 	vkCmdBindPipeline( commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipeline );
 	vkCmdBindDescriptorSets( commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, 0, 1, &technique->renderPass_descriptor[currentFrame], 0, nullptr );
@@ -71,41 +57,7 @@ void CmdDrawSkybox(VkCommandBuffer commandBuffer, VkExtent2D extent, size_t curr
 	CmdEndVkLabel(commandBuffer);
 }
 
-//TODO: Probably just destroy everything and rebuild all pipeline objects
-void CleanupSkyboxAfterSwapchain()
+void SkyboxRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique )
 {
-	Technique* technique = &skyboxMaterial.techniques[0];
-	vkDestroyPipeline(g_vk.device, technique->pipeline, nullptr);
-	vkDestroyPipelineLayout(g_vk.device, technique->pipelineLayout, nullptr);
-}
-
-void CleanupSkybox()
-{
-	Technique* technique = &skyboxMaterial.techniques[0];
-	vkDestroyDescriptorSetLayout(g_vk.device, technique->renderpass_descriptor_layout, nullptr);
-}
-
-void ReloadSkyboxShaders(VkExtent2D extent)
-{
-	Technique* technique = &skyboxMaterial.techniques[0];
-	vkDestroyPipeline(g_vk.device, technique->pipeline, nullptr);
-	CreateSkyboxTechnique(extent, technique);
-}
-
-void RecreateSkyboxAfterSwapchain(const Swapchain* swapchain)
-{
-	Technique* technique = &skyboxMaterial.techniques[0];
-	CreateSkyboxTechnique( swapchain->extent, technique );
-}
-
-void InitializeSkyboxRenderPass(const RenderPass* renderpass, const Swapchain* swapchain, Technique&& technique)
-{
-	skyboxMaterial.techniques[0] = std::move( technique );
-	skyboxRenderPass = renderpass;
-	CreateSkyboxTechnique( swapchain->extent, &skyboxMaterial.techniques[0] );
-}
-
-void SkyboxRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent)
-{
-	CmdDrawSkybox(graphicsCommandBuffer, extent, currentFrame);
+	CmdDrawSkybox( graphicsCommandBuffer, extent, currentFrame, renderpass, technique );
 }

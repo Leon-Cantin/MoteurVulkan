@@ -11,8 +11,6 @@
 #include "console_command.h"
 #include "material.h"
 
-GfxMaterial textMaterial;
-const RenderPass* textRenderPass;
 GpuBuffer textVertexBuffer;
 GpuBuffer textIndexBuffer;
 uint32_t maxTextCharCount = 0;
@@ -31,21 +29,13 @@ const GfxImage* GetTextImage()
 	return &g_fontImage;
 }
 
-static void CreateTextTechnique( VkExtent2D extent, Technique* technique)
+GpuPipelineLayout GetTextPipelineLayout()
 {
-	//Create layout
-	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
-	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipeline_layout_info.setLayoutCount = 1; // Optional
-	pipeline_layout_info.pSetLayouts = &technique->renderpass_descriptor_layout; // Optional
-	pipeline_layout_info.pushConstantRangeCount = 0; // Optional
-	pipeline_layout_info.pPushConstantRanges = nullptr; // Optional
+	return GpuPipelineLayout();
+}
 
-	if( vkCreatePipelineLayout( g_vk.device, &pipeline_layout_info, nullptr, &technique->pipelineLayout ) != VK_SUCCESS ) {
-		throw std::runtime_error( "failed to create pipeline layout!" );
-	}
-
-	//Create PSO
+GpuPipelineState GetTextPipelineState()
+{
 	GpuPipelineState gpuPipelineState = {};
 	gpuPipelineState.viState.vibDescription[0] = TextVertex::get_binding_description();
 	gpuPipelineState.viState.vibDescriptionsCount = 1;
@@ -67,22 +57,17 @@ static void CreateTextTechnique( VkExtent2D extent, Technique* technique)
 	gpuPipelineState.depthStencilState.depthWrite = false;
 	gpuPipelineState.depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS;
 
-	gpuPipelineState.framebufferExtent = extent;
+	gpuPipelineState.framebufferExtent = { 0,0 }; //swapchain sized;
 	gpuPipelineState.blendEnabled = true;
 	gpuPipelineState.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-
-	CreatePipeline( gpuPipelineState,
-		textRenderPass->vk_renderpass,
-		technique->pipelineLayout,
-		&technique->pipeline );
+	return gpuPipelineState;
 }
 
-void CmdDrawText( VkCommandBuffer commandBuffer, VkExtent2D extent, size_t frameIndex)
+static void CmdDrawText( VkCommandBuffer commandBuffer, VkExtent2D extent, size_t frameIndex, const RenderPass * renderpass, const Technique * technique )
 {
 	CmdBeginVkLabel(commandBuffer, "Text overlay Renderpass", glm::vec4(0.6f, 0.6f, 0.6f, 1.0f));
-	BeginRenderPass(commandBuffer, *textRenderPass, textRenderPass->outputFrameBuffer[frameIndex].frameBuffer, extent);
+	BeginRenderPass(commandBuffer, *renderpass, renderpass->outputFrameBuffer[frameIndex].frameBuffer, extent);
 
-	Technique* technique = &textMaterial.techniques[0];
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipeline );
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, 0, 1, &technique->renderPass_descriptor[0], 0, nullptr);
 
@@ -172,37 +157,14 @@ void LoadFontTexture()
 	Load2DTexture(&font24pixels[0][0], fontWidth, fontHeight, 1, 1, VK_FORMAT_R8_UNORM, g_fontImage);
 }
 
-void RecreateTextRenderPassAfterSwapchain(const Swapchain* swapchain)
-{
-	Technique* technique = &textMaterial.techniques[0];
-	CreateTextTechnique( swapchain->extent, technique );
-	//TODO:destroy and recreate the render pass after the swapchain is recreated in case the format changes
-}
-
-void CleanupTextRenderPassAfterSwapchain()
-{
-	Technique* technique = &textMaterial.techniques[0];
-	vkDestroyPipeline(g_vk.device, technique->pipeline, nullptr);
-	vkDestroyPipelineLayout(g_vk.device, technique->pipelineLayout, nullptr);
-}
-
 void CleanupTextRenderPass()
 {
-	Technique* technique = &textMaterial.techniques[0];
 	DestroyImage(g_fontImage);
-	vkDestroyDescriptorSetLayout(g_vk.device, technique->renderpass_descriptor_layout, nullptr);
 	DestroyCommitedGpuBuffer( &textVertexBuffer );
 	DestroyCommitedGpuBuffer( &textIndexBuffer );
 }
 
-void InitializeTextRenderPass(const RenderPass* renderpass, const Swapchain* swapchain, Technique&& technique)
+void TextRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique )
 {
-	textMaterial.techniques[0] = std::move( technique );
-	textRenderPass = renderpass;
-	CreateTextTechnique( swapchain->extent, &textMaterial.techniques[0] );
-}
-
-void TextRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent)
-{
-	CmdDrawText(graphicsCommandBuffer, extent, currentFrame);
+	CmdDrawText(graphicsCommandBuffer, extent, currentFrame, renderpass, technique);
 }

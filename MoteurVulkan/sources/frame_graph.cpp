@@ -26,6 +26,9 @@ namespace FG
 	std::array<RenderPass, 8> _render_passes;
 	uint32_t _render_passes_count = 0;
 
+	std::array<Technique, 8> _techniques;
+	uint32_t _techniques_count = 0;
+
 	const RenderPass* GetRenderPass(uint32_t id)
 	{
 		return &_render_passes[id];
@@ -273,7 +276,7 @@ namespace FG
 	}
 
 	void CreateGraph(const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<RenderTargetCreationData> *inRtCreationData, uint32_t backbufferId, VkDescriptorPool descriptorPool,
-		void(*createTechniqueCallback)(const RenderPassCreationData*, Technique* technique) )
+		void(*createTechniqueCallback)(const RenderPass*, const RenderPassCreationData*, Technique*) )
 	{
 		//Setup resources
 		RENDERTARGETS_COUNT = inRtCreationData->size();
@@ -293,10 +296,7 @@ namespace FG
 			CreateRenderPass( *rpCreationData, rpCreationData->name, &_render_passes[_render_passes_count++] );
 
 			//Create the descriptor set and layout
-			Technique technique;
-			createTechniqueCallback( rpCreationData, &technique );
-
-			_rpCreationData[i].frame_graph_node.Initialize( GetRenderPass( i ), swapchain, std::move( technique ) );
+			createTechniqueCallback( GetRenderPass( i ), rpCreationData, &_techniques[_techniques_count++] );
 		}
 	}
 
@@ -326,14 +326,6 @@ namespace FG
 
 			CreateFrameBuffer(&renderpass, passCreationData, colorCount, containsDepth);
 		}
-
-
-		//Could be avoided with dynamic state, we only need to redo scissor and viewport
-		for (uint32_t i = 0; i < _rpCreationData.size(); ++i)
-		{
-			if (_rpCreationData[i].frame_graph_node.RecreateAfterSwapchain)
-				_rpCreationData[i].frame_graph_node.RecreateAfterSwapchain(swapchain);
-		}
 	}
 
 	void CleanupAfterSwapchain()
@@ -353,27 +345,25 @@ namespace FG
 			}
 		}
 
+		for( uint32_t i = 0; i < _techniques_count; ++i )
+		{
+			Technique& technique = _techniques[i];
+			vkDestroyPipeline( g_vk.device, technique.pipeline, nullptr );
+			vkDestroyPipelineLayout( g_vk.device, technique.pipelineLayout, nullptr );
+			vkDestroyDescriptorSetLayout( g_vk.device, technique.renderpass_descriptor_layout, nullptr );
+			vkDestroyDescriptorSetLayout( g_vk.device, technique.instance_descriptor_layout, nullptr );
+		}
+
 		//destroy all images that are not the frame buffer or sampled (to avoid recreating descriptor sets)
 		for (uint32_t i = 0; i < RENDERTARGETS_COUNT; ++i)
 		{
 			if (i != RT_OUTPUT_TARGET && _rtCreationData[i].swapChainSized)
 				DestroyImage(_render_targets[i]);
 		}
-
-		for (uint32_t i = 0; i < _rpCreationData.size(); ++i)
-		{
-			if (_rpCreationData[i].frame_graph_node.CleanupAfterSwapchain)
-				_rpCreationData[i].frame_graph_node.CleanupAfterSwapchain();
-		}
 	}
 
 	void CleanupResources()
 	{
-		for (uint32_t i = 0; i < _rpCreationData.size(); ++i)
-		{
-			_rpCreationData[i].frame_graph_node.Cleanup();
-		}
-
 		for (uint32_t i = 0; i < RENDERTARGETS_COUNT; ++i)
 		{
 			GfxImage& image = _render_targets[i];
@@ -403,7 +393,8 @@ namespace FG
 	{
 		for (uint32_t i = 0; i < _rpCreationData.size(); ++i)
 		{
-			_rpCreationData[i].frame_graph_node.RecordDrawCommands(currentFrame, frameData, graphicsCommandBuffer, extent);
+			//TODO: _render_passes[i] _techniques[i] doesn't mean is the right one
+			_rpCreationData[i].frame_graph_node.RecordDrawCommands(currentFrame, frameData, graphicsCommandBuffer, extent, &_render_passes[i], &_techniques[i]);
 		}
 	}
 }

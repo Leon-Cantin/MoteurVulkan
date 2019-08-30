@@ -68,8 +68,8 @@ void ReloadSceneShaders()
 {
 	vkDeviceWaitIdle(g_vk.device);
 	VkExtent2D extent = g_swapchain.extent;
-	ReloadSkyboxShaders(extent);
-	ReloadGeometryShaders(extent);
+	/*ReloadSkyboxShaders(extent);
+	ReloadGeometryShaders(extent);*/
 }
 
 VkDescriptorImageInfo albedos[5];
@@ -142,6 +142,8 @@ void CompileScene( const GfxImage* albedoImage, const GfxImage* normalImage, con
 
 void CleanupRendererImp()
 {
+	HACKCleanUpFrameGraphScriptResources();
+	CleanupTextRenderPass();
 	CleanupRenderer();	
 	vkDestroyDescriptorPool(g_vk.device, descriptorPool, nullptr);
 }

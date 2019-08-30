@@ -42,6 +42,11 @@ struct DepthStencilState
 	VkCompareOp depthCompareOp;
 };
 
+struct GpuPipelineLayout
+{
+	std::vector<VkPushConstantRange> pushConstantRanges;
+};
+
 struct GpuPipelineState
 {
 	VIState viState;

@@ -17,14 +17,8 @@ struct SkyboxUniformBufferObject {
 	glm::mat4 inv_view_matrix;
 };
 
-void InitializeSkyboxRenderPass(const RenderPass* renderpass, const Swapchain* swapchain, Technique&& technique);
-void RecreateSkyboxAfterSwapchain(const Swapchain* swapchain);
-void CleanupSkyboxAfterSwapchain();
-void CleanupSkybox();
-void SkyboxRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent);
-
+GpuPipelineLayout GetSkyboxPipelineLayout();
+GpuPipelineState GetSkyboxPipelineState();
+void SkyboxRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique );
 
 void UpdateSkyboxUniformBuffers( GpuBuffer* skyboxUniformBuffer, const glm::mat4& world_view_matrix );
-void CmdDrawSkybox(VkCommandBuffer commandBuffer, VkExtent2D extent, size_t currentFrame);
-
-void ReloadSkyboxShaders(VkExtent2D extent);

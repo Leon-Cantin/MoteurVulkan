@@ -16,12 +16,8 @@
 #include <vector>
 #include <array>
 
-const RenderPass* shadowRenderPass;
-
 //TODO: this is redundant, also found in frame graph
 constexpr VkExtent2D RT_EXTENT_SHADOW = { 1024, 1024 };
-
-GfxMaterial shadowMaterial;
 
 void computeShadowMatrix(const glm::vec3& light_location, glm::mat4* view, glm::mat4* projection)
 {
@@ -41,23 +37,13 @@ void UpdateShadowUniformBuffers(GpuBuffer* shadowSceneUniformBuffer, const Scene
 	UpdateGpuBuffer( shadowSceneUniformBuffer, sceneUniforms, sizeof( SceneMatricesUniform ), 0 );
 }
 
-static void CreateShadowTechnique( const RenderPass* renderpass, Technique* technique )
+GpuPipelineLayout GetShadowPipelineLayout()
 {
-	//Create pipeline layout
-	VkDescriptorSetLayout descriptorSetLayouts[] = { technique->renderpass_descriptor_layout, technique->instance_descriptor_layout };
-	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
-	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipeline_layout_info.setLayoutCount = 2; // Optional
-	pipeline_layout_info.pSetLayouts = descriptorSetLayouts; // Optional
-	pipeline_layout_info.pushConstantRangeCount = 0; // Optional
-	pipeline_layout_info.pPushConstantRanges = nullptr; // Optional
+	return GpuPipelineLayout();
+}
 
-	if( vkCreatePipelineLayout( g_vk.device, &pipeline_layout_info, nullptr, &technique->pipelineLayout ) != VK_SUCCESS ) {
-		throw std::runtime_error( "failed to create pipeline layout!" );
-	}
-
-
-	//Create the PSO
+GpuPipelineState GetShadowPipelineState()
+{
 	GpuPipelineState gpuPipelineState = {};
 	uint32_t bindingCount = GetBindingDescription( &gpuPipelineState.viState );
 
@@ -75,44 +61,23 @@ static void CreateShadowTechnique( const RenderPass* renderpass, Technique* tech
 	gpuPipelineState.framebufferExtent = RT_EXTENT_SHADOW;
 	gpuPipelineState.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
-	CreatePipeline( gpuPipelineState,
-		renderpass->vk_renderpass,
-		technique->pipelineLayout,
-		&technique->pipeline );
-}
-
-static void CreateShadowPass()
-{
-	CreateShadowTechnique( shadowRenderPass, &shadowMaterial.techniques[0] );
-}
-
-void CleanupShadowPass()
-{
-	Destroy( &shadowMaterial );
-}
-
-void InitializeShadowPass(const RenderPass* renderpass, const Swapchain* swapchain, Technique &&technique)
-{
-	shadowRenderPass = renderpass;
-	shadowMaterial.techniques[0] = std::move( technique );
-	CreateShadowPass();
+	return gpuPipelineState;
 }
 
 /*
 	Draw stuff
 */
 
-static void CmdBeginShadowPass( VkCommandBuffer commandBuffer, size_t currentFrame )
+static void CmdBeginShadowPass( VkCommandBuffer commandBuffer, size_t currentFrame, const RenderPass * renderpass, const Technique * technique )
 {
 	CmdBeginVkLabel( commandBuffer, "Shadow Renderpass", glm::vec4( 0.5f, 0.2f, 0.4f, 1.0f ) );
-	BeginRenderPass( commandBuffer, *shadowRenderPass, shadowRenderPass->frameBuffer.frameBuffer, shadowRenderPass->frameBuffer.extent );
+	BeginRenderPass( commandBuffer, *renderpass, renderpass->frameBuffer.frameBuffer, renderpass->frameBuffer.extent );
 
-	BeginTechnique( commandBuffer, &shadowMaterial.techniques[0], currentFrame );
+	BeginTechnique( commandBuffer, technique, currentFrame );
 }
 
-static void CmdDrawModel( VkCommandBuffer commandBuffer, const SceneInstanceSet* instanceSet, const GfxModel* modelAsset, uint32_t currentFrame )
+static void CmdDrawModel( VkCommandBuffer commandBuffer, const SceneInstanceSet* instanceSet, const GfxModel* modelAsset, uint32_t currentFrame, const Technique * technique )
 {
-	const Technique* technique = &shadowMaterial.techniques[0];
 	vkCmdBindDescriptorSets( commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, INSTANCE_SET, 1,
 		&technique->instance_descriptor[currentFrame], 1, &instanceSet->geometryBufferOffsets[currentFrame] );
 	CmdDrawIndexed( commandBuffer, *modelAsset );
@@ -124,13 +89,13 @@ static void CmdEndShadowPass( VkCommandBuffer commandBuffer )
 	CmdEndVkLabel( commandBuffer );
 }
 
-void ShadowRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent)
+void ShadowRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique )
 {
-	CmdBeginShadowPass(graphicsCommandBuffer, currentFrame);
+	CmdBeginShadowPass(graphicsCommandBuffer, currentFrame, renderpass, technique);
 	for (size_t i = 0; i < frameData->renderableAssets.size(); ++i)
 	{
 		const SceneRenderableAsset* renderable = frameData->renderableAssets[i];
-		CmdDrawModel(graphicsCommandBuffer, renderable->descriptorSet, renderable->modelAsset, currentFrame);
+		CmdDrawModel(graphicsCommandBuffer, renderable->descriptorSet, renderable->modelAsset, currentFrame, technique);
 	}
 	CmdEndShadowPass(graphicsCommandBuffer);
 }

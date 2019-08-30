@@ -8,30 +8,21 @@
 
 #include <vector>
 
-const RenderPass* geometryRenderPass;
-GfxMaterial m_geoMaterial;
-
-
-static void createGeoTechnique( VkExtent2D extent, Technique* technique )
+GpuPipelineLayout GetGeoPipelineLayout()
 {
+	GpuPipelineLayout pipelineLayout = {};
+	pipelineLayout.pushConstantRanges.resize( 1 );
+
 	VkPushConstantRange pushConstantRange = {};
-	pushConstantRange.offset = 0;
-	pushConstantRange.size = sizeof( uint32_t );
-	pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	pipelineLayout.pushConstantRanges[0].offset = 0;
+	pipelineLayout.pushConstantRanges[0].size = sizeof( uint32_t );
+	pipelineLayout.pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	
+	return pipelineLayout;
+}
 
-	//Pipeline layout
-	std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = { technique->renderpass_descriptor_layout, technique->instance_descriptor_layout };
-	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
-	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipeline_layout_info.setLayoutCount = 2;
-	pipeline_layout_info.pSetLayouts = descriptorSetLayouts.data();
-	pipeline_layout_info.pushConstantRangeCount = 1;
-	pipeline_layout_info.pPushConstantRanges = &pushConstantRange;
-
-	if( vkCreatePipelineLayout( g_vk.device, &pipeline_layout_info, nullptr, &technique->pipelineLayout ) != VK_SUCCESS ) {
-		throw std::runtime_error( "failed to create pipeline layout!" );
-	}
-
+GpuPipelineState GetGeoPipelineState()
+{
 	GpuPipelineState gpuPipelineState = {};
 	GetBindingDescription( &gpuPipelineState.viState );
 
@@ -48,22 +39,17 @@ static void createGeoTechnique( VkExtent2D extent, Technique* technique )
 
 	gpuPipelineState.blendEnabled = false;
 	gpuPipelineState.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	gpuPipelineState.framebufferExtent = extent;
+	gpuPipelineState.framebufferExtent = { 0,0 }; //swapchain sized
 
-	CreatePipeline( gpuPipelineState, geometryRenderPass->vk_renderpass, technique->pipelineLayout,	&technique->pipeline);
+	return gpuPipelineState;
 }
 
-void CreateGeometryPipeline(const Swapchain& swapchain)
-{
-	createGeoTechnique( swapchain.extent, &m_geoMaterial.techniques[0] );
-}
-
-void CmdBeginGeometryRenderPass(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t currentFrame)
+void CmdBeginGeometryRenderPass(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t currentFrame, const RenderPass * renderpass, const Technique * technique)
 {
 	CmdBeginVkLabel(commandBuffer, "Geometry renderpass", glm::vec4(0.8f, 0.6f, 0.4f, 1.0f));
-	BeginRenderPass(commandBuffer, *geometryRenderPass, geometryRenderPass->outputFrameBuffer[currentFrame].frameBuffer, extent);
+	BeginRenderPass(commandBuffer, *renderpass, renderpass->outputFrameBuffer[currentFrame].frameBuffer, extent);
 
-	BeginTechnique( commandBuffer, &m_geoMaterial.techniques[0], currentFrame );
+	BeginTechnique( commandBuffer, technique, currentFrame );
 }
 
 void CmdEndGeometryRenderPass(VkCommandBuffer vkCommandBuffer)
@@ -72,9 +58,8 @@ void CmdEndGeometryRenderPass(VkCommandBuffer vkCommandBuffer)
 	CmdEndVkLabel(vkCommandBuffer);
 }
 
-static void CmdDrawModelAsset( VkCommandBuffer commandBuffer, const SceneRenderableAsset* renderableAsset, uint32_t currentFrame)
+static void CmdDrawModelAsset( VkCommandBuffer commandBuffer, const SceneRenderableAsset* renderableAsset, uint32_t currentFrame, const Technique* technique )
 {	
-	const Technique* technique = &m_geoMaterial.techniques[0];
 	//TODO: could do like the VIB, query a texture of X from an array using an enum index
 	//Have a list of all required paremeters for this pass.
 	vkCmdPushConstants( commandBuffer, technique->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof( uint32_t ), &renderableAsset->albedoIndex );
@@ -86,47 +71,13 @@ static void CmdDrawModelAsset( VkCommandBuffer commandBuffer, const SceneRendera
 	CmdDrawIndexed(commandBuffer, *modelAsset);	
 }
 
-void ReloadGeometryShaders( VkExtent2D extent )
+void GeometryRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique )
 {
-	Technique* technique = &m_geoMaterial.techniques[0];
-	vkDestroyPipeline(g_vk.device, technique->pipeline, nullptr);
-	createGeoTechnique(extent, technique);
-}
-
-void CleanupGeometryRenderpassAfterSwapchain()
-{
-	Technique* technique = &m_geoMaterial.techniques[0];
-	vkDestroyPipeline(g_vk.device, technique->pipeline, nullptr);
-	vkDestroyPipelineLayout(g_vk.device, technique->pipelineLayout, nullptr);
-	//TODO: format could change after a swap chain recreation. The renderpas depends on it.
-}
-
-void CleanupGeometryRenderpass()
-{
-	Technique* technique = &m_geoMaterial.techniques[0];
-	vkDestroyDescriptorSetLayout(g_vk.device, technique->renderpass_descriptor_layout, nullptr);
-	vkDestroyDescriptorSetLayout(g_vk.device, technique->instance_descriptor_layout, nullptr);
-}
-
-void InitializeGeometryRenderPass(const RenderPass* renderpass, const Swapchain* swapchain, Technique&& technique)
-{
-	m_geoMaterial.techniques[0] = std::move( technique );
-	geometryRenderPass = renderpass;
-	CreateGeometryPipeline(*swapchain);
-}
-
-void RecreateGeometryAfterSwapChain(const Swapchain* swapchain)
-{
-	createGeoTechnique(swapchain->extent, &m_geoMaterial.techniques[0] );
-}
-
-void GeometryRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent)
-{
-	CmdBeginGeometryRenderPass(graphicsCommandBuffer, extent, currentFrame);
+	CmdBeginGeometryRenderPass(graphicsCommandBuffer, extent, currentFrame, renderpass, technique);
 	for (size_t i = 0; i < frameData->renderableAssets.size(); ++i)
 	{
 		const SceneRenderableAsset* renderable = frameData->renderableAssets[i];
-		CmdDrawModelAsset(graphicsCommandBuffer, renderable, currentFrame);
+		CmdDrawModelAsset(graphicsCommandBuffer, renderable, currentFrame, technique);
 	}
 	CmdEndGeometryRenderPass(graphicsCommandBuffer);
 }
