@@ -46,35 +46,34 @@ static void CreateTextTechnique( VkExtent2D extent, Technique* technique)
 	}
 
 	//Create PSO
-	auto bindingDescription = TextVertex::get_binding_description();
+	GpuPipelineState gpuPipelineState = {};
+	gpuPipelineState.viState.vibDescription[0] = TextVertex::get_binding_description();
+	gpuPipelineState.viState.vibDescriptionsCount = 1;
+
 	auto attributeDescriptions = TextVertex::get_attribute_descriptions();
+	assert( attributeDescriptions.size() <= VI_STATE_MAX_DESCRIPTIONS );
+	gpuPipelineState.viState.visDescriptionsCount = attributeDescriptions.size();
+	for( size_t i = 0; i < attributeDescriptions.size(); ++i )
+		gpuPipelineState.viState.visDescriptions[i] = attributeDescriptions[i];
 
-	std::vector<char> vertShaderCode = FS::readFile("shaders/text.vert.spv");
-	std::vector<char> fragShaderCode = FS::readFile("shaders/text.frag.spv");
+	gpuPipelineState.shaders = {
+		{ FS::readFile( "shaders/text.vert.spv" ), "main", VK_SHADER_STAGE_VERTEX_BIT },
+		{ FS::readFile( "shaders/text.frag.spv" ), "main", VK_SHADER_STAGE_FRAGMENT_BIT } };
 
-	VICreation viState = { &bindingDescription, 1, attributeDescriptions.data(), static_cast< uint32_t >(attributeDescriptions.size()) };
-	//TODO: these cast are dangerous for alligment
-	std::vector<ShaderCreation> shaderState = {
-		{ reinterpret_cast< uint32_t* >(vertShaderCode.data()), vertShaderCode.size(), "main", VK_SHADER_STAGE_VERTEX_BIT },
-		{ reinterpret_cast< uint32_t* >(fragShaderCode.data()), fragShaderCode.size(), "main", VK_SHADER_STAGE_FRAGMENT_BIT } };
-	RasterizationState rasterizationState;
-	rasterizationState.backFaceCulling = false;
-	rasterizationState.depthBiased = false;
-	DepthStencilState depthStencilState;
-	depthStencilState.depthRead = false;
-	depthStencilState.depthWrite = false;
-	depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS;
+	gpuPipelineState.rasterizationState.backFaceCulling = false;
+	gpuPipelineState.rasterizationState.depthBiased = false;
 
-	CreatePipeline(
-		viState,
-		shaderState,
-		extent,
+	gpuPipelineState.depthStencilState.depthRead = false;
+	gpuPipelineState.depthStencilState.depthWrite = false;
+	gpuPipelineState.depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS;
+
+	gpuPipelineState.framebufferExtent = extent;
+	gpuPipelineState.blendEnabled = true;
+	gpuPipelineState.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+	CreatePipeline( gpuPipelineState,
 		textRenderPass->vk_renderpass,
 		technique->pipelineLayout,
-		rasterizationState,
-		depthStencilState,
-		true,
-		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 		&technique->pipeline );
 }
 

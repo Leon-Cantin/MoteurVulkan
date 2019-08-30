@@ -13,18 +13,18 @@ struct RenderPass {
 	FrameBuffer outputFrameBuffer[SIMULTANEOUS_FRAMES];
 };
 
-struct VICreation
+constexpr uint32_t VI_STATE_MAX_DESCRIPTIONS = 5;
+struct VIState
 {
-	const VkVertexInputBindingDescription * vibDescription;
+	VkVertexInputBindingDescription vibDescription [VI_STATE_MAX_DESCRIPTIONS];
 	uint32_t vibDescriptionsCount;
-	const VkVertexInputAttributeDescription* visDescriptions;
+	VkVertexInputAttributeDescription visDescriptions [VI_STATE_MAX_DESCRIPTIONS];
 	uint32_t visDescriptionsCount;
 };
 
 struct ShaderCreation
 {
-	const uint32_t* code;
-	size_t length;
+	std::vector<char> code;
 	const char* entryPoint;
 	VkShaderStageFlagBits flags;
 };
@@ -42,17 +42,18 @@ struct DepthStencilState
 	VkCompareOp depthCompareOp;
 };
 
-void CreatePipeline(
-	const VICreation& viCreation,
-	const std::vector<ShaderCreation>& shaders,
-	VkExtent2D framebufferExtent,
-	VkRenderPass renderPass,
-	VkPipelineLayout pipelineLayout,
-	RasterizationState rasterizationState,
-	DepthStencilState depthStencilState,
-	bool blendEnabled,
-	VkPrimitiveTopology primitiveTopology,
-	VkPipeline* o_pipeline);
+struct GpuPipelineState
+{
+	VIState viState;
+	std::vector<ShaderCreation> shaders;
+	VkExtent2D framebufferExtent;
+	RasterizationState rasterizationState;
+	DepthStencilState depthStencilState;
+	bool blendEnabled;
+	VkPrimitiveTopology primitiveTopology;
+};
+
+void CreatePipeline( const GpuPipelineState& gpuPipeline, VkRenderPass renderPass, VkPipelineLayout pipelineLayout,	VkPipeline* o_pipeline);
 
 void BeginRenderPass(VkCommandBuffer commandBuffer, const RenderPass& renderpass, VkFramebuffer framebuffer, VkExtent2D extent);
 void EndRenderPass(VkCommandBuffer commandBuffer);

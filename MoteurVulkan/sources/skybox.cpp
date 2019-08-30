@@ -26,32 +26,26 @@ static void CreateSkyboxTechnique(VkExtent2D extent, Technique* technique)
 		throw std::runtime_error( "failed to create pipeline layout!" );
 	}
 
-	std::vector<char> vertShaderCode = FS::readFile("shaders/skybox.vert.spv");
-	std::vector<char> fragShaderCode = FS::readFile("shaders/skybox.frag.spv");
+	GpuPipelineState gpuPipelineState = {};
 
-	VICreation viState = { VK_NULL_HANDLE, 0, VK_NULL_HANDLE, 0 };
-	//TODO: these cast are dangerous for alligment
-	std::vector<ShaderCreation> shaderState = {
-		{ reinterpret_cast< uint32_t* >(vertShaderCode.data()), vertShaderCode.size(), "main", VK_SHADER_STAGE_VERTEX_BIT },
-		{ reinterpret_cast< uint32_t* >(fragShaderCode.data()), fragShaderCode.size(), "main", VK_SHADER_STAGE_FRAGMENT_BIT } };
-	RasterizationState rasterizationState;
-	rasterizationState.backFaceCulling = false;
-	rasterizationState.depthBiased = false;
-	DepthStencilState depthStencilState;
-	depthStencilState.depthRead = true;
-	depthStencilState.depthWrite = false;
-	depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+	gpuPipelineState.shaders = {
+		{ FS::readFile( "shaders/skybox.vert.spv" ), "main", VK_SHADER_STAGE_VERTEX_BIT },
+		{ FS::readFile( "shaders/skybox.frag.spv" ), "main", VK_SHADER_STAGE_FRAGMENT_BIT } };
 
-	CreatePipeline(
-		viState,
-		shaderState,
-		extent,
+	gpuPipelineState.rasterizationState.backFaceCulling = false;
+	gpuPipelineState.rasterizationState.depthBiased = false;
+
+	gpuPipelineState.depthStencilState.depthRead = true;
+	gpuPipelineState.depthStencilState.depthWrite = false;
+	gpuPipelineState.depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+
+	gpuPipelineState.framebufferExtent = extent;
+	gpuPipelineState.blendEnabled = false;
+	gpuPipelineState.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+
+	CreatePipeline( gpuPipelineState,
 		skyboxRenderPass->vk_renderpass, 
 		technique->pipelineLayout,
-		rasterizationState,
-		depthStencilState,
-		false,
-		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
 		&technique->pipeline );
 }
 

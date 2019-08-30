@@ -56,34 +56,28 @@ static void CreateShadowTechnique( const RenderPass* renderpass, Technique* tech
 		throw std::runtime_error( "failed to create pipeline layout!" );
 	}
 
+
 	//Create the PSO
-	VkVertexInputBindingDescription bindingDescriptions[5];
-	VkVertexInputAttributeDescription attributeDescriptions[5];
-	uint32_t bindingCount = GetBindingDescription( bindingDescriptions, attributeDescriptions );
+	GpuPipelineState gpuPipelineState = {};
+	uint32_t bindingCount = GetBindingDescription( &gpuPipelineState.viState );
 
-	std::vector<char> vertShaderCode = FS::readFile( "shaders/shadows.vert.spv" );
+	gpuPipelineState.shaders = {
+		{ FS::readFile( "shaders/shadows.vert.spv" ), "main", VK_SHADER_STAGE_VERTEX_BIT } };
 
-	VICreation viState = { bindingDescriptions, bindingCount, attributeDescriptions, bindingCount };
-	//TODO: these cast are dangerous for alligment
-	std::vector<ShaderCreation> shaderState = {
-		{ reinterpret_cast< uint32_t* >(vertShaderCode.data()), vertShaderCode.size(), "main", VK_SHADER_STAGE_VERTEX_BIT } };
-	RasterizationState rasterizationState;
-	rasterizationState.backFaceCulling = true;
-	rasterizationState.depthBiased = true;
-	DepthStencilState depthStencilState;
-	depthStencilState.depthRead = true;
-	depthStencilState.depthWrite = true;
-	depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS;
+	gpuPipelineState.rasterizationState.backFaceCulling = true;
+	gpuPipelineState.rasterizationState.depthBiased = true;
 
-	CreatePipeline( viState,
-		shaderState,
-		RT_EXTENT_SHADOW,
+	gpuPipelineState.depthStencilState.depthRead = true;
+	gpuPipelineState.depthStencilState.depthWrite = true;
+	gpuPipelineState.depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS;
+
+	gpuPipelineState.blendEnabled = false;
+	gpuPipelineState.framebufferExtent = RT_EXTENT_SHADOW;
+	gpuPipelineState.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+	CreatePipeline( gpuPipelineState,
 		renderpass->vk_renderpass,
 		technique->pipelineLayout,
-		rasterizationState,
-		depthStencilState,
-		false,
-		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 		&technique->pipeline );
 }
 

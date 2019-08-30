@@ -61,6 +61,7 @@ struct TechniqueDataBinding
 
 struct TechniqueDescriptorSetDesc
 {
+	//TODO: Could be just "dataBindings" instead of 2 seperate arrays if they end up using the same structures. Use an enum to tell which type it is.
 	TechniqueDataBinding buffersBindings [8];
 	uint32_t buffersCount;
 

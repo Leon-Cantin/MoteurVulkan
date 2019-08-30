@@ -34,6 +34,9 @@
     <Filter Include="sources\glTF">
       <UniqueIdentifier>{259a04e2-61f9-4d56-a89c-fe7f1bef1b81}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sources\memory">
+      <UniqueIdentifier>{5141f1e7-ea7c-470d-8d0c-8d5d18d6b788}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sources\main.cpp">
@@ -294,6 +297,9 @@
     </ClInclude>
     <ClInclude Include="sources\material.h">
       <Filter>sources\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\memory.h">
+      <Filter>sources\memory</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

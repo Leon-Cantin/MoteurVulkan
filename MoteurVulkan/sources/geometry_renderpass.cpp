@@ -31,37 +31,26 @@ static void createGeoTechnique( VkExtent2D extent, Technique* technique )
 	if( vkCreatePipelineLayout( g_vk.device, &pipeline_layout_info, nullptr, &technique->pipelineLayout ) != VK_SUCCESS ) {
 		throw std::runtime_error( "failed to create pipeline layout!" );
 	}
-	
-	VkVertexInputBindingDescription bindingDescriptions[5];
-	VkVertexInputAttributeDescription attributeDescriptions[5];
-	uint32_t bindingCount = GetBindingDescription( bindingDescriptions, attributeDescriptions );
 
-	std::vector<char> vertShaderCode = FS::readFile("shaders/triangle.vert.spv");
-	std::vector<char> fragShaderCode = FS::readFile("shaders/triangle.frag.spv");
+	GpuPipelineState gpuPipelineState = {};
+	GetBindingDescription( &gpuPipelineState.viState );
 
-	VICreation viState = { bindingDescriptions, bindingCount, attributeDescriptions, bindingCount};
-	//TODO: these cast are dangerous for alligment
-	std::vector<ShaderCreation> shaderState = { 
-		{ reinterpret_cast< uint32_t* >(vertShaderCode.data()), vertShaderCode.size(), "main", VK_SHADER_STAGE_VERTEX_BIT },
-		{ reinterpret_cast< uint32_t* >(fragShaderCode.data()), fragShaderCode.size(), "main", VK_SHADER_STAGE_FRAGMENT_BIT } };
-	RasterizationState rasterizationState;
-	rasterizationState.backFaceCulling = true;
-	rasterizationState.depthBiased = false;
-	DepthStencilState depthStencilState;
-	depthStencilState.depthRead = true;
-	depthStencilState.depthWrite = true;
-	depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS;
+	gpuPipelineState.shaders = {
+		{ FS::readFile( "shaders/triangle.vert.spv" ), "main", VK_SHADER_STAGE_VERTEX_BIT },
+		{ FS::readFile( "shaders/triangle.frag.spv" ), "main", VK_SHADER_STAGE_FRAGMENT_BIT } };
 
-	CreatePipeline( viState,
-		shaderState,
-		extent,
-		geometryRenderPass->vk_renderpass,
-		technique->pipelineLayout,
-		rasterizationState,
-		depthStencilState,
-		false,
-		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-		&technique->pipeline);
+	gpuPipelineState.rasterizationState.backFaceCulling = true;
+	gpuPipelineState.rasterizationState.depthBiased = false;
+
+	gpuPipelineState.depthStencilState.depthRead = true;
+	gpuPipelineState.depthStencilState.depthWrite = true;
+	gpuPipelineState.depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS;
+
+	gpuPipelineState.blendEnabled = false;
+	gpuPipelineState.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	gpuPipelineState.framebufferExtent = extent;
+
+	CreatePipeline( gpuPipelineState, geometryRenderPass->vk_renderpass, technique->pipelineLayout,	&technique->pipeline);
 }
 
 void CreateGeometryPipeline(const Swapchain& swapchain)

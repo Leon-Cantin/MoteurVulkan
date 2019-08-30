@@ -230,6 +230,7 @@
     <ClInclude Include="sources\input.h" />
     <ClInclude Include="sources\inputs_def.h" />
     <ClInclude Include="sources\material.h" />
+    <ClInclude Include="sources\memory.h" />
     <ClInclude Include="sources\renderer.h" />
     <ClInclude Include="sources\Scene2DGame.h" />
     <ClInclude Include="sources\scene2D_renderer_imp.h" />

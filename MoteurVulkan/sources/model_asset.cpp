@@ -61,11 +61,15 @@ void get_binding_description( const VIBinding * bindingsDescs, uint32_t count, V
 	}
 }
 
-uint32_t GetBindingDescription( VkVertexInputBindingDescription* VIBDescs, VkVertexInputAttributeDescription* VIADescs )
+uint32_t GetBindingDescription( VIState* o_viCreation )
 {
 	uint32_t count = 5;
+	assert( count <= VI_STATE_MAX_DESCRIPTIONS );
 
-	get_binding_description( VIBindings, 5, VIBDescs, VIADescs );
+	get_binding_description( VIBindings, 5, o_viCreation->vibDescription, o_viCreation->visDescriptions );
+
+	o_viCreation->vibDescriptionsCount = count;
+	o_viCreation->visDescriptionsCount = count;
 
 	return count;
 }

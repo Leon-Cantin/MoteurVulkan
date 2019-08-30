@@ -1,5 +1,6 @@
 #pragma once
 #include "vk_globals.h"
+#include "renderpass.h" // TODO remove, only used for ViCreation
 
 #include <glm/vec3.hpp>
 #include <glm/vec2.hpp>
@@ -60,7 +61,7 @@ static const VIBinding VIBindings[] = {
 };
 static const uint32_t viBindingCount = 5;
 void get_binding_description( const VIBinding * bindingsDescs, uint32_t count, VkVertexInputBindingDescription* VIBDescs, VkVertexInputAttributeDescription* VIADescs );
-uint32_t GetBindingDescription( VkVertexInputBindingDescription* VIBDescs, VkVertexInputAttributeDescription* VIADescs );
+uint32_t GetBindingDescription( VIState* viState );
 
 struct GfxModelVertexInput
 {

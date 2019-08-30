@@ -2,43 +2,35 @@
 
 #include "vk_shader.h"
 
-void CreatePipeline(
-	const VICreation& viCreation,
-	const std::vector<ShaderCreation>& shaders,
-	VkExtent2D framebufferExtent,
-	VkRenderPass renderPass,
-	VkPipelineLayout pipelineLayout,
-	RasterizationState rasterizationState,
-	DepthStencilState depthStencilState,
-	bool blendEnabled,
-	VkPrimitiveTopology primitiveTopology,
-	VkPipeline* o_pipeline)
+void CreatePipeline( const GpuPipelineState& gpuPipeline, VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline* o_pipeline )
 {
-
+	//Vertex Input
+	const VIState& viState = gpuPipeline.viState;
 	VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
 	vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertex_input_info.vertexBindingDescriptionCount = viCreation.vibDescriptionsCount;
-	vertex_input_info.pVertexBindingDescriptions = viCreation.vibDescription; // Optional
-	vertex_input_info.vertexAttributeDescriptionCount = viCreation.visDescriptionsCount;
-	vertex_input_info.pVertexAttributeDescriptions = viCreation.visDescriptions; // Optional
+	vertex_input_info.vertexBindingDescriptionCount = viState.vibDescriptionsCount;
+	vertex_input_info.pVertexBindingDescriptions = viState.vibDescription; // Optional
+	vertex_input_info.vertexAttributeDescriptionCount = viState.visDescriptionsCount;
+	vertex_input_info.pVertexAttributeDescriptions = viState.visDescriptions; // Optional
 
-																				   //Input assembly
+	//Input assembly
 	VkPipelineInputAssemblyStateCreateInfo input_assembly = {};
 	input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-	input_assembly.topology = primitiveTopology;
+	input_assembly.topology = gpuPipeline.primitiveTopology;
 	input_assembly.primitiveRestartEnable = VK_FALSE;
 
 	VkPipelineShaderStageCreateInfo shader_stages[8];
 	uint32_t shadersCount = 0;
 
-	for( uint8_t i = 0; i < shaders.size(); ++i )
+	for( uint8_t i = 0; i < gpuPipeline.shaders.size(); ++i )
 	{
 		VkPipelineShaderStageCreateInfo& shaderStageInfo = shader_stages[shadersCount++];
 		shaderStageInfo = {};
 		shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		shaderStageInfo.stage = shaders[i].flags;
-		shaderStageInfo.module = create_shader_module( shaders[i].code, shaders[i].length );
-		shaderStageInfo.pName = shaders[i].entryPoint;
+		shaderStageInfo.stage = gpuPipeline.shaders[i].flags;
+		//TODO: these cast are dangerous for alligment
+		shaderStageInfo.module = create_shader_module( reinterpret_cast< const uint32_t * >(gpuPipeline.shaders[i].code.data()), gpuPipeline.shaders[i].code.size() );
+		shaderStageInfo.pName = gpuPipeline.shaders[i].entryPoint;
 	}
 
 	//Rasterizer
@@ -48,12 +40,12 @@ void CreatePipeline(
 	rasterizer.rasterizerDiscardEnable = VK_FALSE;
 	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterizer.lineWidth = 1.0f;
-	rasterizer.cullMode = rasterizationState.backFaceCulling ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE;
+	rasterizer.cullMode = gpuPipeline.rasterizationState.backFaceCulling ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE;
 	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-	rasterizer.depthBiasEnable = rasterizationState.depthBiased;
-	rasterizer.depthBiasConstantFactor = rasterizationState.depthBiased ? 1.25f : 0.0f; // Optional
+	rasterizer.depthBiasEnable = gpuPipeline.rasterizationState.depthBiased;
+	rasterizer.depthBiasConstantFactor = gpuPipeline.rasterizationState.depthBiased ? 1.25f : 0.0f; // Optional
 	rasterizer.depthBiasClamp = 0.0f; // Optional
-	rasterizer.depthBiasSlopeFactor = rasterizationState.depthBiased ? 1.75f : 0.0f; // Optional
+	rasterizer.depthBiasSlopeFactor = gpuPipeline.rasterizationState.depthBiased ? 1.75f : 0.0f; // Optional
 
 	VkPipelineMultisampleStateCreateInfo multisampling = {};
 	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -66,9 +58,9 @@ void CreatePipeline(
 
 	VkPipelineDepthStencilStateCreateInfo depthStencil = {};
 	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-	depthStencil.depthTestEnable = depthStencilState.depthRead;
-	depthStencil.depthWriteEnable = depthStencilState.depthWrite;
-	depthStencil.depthCompareOp = depthStencilState.depthCompareOp,
+	depthStencil.depthTestEnable = gpuPipeline.depthStencilState.depthRead;
+	depthStencil.depthWriteEnable = gpuPipeline.depthStencilState.depthWrite;
+	depthStencil.depthCompareOp = gpuPipeline.depthStencilState.depthCompareOp,
 	depthStencil.depthBoundsTestEnable = VK_FALSE;
 	depthStencil.minDepthBounds = 0.0f; // Optional
 	depthStencil.maxDepthBounds = 1.0f; // Optional
@@ -79,7 +71,7 @@ void CreatePipeline(
 	//Color blending
 	VkPipelineColorBlendAttachmentState color_blend_attachement = {};
 	color_blend_attachement.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	if (blendEnabled)
+	if ( gpuPipeline.blendEnabled)
 	{
 		color_blend_attachement.blendEnable = VK_TRUE;
 		color_blend_attachement.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
@@ -115,14 +107,14 @@ void CreatePipeline(
 	VkViewport viewport = {};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(framebufferExtent.width);
-	viewport.height = static_cast<float>(framebufferExtent.height);
+	viewport.width = static_cast< float >(gpuPipeline.framebufferExtent.width);
+	viewport.height = static_cast< float >(gpuPipeline.framebufferExtent.height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
 	VkRect2D scissor = {};
 	scissor.offset = { 0, 0 };
-	scissor.extent = framebufferExtent;
+	scissor.extent = gpuPipeline.framebufferExtent;
 
 	VkPipelineViewportStateCreateInfo viewport_state_info = {};
 	viewport_state_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
