@@ -48,9 +48,7 @@ namespace FG
 		void( *createTechniqueCallback )(const RenderPass*, const RenderPassCreationData*, Technique*) );
 	const RenderPass* GetRenderPass(uint32_t id);
 	const GfxImage* GetRenderTarget(uint32_t render_target_id);
-	void RecreateAfterSwapchain(const Swapchain* swapchain);
-	void CleanupAfterSwapchain();
-	void CleanupResources();
+	void Cleanup();
 
 	void CreateColor(RenderPassCreationData& resource, VkFormat format, uint32_t render_target);
 	void CreateDepth(RenderPassCreationData& resource, VkFormat format, uint32_t render_target);

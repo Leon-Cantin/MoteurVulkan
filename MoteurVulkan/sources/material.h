@@ -16,6 +16,8 @@ struct Technique
 
 	VkPipelineLayout pipelineLayout;
 	VkPipeline pipeline;
+
+	VkDescriptorPool parentDescriptorPool;
 };
 
 struct GfxMaterial

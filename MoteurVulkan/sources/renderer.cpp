@@ -26,6 +26,8 @@ std::array<VkSemaphore, SIMULTANEOUS_FRAMES> imageAvailableSemaphores;
 std::array<VkSemaphore, SIMULTANEOUS_FRAMES> renderFinishedSemaphores;
 std::array<VkFence, SIMULTANEOUS_FRAMES> inFlightFences;
 
+void( *_fFGScriptInitialize )(const Swapchain*);
+
 void CreateCommandBuffer()
 {
 	VkCommandBufferAllocateInfo allocInfo = {};
@@ -92,7 +94,7 @@ void cleanup_swap_chain()
 	vkFreeCommandBuffers(g_vk.device, g_vk.transferCommandPool, static_cast<uint32_t>(g_transferCommandBuffers.size()), g_transferCommandBuffers.data());
 	vkFreeCommandBuffers(g_vk.device, g_vk.computeCommandPool, static_cast<uint32_t>(g_computeCommandBuffers.size()), g_computeCommandBuffers.data());
 
-	FG::CleanupAfterSwapchain();
+	FG::Cleanup();
 
 	for (auto image : g_swapchain.images)
 		vkDestroyImageView(g_vk.device, image.imageView, nullptr);
@@ -120,7 +122,7 @@ void recreate_swap_chain()
 	WH::GetFramebufferSize(&width, &height);
 	createSwapChain(g_vk.windowSurface, width, height, g_swapchain);
 
-	FG::RecreateAfterSwapchain(&g_swapchain);
+	_fFGScriptInitialize( &g_swapchain );
 
 	CreateCommandBuffer();
 	CreateTransferCommandBuffer();
@@ -146,15 +148,16 @@ void InitRenderer()
 	CreateTimeStampsQueryPool(SIMULTANEOUS_FRAMES);
 }
 
-void CompileFrameGraph( void( *FGScriptInitialize )(const Swapchain* swapchain) )
+void CompileFrameGraph( void( *FGScriptInitialize )( const Swapchain* ) )
 {
-	FGScriptInitialize( &g_swapchain );
+	_fFGScriptInitialize = FGScriptInitialize;
+	_fFGScriptInitialize( &g_swapchain );
 }
 
 bool verify_swap_chain(VkResult result)
 {
-	if (result != VK_SUCCESS)
-		throw std::runtime_error("failed to acquire swap chain image");
+	//if (result != VK_SUCCESS)
+		//throw std::runtime_error("failed to acquire swap chain image");
 
 	return result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebuffer_resized ? false : true;
 }
@@ -240,7 +243,7 @@ void CleanupRenderer() {
 
 	DestroySamplers();
 
-	FG::CleanupResources();
+	FG::Cleanup();
 
 	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
 	{

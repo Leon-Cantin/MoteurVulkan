@@ -365,6 +365,7 @@ void CreateTechniqueCallback (const RenderPass* renderpass, const FG::RenderPass
 		for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 			CreateDescriptorSet( &inputBuffers[i], instanceSet, technique->instance_descriptor_layout, _descriptorPool, &technique->instance_descriptor[i] );
 	}
+	technique->parentDescriptorPool = _descriptorPool;
 
 	//Create pipeline layout
 	uint32_t dscriptorSetLayoutsCount = 0;

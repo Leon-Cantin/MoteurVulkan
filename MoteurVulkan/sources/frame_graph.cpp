@@ -9,7 +9,6 @@
 
 namespace FG
 {
-
 	GfxImage _output_buffers[SIMULTANEOUS_FRAMES];
 
 	constexpr size_t MAX_RENDERTARGETS = 8;
@@ -300,69 +299,7 @@ namespace FG
 		}
 	}
 
-	void RecreateAfterSwapchain(const Swapchain* swapchain)
-	{
-		CreateResourceCreationData(swapchain);
-
-		//Recreate those are not the frame buffer nor sampled
-		for (uint32_t i = 0; i < RENDERTARGETS_COUNT; ++i)
-		{
-			if (i != RT_OUTPUT_TARGET && _rtCreationData[i].swapChainSized)
-			{
-				RenderTargetCreationData* rtCreationData = &_rtCreationData[i];
-				CreateImage(rtCreationData->format, rtCreationData->extent, &_render_targets[i], rtCreationData->usage_flags, rtCreationData->aspect_flags, rtCreationData->image_layout);
-			}
-		}
-
-		//Recreate the frame buffers
-		for (uint32_t i = 0; i < _render_passes_count; ++i)
-		{
-			RenderPassCreationData& passCreationData = _rpCreationData[i];
-			RenderPass& renderpass = _render_passes[i];
-
-			assert(passCreationData.attachmentCount > 0);
-			bool containsDepth = passCreationData.references[passCreationData.attachmentCount - 1].layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-			uint32_t colorCount = passCreationData.attachmentCount - (containsDepth ? 1 : 0);
-
-			CreateFrameBuffer(&renderpass, passCreationData, colorCount, containsDepth);
-		}
-	}
-
-	void CleanupAfterSwapchain()
-	{
-		for (uint32_t i = 0; i < _render_passes_count; ++i)
-		{
-			RenderPass& renderpass = _render_passes[i];
-			if (renderpass.frameBuffer.frameBuffer)
-			{
-				vkDestroyFramebuffer(g_vk.device, renderpass.frameBuffer.frameBuffer, nullptr);
-				renderpass.frameBuffer.frameBuffer = VK_NULL_HANDLE;
-			}
-			for (uint32_t fb_index = 0; fb_index < SIMULTANEOUS_FRAMES; ++fb_index)
-			{
-				vkDestroyFramebuffer(g_vk.device, renderpass.outputFrameBuffer[fb_index].frameBuffer, nullptr);
-				renderpass.outputFrameBuffer[fb_index].frameBuffer = VK_NULL_HANDLE;
-			}
-		}
-
-		for( uint32_t i = 0; i < _techniques_count; ++i )
-		{
-			Technique& technique = _techniques[i];
-			vkDestroyPipeline( g_vk.device, technique.pipeline, nullptr );
-			vkDestroyPipelineLayout( g_vk.device, technique.pipelineLayout, nullptr );
-			vkDestroyDescriptorSetLayout( g_vk.device, technique.renderpass_descriptor_layout, nullptr );
-			vkDestroyDescriptorSetLayout( g_vk.device, technique.instance_descriptor_layout, nullptr );
-		}
-
-		//destroy all images that are not the frame buffer or sampled (to avoid recreating descriptor sets)
-		for (uint32_t i = 0; i < RENDERTARGETS_COUNT; ++i)
-		{
-			if (i != RT_OUTPUT_TARGET && _rtCreationData[i].swapChainSized)
-				DestroyImage(_render_targets[i]);
-		}
-	}
-
-	void CleanupResources()
+	void Cleanup()
 	{
 		for (uint32_t i = 0; i < RENDERTARGETS_COUNT; ++i)
 		{
@@ -370,6 +307,7 @@ namespace FG
 			if (image.image && i != RT_OUTPUT_TARGET)
 				DestroyImage(image);
 		}
+		RENDERTARGETS_COUNT = 0;
 
 		for (uint32_t i = 0; i < _render_passes_count; ++i)
 		{
@@ -387,6 +325,25 @@ namespace FG
 			vkDestroyRenderPass(g_vk.device, renderpass.vk_renderpass, nullptr);
 			renderpass.vk_renderpass = VK_NULL_HANDLE;
 		}
+		_render_passes_count = 0;
+
+		//Cleanup technique
+		for( uint32_t i = 0; i < _techniques_count; ++i )
+		{
+			Technique& technique = _techniques[i];
+			vkDestroyPipeline( g_vk.device, technique.pipeline, nullptr );
+			vkDestroyPipelineLayout( g_vk.device, technique.pipelineLayout, nullptr );
+			vkDestroyDescriptorSetLayout( g_vk.device, technique.renderpass_descriptor_layout, nullptr );
+			vkDestroyDescriptorSetLayout( g_vk.device, technique.instance_descriptor_layout, nullptr );
+			for( uint32_t j = 0; j < technique.instance_descriptor.size(); ++j )
+				if( technique.instance_descriptor[j] )
+					vkFreeDescriptorSets( g_vk.device, technique.parentDescriptorPool, 1, &technique.instance_descriptor[j] );
+			for( uint32_t j = 0; j < technique.renderPass_descriptor.size(); ++j )
+				if( technique.renderPass_descriptor[j] )
+					vkFreeDescriptorSets( g_vk.device, technique.parentDescriptorPool, 1, &technique.renderPass_descriptor[j] );
+			technique = {};
+		}
+		_techniques_count = 0;
 	}
 
 	void RecordDrawCommands(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent)
