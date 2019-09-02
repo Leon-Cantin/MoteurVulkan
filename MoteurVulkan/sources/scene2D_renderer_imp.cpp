@@ -19,7 +19,7 @@ bool g_forceReloadShaders = false;
 
 SceneInstanceSet g_sceneInstanceDescriptorSets[5];
 size_t g_sceneInstancesCount = 0;
-std::array< InputBuffers, SIMULTANEOUS_FRAMES> _inputBuffers;
+std::array< GpuInputData, SIMULTANEOUS_FRAMES> _inputBuffers;
 
 /*
 	Create Stuff
@@ -87,7 +87,7 @@ static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cam
 
 	VkExtent2D swapChainExtent = g_swapchain.extent;
 
-	InputBuffers inputbuffers = _inputBuffers[currentFrame];
+	GpuInputData inputbuffers = _inputBuffers[currentFrame];
 
 	//Update GeometryUniformBuffer
 	for( auto& drawNode : drawList )

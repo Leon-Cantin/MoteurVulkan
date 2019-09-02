@@ -37,72 +37,86 @@ enum eTechniqueDataEntryFlags
 	EXTERNAL = 1 << 1,
 };
 
+enum eDescriptorType
+{
+	BUFFER = 0,
+	BUFFER_DYNAMIC,
+	IMAGE,
+	SAMPLER,
+	IMAGE_SAMPLER,
+};
+
+inline bool IsBufferType( eDescriptorType type )
+{
+	return type == eDescriptorType::BUFFER || type == eDescriptorType::BUFFER_DYNAMIC;
+}
+
+enum eDescriptorAccess
+{
+	READ = 0,
+	WRITE,
+};
+
 struct TechniqueDataEntry
 {
 	uint32_t id;
-	VkDescriptorType descriptorType;
+	eDescriptorType descriptorType;
 	uint32_t count;
 	uint32_t flags;
 	uint32_t size;
 };
 
-struct TechniqueDataEntryImage
-{
-	uint32_t id;
-	VkDescriptorType descriptorType;
-	uint32_t count;
-};
-
-
 struct TechniqueDataBinding
 {
 	uint32_t id;
 	uint32_t binding;
+	eDescriptorAccess descriptorAccess;
 	VkShaderStageFlags stageFlags;
-};
-
-struct TechniqueDescriptorSetDesc
-{
-	//TODO: Could be just "dataBindings" instead of 2 seperate arrays if they end up using the same structures. Use an enum to tell which type it is.
-	TechniqueDataBinding buffersBindings [8];
-	uint32_t buffersCount;
-
-	TechniqueDataBinding imagesBindings [8];
-	uint32_t imagesCount;
 };
 
 constexpr size_t MAX_DATA_ENTRIES = 16;
 
-struct InputBuffers
+struct TechniqueDescriptorSetDesc
 {
-	//TODO the ptr here is kinda dangerous. Used for descriptors that contains multiple descriptors... mostly just for images
-	std::array<GpuBuffer* , MAX_DATA_ENTRIES> data;
-	std::array<VkDescriptorImageInfo* , MAX_DATA_ENTRIES> dataImages;
+	TechniqueDataBinding dataBindings [MAX_DATA_ENTRIES];
+	uint32_t dataCount;
 };
 
-inline void SetBuffers( InputBuffers* buffers, uint32_t id, GpuBuffer* input )
+union GpuInputDataEntry
+{
+	GpuBuffer* buffer;
+	VkDescriptorImageInfo* image;
+};
+
+struct GpuInputData
+{
+	//TODO the ptr here is kinda dangerous. Used for descriptors that contains multiple descriptors... mostly just for images
+	std::array<GpuInputDataEntry, MAX_DATA_ENTRIES> data;
+};
+
+inline void SetBuffers( GpuInputData* buffers, uint32_t id, GpuBuffer* input )
 {
 	assert( id < MAX_DATA_ENTRIES );
-	buffers->data[id] = input;
+	buffers->data[id].buffer = input;
 }
 
-inline void SetImages( InputBuffers* buffers, uint32_t id, VkDescriptorImageInfo* input )
+inline void SetImages( GpuInputData* buffers, uint32_t id, VkDescriptorImageInfo* input )
 {
 	assert( id < MAX_DATA_ENTRIES );
-	buffers->dataImages[id] = input;
+	buffers->data[id].image = input;
 }
 
-inline GpuBuffer* GetBuffer( const InputBuffers* buffers, uint32_t id )
+inline GpuBuffer* GetBuffer( const GpuInputData* buffers, uint32_t id )
 {
 	assert( id < MAX_DATA_ENTRIES );
-	return buffers->data[id];
+	return buffers->data[id].buffer;
 }
 
-inline VkDescriptorImageInfo* GetImage( const InputBuffers* buffers, uint32_t id )
+inline VkDescriptorImageInfo* GetImage( const GpuInputData* buffers, uint32_t id )
 {
 	assert( id < MAX_DATA_ENTRIES );
-	return buffers->dataImages[id];
+	return buffers->data[id].image;
 }
 
 void CreateDescriptorSetLayout( const TechniqueDescriptorSetDesc * desc, VkDescriptorSetLayout * o_setLayout );
-void CreateDescriptorSet( const InputBuffers* buffers, const TechniqueDescriptorSetDesc* descriptorSetDesc, VkDescriptorSetLayout descriptorSetLayout, VkDescriptorPool descriptorPool, VkDescriptorSet* o_descriptorSet );
+void CreateDescriptorSet( const GpuInputData* buffers, const TechniqueDescriptorSetDesc* descriptorSetDesc, VkDescriptorSetLayout descriptorSetLayout, VkDescriptorPool descriptorPool, VkDescriptorSet* o_descriptorSet );
