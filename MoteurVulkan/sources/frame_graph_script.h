@@ -8,6 +8,8 @@
 #include "text_overlay.h"
 #include "descriptors.h"
 
+#include <unordered_map>
+
 std::array< GpuInputData, SIMULTANEOUS_FRAMES>* _pInputBuffers;
 VkDescriptorPool _descriptorPool;
 
@@ -52,7 +54,7 @@ static const TechniqueDataEntry techniqueDataEntries[static_cast< size_t >(eTech
 	//images
 	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::ALBEDOS), eDescriptorType::IMAGE_SAMPLER, 5, eTechniqueDataEntryFlags::EXTERNAL, 0 },
 	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::NORMALS), eDescriptorType::IMAGE_SAMPLER, 1, eTechniqueDataEntryFlags::EXTERNAL, 0 },
-	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::SHADOWS), eDescriptorType::IMAGE_SAMPLER, 1, eTechniqueDataEntryFlags::EXTERNAL, 0 },
+	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::SHADOWS), eDescriptorType::IMAGE_SAMPLER, 1, eTechniqueDataEntryFlags::NONE, 0 },
 	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::TEXT), eDescriptorType::IMAGE_SAMPLER, 1, eTechniqueDataEntryFlags::EXTERNAL, 0 },
 	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::SKYBOX), eDescriptorType::IMAGE_SAMPLER, 1, eTechniqueDataEntryFlags::EXTERNAL, 0 },
 };
@@ -64,7 +66,8 @@ const TechniqueDataEntry* GetDataEntry( uint32_t entryId )
 	return dataEntry;
 }
 
-std::array<PerFrameBuffer, 16> _allbuffers;
+std::array<PerFrameBuffer, static_cast< size_t >(eTechniqueDataEntryImageName::COUNT)> _allbuffers;
+std::array<VkDescriptorImageInfo, static_cast< size_t >(eTechniqueDataEntryImageName::COUNT)> _allImages;
 
 inline void SetBuffers( GpuInputData* buffers, eTechniqueDataEntryName id, GpuBuffer* input )
 {
@@ -93,6 +96,8 @@ void HACKCleanUpFrameGraphScriptResources()
 		if( _allbuffers[i].memory )
 			DestroyPerFrameBuffer( &_allbuffers[i] );
 	}
+
+	_allImages = {};
 }
 
 enum eRenderTarget : uint32_t
@@ -102,6 +107,13 @@ enum eRenderTarget : uint32_t
 	RT_SHADOW_MAP,
 	RT_COUNT
 };
+
+struct ImageDataEntrySomething
+{
+	eRenderTarget renderTarget;
+	Samplers sampler;
+};
+std::unordered_map< eTechniqueDataEntryImageName, ImageDataEntrySomething > dataEntryToFGImage = { {eTechniqueDataEntryImageName::SHADOWS, { RT_SHADOW_MAP, Samplers::Shadow } } };
 
 TechniqueDescriptorSetDesc geoPassSetDesc =
 {
@@ -331,10 +343,7 @@ static void CreateDescriptorSet( const GpuInputData* inputData, const TechniqueD
 	UpdateDescriptorSets( 1, &writeDescriptorSet, o_descriptorSet );
 }
 
-constexpr VkFormat RT_FORMAT_SHADOW_DEPTH = VK_FORMAT_D32_SFLOAT;
-constexpr VkExtent2D RT_EXTENT_SHADOW = { 1024, 1024 };
-
-static void CreateDataIfNotCreated( std::array< GpuInputData, SIMULTANEOUS_FRAMES>* inputBuffers, const TechniqueDescriptorSetDesc* descriptorSetDesc )
+static void SetOrCreateDataIfNeeded( std::array< GpuInputData, SIMULTANEOUS_FRAMES>* inputBuffers, const TechniqueDescriptorSetDesc* descriptorSetDesc )
 {
 	for( uint32_t i = 0; i < descriptorSetDesc->dataCount; ++i )
 	{
@@ -349,6 +358,7 @@ static void CreateDataIfNotCreated( std::array< GpuInputData, SIMULTANEOUS_FRAME
 			PerFrameBuffer* buffer = &_allbuffers[dataEntry->id];
 			if( buffer->memory == VK_NULL_HANDLE )
 			{
+				//TODO: could have to change VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT if we write (store).
 				CreatePerFrameBuffer( dataEntry->size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, buffer );
 				for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 					SetBuffers( &(*inputBuffers)[i], dataEntry->id, &buffer->buffers[i] );
@@ -356,7 +366,16 @@ static void CreateDataIfNotCreated( std::array< GpuInputData, SIMULTANEOUS_FRAME
 		}
 		else
 		{
-			//TODO create images? Maybe just in frame graph
+			const ImageDataEntrySomething& imageDataEntrySomething = dataEntryToFGImage.at( static_cast< eTechniqueDataEntryImageName >(dataEntry->id) );
+			const GfxImage* image = FG::GetRenderTarget( imageDataEntrySomething.renderTarget );
+			VkDescriptorImageInfo* imageInfo = &_allImages[dataEntry->id];
+			if( imageInfo->imageView == VK_NULL_HANDLE )
+			{
+				//TODO: layout might be different for different shaders, probably just need write, works so far.
+				*imageInfo = { GetSampler( imageDataEntrySomething.sampler ), image->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+				for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
+					SetImages( &(*inputBuffers)[i], dataEntry->id, imageInfo );
+			}
 		}
 	}
 }
@@ -370,15 +389,9 @@ void CreateTechniqueCallback (const RenderPass* renderpass, const FG::RenderPass
 
 	//Create buffers if required
 	if( passSet )
-		CreateDataIfNotCreated( &inputBuffers, passSet );
+		SetOrCreateDataIfNeeded( &inputBuffers, passSet );
 	if( instanceSet )
-		CreateDataIfNotCreated( &inputBuffers, instanceSet );
-
-	//Set buffers and images taken from the frame graph
-	const GfxImage *shadowImages = FG::GetRenderTarget( RT_SHADOW_MAP );
-	VkDescriptorImageInfo shadowTextures[] = { { GetSampler( Samplers::Shadow ), shadowImages->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL } };
-	for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
-		SetImages( &inputBuffers[i], eTechniqueDataEntryImageName::SHADOWS, shadowTextures );
+		SetOrCreateDataIfNeeded( &inputBuffers, instanceSet );
 
 	//Create descriptors
 	if( passSet )
@@ -427,8 +440,13 @@ void CreateTechniqueCallback (const RenderPass* renderpass, const FG::RenderPass
 		&technique->pipeline );
 }
 
+constexpr VkFormat RT_FORMAT_SHADOW_DEPTH = VK_FORMAT_D32_SFLOAT;
+constexpr VkExtent2D RT_EXTENT_SHADOW = { 1024, 1024 };
+
 void InitializeScript(const Swapchain* swapchain)
 {
+	HACKCleanUpFrameGraphScriptResources();
+
 	//Setup resources
 	VkFormat swapchainFormat = swapchain->surfaceFormat.format;
 	VkExtent2D swapchainExtent = swapchain->extent;
