@@ -39,8 +39,6 @@ enum class eTechniqueDataEntryImageName
 	COUNT
 };
 
-//TODO: Could use the descriptor type where all UNIFORM_X and STORAGE_X mean read and write respectively
-//TODO: I don't think we enforce that the enum corresponds to the place in this array
 const uint32_t maxModelsCount = 5;
 static const TechniqueDataEntry techniqueDataEntries[static_cast< size_t >(eTechniqueDataEntryImageName::COUNT)] =
 {
