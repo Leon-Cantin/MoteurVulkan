@@ -50,8 +50,8 @@ namespace FG
 	const GfxImage* GetRenderTarget(uint32_t render_target_id);
 	void Cleanup();
 
-	void CreateColor(RenderPassCreationData& resource, VkFormat format, uint32_t render_target);
-	void CreateDepth(RenderPassCreationData& resource, VkFormat format, uint32_t render_target);
+	void RenderColor(RenderPassCreationData& resource, VkFormat format, uint32_t render_target);
+	void RenderDepth(RenderPassCreationData& resource, VkFormat format, uint32_t render_target);
 	void ReadResource(RenderPassCreationData& resource, uint32_t render_target);
 	void ClearLast(RenderPassCreationData& resource);
 

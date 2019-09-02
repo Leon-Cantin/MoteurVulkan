@@ -64,6 +64,56 @@ static void UpdateGeometryUniformBuffer( const SceneInstance* sceneInstance, con
 	UpdateGpuBuffer( geometryUniformBuffer, &instanceMatrices, sizeof( InstanceMatrices ), sceneInstanceDescriptorSet->geometryBufferOffsets[0] );//TODO checking only 0 is stupid, why do I have one for each frame?
 }
 
+static void updateTextOverlayBuffer( uint32_t currentFrame )
+{
+	float miliseconds = GetTimestampsDelta( Timestamp::COMMAND_BUFFER_START, Timestamp::COMMAND_BUFFER_END, abs( static_cast< int64_t >(currentFrame) - 1ll ) );
+	char textBuffer[256];
+	int charCount = sprintf_s( textBuffer, 256, "GPU: %4.4fms", miliseconds );
+	size_t textZonesCount = 1;
+	TextZone textZones[2] = { -1.0f, -1.0f, std::string( textBuffer ) };
+	if( ConCom::isOpen() ) {
+		textZones[1] = { -1.0f, 0.0f, ConCom::GetViewableString() };
+		++textZonesCount;
+	}
+	UpdateText( textZones, textZonesCount, g_swapchain.extent );
+}
+
+//TODO seperate the buffer update and computation of frame data
+//TODO Make light Uniform const
+//TODO Instead of preassigning descriptors to instances, just give them one before drawing
+static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<std::pair<const SceneInstance*, const SceneRenderableAsset*>>& drawList )
+{
+	glm::mat4 world_view_matrix = ComputeCameraSceneInstanceViewMatrix( *cameraSceneInstance );
+
+	VkExtent2D swapChainExtent = g_swapchain.extent;
+
+	InputBuffers inputbuffers = _inputBuffers[currentFrame];
+
+	//Update GeometryUniformBuffer
+	for( auto& drawNode : drawList )
+		UpdateGeometryUniformBuffer( drawNode.first, drawNode.second->descriptorSet, GetBuffer( &inputbuffers, eTechniqueDataEntryName::INSTANCE_DATA ) );
+
+	UpdateSceneUniformBuffer( world_view_matrix, swapChainExtent, GetBuffer( &inputbuffers, eTechniqueDataEntryName::SCENE_DATA ) );
+
+	SceneMatricesUniform shadowSceneMatrices;
+	computeShadowMatrix( light->position, &shadowSceneMatrices.view, &shadowSceneMatrices.proj );
+
+	UpdateLightUniformBuffer( &shadowSceneMatrices, light, GetBuffer( &inputbuffers, eTechniqueDataEntryName::LIGHT_DATA ), GetBuffer( &inputbuffers, eTechniqueDataEntryName::SHADOW_DATA ) );
+
+	UpdateSkyboxUniformBuffers( GetBuffer( &inputbuffers, eTechniqueDataEntryName::SKYBOX_DATA ), world_view_matrix );
+
+	updateTextOverlayBuffer( currentFrame );
+}
+
+static void PrepareSceneFrameData( SceneFrameData* frameData, uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<std::pair<const SceneInstance*, const SceneRenderableAsset*>>& drawList )
+{
+	updateUniformBuffer( currentFrame, cameraSceneInstance, light, drawList );
+
+	frameData->renderableAssets.resize( drawList.size() );
+	for( size_t i = 0; i < drawList.size(); ++i )
+		frameData->renderableAssets[i] = drawList[i].second;
+}
+
 void ReloadSceneShaders()
 {
 	vkDeviceWaitIdle(g_vk.device);
@@ -146,56 +196,6 @@ void CleanupRendererImp()
 	CleanupTextRenderPass();
 	CleanupRenderer();	
 	vkDestroyDescriptorPool(g_vk.device, descriptorPool, nullptr);
-}
-
-static void updateTextOverlayBuffer(uint32_t currentFrame)
-{
-	float miliseconds = GetTimestampsDelta(Timestamp::COMMAND_BUFFER_START, Timestamp::COMMAND_BUFFER_END, abs(static_cast<int64_t>(currentFrame) - 1ll));
-	char textBuffer[256];
-	int charCount = sprintf_s(textBuffer, 256, "GPU: %4.4fms", miliseconds);
-	size_t textZonesCount = 1;
-	TextZone textZones[2] = { -1.0f, -1.0f, std::string(textBuffer) };
-	if (ConCom::isOpen()) {
-		textZones[1] = { -1.0f, 0.0f, ConCom::GetViewableString() };
-		++textZonesCount;
-	}
-	UpdateText(textZones, textZonesCount, g_swapchain.extent);
-}
-
-//TODO seperate the buffer update and computation of frame data
-//TODO Make light Uniform const
-//TODO Instead of preassigning descriptors to instances, just give them one before drawing
-static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<std::pair<const SceneInstance*,const SceneRenderableAsset*>>& drawList )
-{
-	glm::mat4 world_view_matrix = ComputeCameraSceneInstanceViewMatrix(*cameraSceneInstance);
-
-	VkExtent2D swapChainExtent = g_swapchain.extent;
-
-	InputBuffers inputbuffers = _inputBuffers[currentFrame];
-
-	//Update GeometryUniformBuffer
-	for( auto& drawNode : drawList )
-		UpdateGeometryUniformBuffer( drawNode.first, drawNode.second->descriptorSet, GetBuffer( &inputbuffers, eTechniqueDataEntryName::INSTANCE_DATA) );
-
-	UpdateSceneUniformBuffer(world_view_matrix, swapChainExtent, GetBuffer( &inputbuffers, eTechniqueDataEntryName::SCENE_DATA ) );
-
-	SceneMatricesUniform shadowSceneMatrices;
-	computeShadowMatrix(light->position, &shadowSceneMatrices.view, &shadowSceneMatrices.proj);
-
-	UpdateLightUniformBuffer(&shadowSceneMatrices, light, GetBuffer( &inputbuffers, eTechniqueDataEntryName::LIGHT_DATA ), GetBuffer( &inputbuffers, eTechniqueDataEntryName::SHADOW_DATA ) );
-
-	UpdateSkyboxUniformBuffers( GetBuffer( &inputbuffers, eTechniqueDataEntryName::SKYBOX_DATA ), world_view_matrix );
-
-	updateTextOverlayBuffer(currentFrame);
-}
-
-static void PrepareSceneFrameData(SceneFrameData* frameData, uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<std::pair<const SceneInstance*, const SceneRenderableAsset*>>& drawList)
-{
-	updateUniformBuffer(currentFrame, cameraSceneInstance, light,drawList);
-
-	frameData->renderableAssets.resize(drawList.size());
-	for (size_t i = 0; i < drawList.size(); ++i)
-		frameData->renderableAssets[i] = drawList[i].second;
 }
 
 void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<std::pair<const SceneInstance*, const SceneRenderableAsset*>>& drawList )

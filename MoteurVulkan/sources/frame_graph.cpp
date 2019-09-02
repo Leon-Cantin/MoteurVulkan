@@ -70,12 +70,12 @@ namespace FG
 		++resource.attachmentCount;
 	}
 
-	void CreateColor(RenderPassCreationData& resource, VkFormat format, uint32_t render_target)
+	void RenderColor(RenderPassCreationData& resource, VkFormat format, uint32_t render_target)
 	{
 		CreateRTCommon(resource, format, render_target, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	}
 
-	void CreateDepth(RenderPassCreationData& resource, VkFormat format, uint32_t render_target)
+	void RenderDepth(RenderPassCreationData& resource, VkFormat format, uint32_t render_target)
 	{
 		CreateRTCommon(resource, format, render_target, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 	}

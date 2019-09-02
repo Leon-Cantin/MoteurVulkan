@@ -43,6 +43,7 @@ void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int3
 bool hasStencilComponent(VkFormat format);
 void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount);
 void transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount);
+VkFormat findDepthFormat();
 VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
 void CreateSolidColorImage(glm::vec4 color, GfxImage* o_image);

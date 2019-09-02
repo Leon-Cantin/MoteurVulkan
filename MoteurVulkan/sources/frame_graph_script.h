@@ -37,26 +37,8 @@ enum class eTechniqueDataEntryImageName
 	COUNT
 };
 
-inline void SetBuffers( InputBuffers* buffers, eTechniqueDataEntryName id, GpuBuffer* input )
-{
-	SetBuffers( buffers, static_cast< uint32_t >(id), input );
-}
-
-inline void SetImages( InputBuffers* buffers, eTechniqueDataEntryImageName id, VkDescriptorImageInfo* input )
-{
-	SetImages( buffers, static_cast< uint32_t >(id), input );
-}
-
-inline GpuBuffer* GetBuffer( const InputBuffers* buffers, eTechniqueDataEntryName id )
-{
-	return GetBuffer( buffers, static_cast< uint32_t >(id) );
-}
-
-inline VkDescriptorImageInfo* GetImage( const InputBuffers* buffers, eTechniqueDataEntryImageName id )
-{
-	return GetImage( buffers, static_cast< uint32_t >(id) );
-}
-
+//TODO: Could use the descriptor type where all UNIFORM_X and STORAGE_X mean read and write respectively
+//TODO: I don't think we enforce that the enum corresponds to the place in this array
 const uint32_t maxModelsCount = 5;
 static const TechniqueDataEntry techniqueDataEntries[static_cast< size_t >(eTechniqueDataEntryName::COUNT)] =
 {
@@ -77,6 +59,26 @@ static const TechniqueDataEntryImage techniqueDataEntryImages[static_cast< size_
 };
 
 std::array<PerFrameBuffer, 16> _allbuffers;
+
+inline void SetBuffers( InputBuffers* buffers, eTechniqueDataEntryName id, GpuBuffer* input )
+{
+	SetBuffers( buffers, static_cast< uint32_t >(id), input );
+}
+
+inline void SetImages( InputBuffers* buffers, eTechniqueDataEntryImageName id, VkDescriptorImageInfo* input )
+{
+	SetImages( buffers, static_cast< uint32_t >(id), input );
+}
+
+inline GpuBuffer* GetBuffer( const InputBuffers* buffers, eTechniqueDataEntryName id )
+{
+	return GetBuffer( buffers, static_cast< uint32_t >(id) );
+}
+
+inline VkDescriptorImageInfo* GetImage( const InputBuffers* buffers, eTechniqueDataEntryImageName id )
+{
+	return GetImage( buffers, static_cast< uint32_t >(id) );
+}
 
 void HACKCleanUpFrameGraphScriptResources()
 {
@@ -125,17 +127,16 @@ static void FG_Geometry_CreateGraphNode(FG::RenderPassCreationData* renderPassCr
 
 	VkFormat swapchainFormat = swapchain->surfaceFormat.format;
 
-	FG::CreateColor(*renderPassCreationData, swapchainFormat, RT_SCENE_COLOR);
-	FG::CreateDepth(*renderPassCreationData, VK_FORMAT_D32_SFLOAT, RT_SCENE_DEPTH);
+	FG::RenderColor(*renderPassCreationData, swapchainFormat, RT_SCENE_COLOR);
+	FG::RenderDepth(*renderPassCreationData, VK_FORMAT_D32_SFLOAT, RT_SCENE_DEPTH);
 	FG::ClearLast(*renderPassCreationData);
 	FG::ReadResource(*renderPassCreationData, RT_SHADOW_MAP);
 
 	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData->frame_graph_node;
+	frameGraphNode->RecordDrawCommands = GeometryRecordDrawCommandsBuffer;
 
 	frameGraphNode->gpuPipelineLayout = GetGeoPipelineLayout();
 	frameGraphNode->gpuPipelineState = GetGeoPipelineState();
-
-	frameGraphNode->RecordDrawCommands = GeometryRecordDrawCommandsBuffer;
 	frameGraphNode->instanceSet = &geoInstanceSetDesc;
 	frameGraphNode->passSet = &geoPassSetDesc;
 }
@@ -160,14 +161,14 @@ static void FG_Shadow_CreateGraphNode(FG::RenderPassCreationData* renderPassCrea
 {
 	renderPassCreationData->name = "shadow_pass";
 
-	FG::CreateDepth(*renderPassCreationData, VK_FORMAT_D32_SFLOAT, RT_SHADOW_MAP);
+	FG::RenderDepth(*renderPassCreationData, VK_FORMAT_D32_SFLOAT, RT_SHADOW_MAP);
 	FG::ClearLast(*renderPassCreationData);
 
 	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData->frame_graph_node;
+	frameGraphNode->RecordDrawCommands = ShadowRecordDrawCommandsBuffer;
 
 	frameGraphNode->gpuPipelineLayout = GetShadowPipelineLayout();
 	frameGraphNode->gpuPipelineState = GetShadowPipelineState();
-	frameGraphNode->RecordDrawCommands = ShadowRecordDrawCommandsBuffer;
 	frameGraphNode->instanceSet = &shadowInstanceSet;
 	frameGraphNode->passSet = &shadowPassSet;
 }
@@ -190,14 +191,14 @@ static void FG_Skybox_CreateGraphNode(FG::RenderPassCreationData* renderPassCrea
 
 	VkFormat swapchainFormat = swapchain->surfaceFormat.format;
 
-	FG::CreateColor(*renderPassCreationData, swapchainFormat, RT_SCENE_COLOR);
-	FG::CreateDepth(*renderPassCreationData, VK_FORMAT_D32_SFLOAT, RT_SCENE_DEPTH);
+	FG::RenderColor(*renderPassCreationData, swapchainFormat, RT_SCENE_COLOR);
+	FG::RenderDepth(*renderPassCreationData, VK_FORMAT_D32_SFLOAT, RT_SCENE_DEPTH);
 
 	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData->frame_graph_node;
+	frameGraphNode->RecordDrawCommands = SkyboxRecordDrawCommandsBuffer;
 
 	frameGraphNode->gpuPipelineLayout = GetSkyboxPipelineLayout();
 	frameGraphNode->gpuPipelineState = GetSkyboxPipelineState();
-	frameGraphNode->RecordDrawCommands = SkyboxRecordDrawCommandsBuffer;
 	frameGraphNode->instanceSet = nullptr;
 	frameGraphNode->passSet = &skyboxPassSetDesc;
 }
@@ -218,13 +219,13 @@ static void FG_TextOverlay_CreateGraphNode(FG::RenderPassCreationData* renderPas
 
 	VkFormat swapchainFormat = swapchain->surfaceFormat.format;
 
-	FG::CreateColor(*renderPassCreationData, swapchainFormat, RT_SCENE_COLOR);
+	FG::RenderColor(*renderPassCreationData, swapchainFormat, RT_SCENE_COLOR);
 
 	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData->frame_graph_node;
+	frameGraphNode->RecordDrawCommands = TextRecordDrawCommandsBuffer;
 
 	frameGraphNode->gpuPipelineLayout = GetTextPipelineLayout();
 	frameGraphNode->gpuPipelineState = GetTextPipelineState();
-	frameGraphNode->RecordDrawCommands = TextRecordDrawCommandsBuffer;
 	frameGraphNode->instanceSet = nullptr;
 	//TODO: we don't need one set per frame for this one
 	frameGraphNode->passSet = &textPassSet;
@@ -278,6 +279,7 @@ static void CreateDescriptorSet( const InputBuffers* inputData, const TechniqueD
 	{
 		const TechniqueDataBinding* bufferBinding = &descriptorSetDesc->buffersBindings[i];
 		const TechniqueDataEntry* techniqueDataEntry = &techniqueDataEntries[bufferBinding->id];
+		assert( bufferBinding->id == techniqueDataEntry->id );
 		GpuBuffer* buffers = GetBuffer( inputData, bufferBinding->id );
 		uint32_t bufferStart = descriptorBuffersInfosCount;
 		for( uint32_t descriptorIndex = 0; descriptorIndex < techniqueDataEntry->count; ++descriptorIndex )
@@ -295,6 +297,7 @@ static void CreateDescriptorSet( const InputBuffers* inputData, const TechniqueD
 	{
 		const TechniqueDataBinding* imageBinding = &descriptorSetDesc->imagesBindings[i];
 		const TechniqueDataEntryImage* techniqueDataEntry = &techniqueDataEntryImages[imageBinding->id];
+		assert( imageBinding->id == techniqueDataEntry->id );
 		VkDescriptorImageInfo* images = GetImage( inputData, imageBinding->id );
 		uint32_t bufferStart = descriptorImagesInfosCount;
 		for( uint32_t descriptorIndex = 0; descriptorIndex < techniqueDataEntry->count; ++descriptorIndex )
@@ -305,7 +308,6 @@ static void CreateDescriptorSet( const InputBuffers* inputData, const TechniqueD
 		}
 		writeDescriptors[writeDescriptorsCount++] = { imageBinding->binding, techniqueDataEntry->count, techniqueDataEntry->descriptorType, nullptr, &descriptorImagesInfos[bufferStart] };
 	}
-
 
 	UpdateDescriptorSets( 1, &writeDescriptorSet, o_descriptorSet );
 }

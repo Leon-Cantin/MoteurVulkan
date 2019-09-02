@@ -28,7 +28,7 @@ std::array<VkFence, SIMULTANEOUS_FRAMES> inFlightFences;
 
 void( *_fFGScriptInitialize )(const Swapchain*);
 
-void CreateCommandBuffer()
+static void CreateCommandBuffer()
 {
 	VkCommandBufferAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -41,7 +41,7 @@ void CreateCommandBuffer()
 	}
 }
 
-void CreateTransferCommandBuffer()
+static void CreateTransferCommandBuffer()
 {
 	VkCommandBufferAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -54,7 +54,7 @@ void CreateTransferCommandBuffer()
 	}
 }
 
-void create_sync_objects()
+static void create_sync_objects()
 {
 	VkSemaphoreCreateInfo semaphoreInfo = {};
 	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -80,15 +80,7 @@ void create_sync_objects()
 	}
 }
 
-VkFormat findDepthFormat() {
-	return findSupportedFormat(
-		{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
-		VK_IMAGE_TILING_OPTIMAL,
-		VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
-	);
-}
-
-void cleanup_swap_chain()
+static void cleanup_swap_chain()
 {
 	vkFreeCommandBuffers(g_vk.device, g_vk.graphicsCommandPool, static_cast<uint32_t>(g_graphicsCommandBuffers.size()), g_graphicsCommandBuffers.data());
 	vkFreeCommandBuffers(g_vk.device, g_vk.transferCommandPool, static_cast<uint32_t>(g_transferCommandBuffers.size()), g_transferCommandBuffers.data());
@@ -100,6 +92,26 @@ void cleanup_swap_chain()
 		vkDestroyImageView(g_vk.device, image.imageView, nullptr);
 
 	vkDestroySwapchainKHR(g_vk.device, g_swapchain.vkSwapchain, nullptr);
+}
+
+void InitRenderer()
+{
+	uint64_t width, height;
+	WH::GetFramebufferSize( &width, &height );
+	createSwapChain( g_vk.windowSurface, width, height, g_swapchain );
+
+	QueueFamilyIndices queue_family_indices = find_queue_families( g_vk.physicalDevice );
+	CreateCommandPool( queue_family_indices.graphics_family.value(), &g_vk.graphicsCommandPool );
+	CreateCommandPool( queue_family_indices.transfer_family.value(), &g_vk.transferCommandPool );
+	CreateSingleUseCommandPool( queue_family_indices.graphics_family.value(), &g_vk.graphicsSingleUseCommandPool );
+	CreateSingleUseCommandPool( queue_family_indices.compute_family.value(), &g_vk.computeCommandPool );
+
+	InitSamplers();
+
+	CreateCommandBuffer();
+	create_sync_objects();
+
+	CreateTimeStampsQueryPool( SIMULTANEOUS_FRAMES );
 }
 
 void recreate_swap_chain()
@@ -126,26 +138,6 @@ void recreate_swap_chain()
 
 	CreateCommandBuffer();
 	CreateTransferCommandBuffer();
-}
-
-void InitRenderer()
-{
-	uint64_t width, height;
-	WH::GetFramebufferSize(&width, &height);
-	createSwapChain(g_vk.windowSurface, width, height, g_swapchain);
-
-	QueueFamilyIndices queue_family_indices = find_queue_families(g_vk.physicalDevice);
-	CreateCommandPool(queue_family_indices.graphics_family.value(), &g_vk.graphicsCommandPool);
-	CreateCommandPool(queue_family_indices.transfer_family.value(), &g_vk.transferCommandPool);
-	CreateSingleUseCommandPool(queue_family_indices.graphics_family.value(), &g_vk.graphicsSingleUseCommandPool);
-	CreateSingleUseCommandPool(queue_family_indices.compute_family.value(), &g_vk.computeCommandPool);
-
-	InitSamplers();
-
-	CreateCommandBuffer();
-	create_sync_objects();
-
-	CreateTimeStampsQueryPool(SIMULTANEOUS_FRAMES);
 }
 
 void CompileFrameGraph( void( *FGScriptInitialize )( const Swapchain* ) )
