@@ -334,12 +334,16 @@ static void CreateDescriptorSet( const GpuInputData* inputData, const TechniqueD
 constexpr VkFormat RT_FORMAT_SHADOW_DEPTH = VK_FORMAT_D32_SFLOAT;
 constexpr VkExtent2D RT_EXTENT_SHADOW = { 1024, 1024 };
 
-static void CreateBuffersIfNotCreated( std::array< GpuInputData, SIMULTANEOUS_FRAMES>* inputBuffers, const TechniqueDescriptorSetDesc* descriptorSetDesc )
+static void CreateDataIfNotCreated( std::array< GpuInputData, SIMULTANEOUS_FRAMES>* inputBuffers, const TechniqueDescriptorSetDesc* descriptorSetDesc )
 {
 	for( uint32_t i = 0; i < descriptorSetDesc->dataCount; ++i )
 	{
 		const TechniqueDataBinding* dataBinding = &descriptorSetDesc->dataBindings[i];
 		const TechniqueDataEntry* dataEntry = GetDataEntry( dataBinding->id );
+
+		if( dataEntry->flags & eTechniqueDataEntryFlags::EXTERNAL )
+			continue;
+
 		if( IsBufferType( dataEntry->descriptorType ) )
 		{
 			PerFrameBuffer* buffer = &_allbuffers[dataEntry->id];
@@ -350,6 +354,10 @@ static void CreateBuffersIfNotCreated( std::array< GpuInputData, SIMULTANEOUS_FR
 					SetBuffers( &(*inputBuffers)[i], dataEntry->id, &buffer->buffers[i] );
 			}
 		}
+		else
+		{
+			//TODO create images? Maybe just in frame graph
+		}
 	}
 }
 
@@ -357,13 +365,14 @@ void CreateTechniqueCallback (const RenderPass* renderpass, const FG::RenderPass
 {
 	std::array< GpuInputData, SIMULTANEOUS_FRAMES>& inputBuffers = *_pInputBuffers;
 
-	//Create buffers if required
-	if( passCreationData->frame_graph_node.passSet )
-		CreateBuffersIfNotCreated( &inputBuffers, passCreationData->frame_graph_node.passSet );
-	if( passCreationData->frame_graph_node.instanceSet )
-		CreateBuffersIfNotCreated( &inputBuffers, passCreationData->frame_graph_node.instanceSet );
+	const TechniqueDescriptorSetDesc* passSet = passCreationData->frame_graph_node.passSet;
+	const TechniqueDescriptorSetDesc* instanceSet = passCreationData->frame_graph_node.instanceSet;
 
-	//TODO: create images? don't create stuff if it's external, so far it's all images so it works?
+	//Create buffers if required
+	if( passSet )
+		CreateDataIfNotCreated( &inputBuffers, passSet );
+	if( instanceSet )
+		CreateDataIfNotCreated( &inputBuffers, instanceSet );
 
 	//Set buffers and images taken from the frame graph
 	const GfxImage *shadowImages = FG::GetRenderTarget( RT_SHADOW_MAP );
@@ -372,9 +381,6 @@ void CreateTechniqueCallback (const RenderPass* renderpass, const FG::RenderPass
 		SetImages( &inputBuffers[i], eTechniqueDataEntryImageName::SHADOWS, shadowTextures );
 
 	//Create descriptors
-	const TechniqueDescriptorSetDesc* passSet = passCreationData->frame_graph_node.passSet;
-	const TechniqueDescriptorSetDesc* instanceSet = passCreationData->frame_graph_node.instanceSet;
-
 	if( passSet )
 	{
 		CreateDescriptorSetLayout( passSet, &technique->renderpass_descriptor_layout );
