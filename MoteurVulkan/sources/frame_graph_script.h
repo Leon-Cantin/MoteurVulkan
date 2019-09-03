@@ -43,18 +43,18 @@ const uint32_t maxModelsCount = 5;
 static const TechniqueDataEntry techniqueDataEntries[static_cast< size_t >(eTechniqueDataEntryImageName::COUNT)] =
 {
 	//Buffers
-	{ static_cast< uint32_t >(eTechniqueDataEntryName::INSTANCE_DATA), BUFFER_DYNAMIC, 1, eTechniqueDataEntryFlags::NONE, sizeof( InstanceMatrices ) * maxModelsCount},
-	{ static_cast< uint32_t >(eTechniqueDataEntryName::SHADOW_DATA), BUFFER, 1, eTechniqueDataEntryFlags::NONE, sizeof( SceneMatricesUniform )},
-	{ static_cast< uint32_t >(eTechniqueDataEntryName::SCENE_DATA),	BUFFER, 1, eTechniqueDataEntryFlags::NONE, sizeof( SceneMatricesUniform )},
-	{ static_cast< uint32_t >(eTechniqueDataEntryName::LIGHT_DATA),	BUFFER, 1, eTechniqueDataEntryFlags::NONE, sizeof( LightUniform )},
-	{ static_cast< uint32_t >(eTechniqueDataEntryName::SKYBOX_DATA), BUFFER, 1, eTechniqueDataEntryFlags::NONE, sizeof( SkyboxUniformBufferObject )},
+	{ static_cast< uint32_t >(eTechniqueDataEntryName::INSTANCE_DATA),	eDescriptorType::BUFFER_DYNAMIC, 1, eTechniqueDataEntryFlags::NONE,		sizeof( InstanceMatrices ) * maxModelsCount},
+	{ static_cast< uint32_t >(eTechniqueDataEntryName::SHADOW_DATA),	eDescriptorType::BUFFER,		1, eTechniqueDataEntryFlags::NONE,		sizeof( SceneMatricesUniform )},
+	{ static_cast< uint32_t >(eTechniqueDataEntryName::SCENE_DATA),		eDescriptorType::BUFFER,		1, eTechniqueDataEntryFlags::NONE,		sizeof( SceneMatricesUniform )},
+	{ static_cast< uint32_t >(eTechniqueDataEntryName::LIGHT_DATA),		eDescriptorType::BUFFER,		1, eTechniqueDataEntryFlags::NONE,		sizeof( LightUniform )},
+	{ static_cast< uint32_t >(eTechniqueDataEntryName::SKYBOX_DATA),	eDescriptorType::BUFFER,		1, eTechniqueDataEntryFlags::NONE,		sizeof( SkyboxUniformBufferObject )},
 
 	//images
-	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::ALBEDOS), eDescriptorType::IMAGE_SAMPLER, 5, eTechniqueDataEntryFlags::EXTERNAL, 0 },
-	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::NORMALS), eDescriptorType::IMAGE_SAMPLER, 1, eTechniqueDataEntryFlags::EXTERNAL, 0 },
-	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::SHADOWS), eDescriptorType::IMAGE_SAMPLER, 1, eTechniqueDataEntryFlags::NONE, 0 },
-	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::TEXT), eDescriptorType::IMAGE_SAMPLER, 1, eTechniqueDataEntryFlags::EXTERNAL, 0 },
-	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::SKYBOX), eDescriptorType::IMAGE_SAMPLER, 1, eTechniqueDataEntryFlags::EXTERNAL, 0 },
+	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::ALBEDOS),	eDescriptorType::IMAGE_SAMPLER, 5, eTechniqueDataEntryFlags::EXTERNAL,	0 },
+	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::NORMALS),	eDescriptorType::IMAGE_SAMPLER, 1, eTechniqueDataEntryFlags::EXTERNAL,	0 },
+	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::SHADOWS),	eDescriptorType::IMAGE_SAMPLER, 1, eTechniqueDataEntryFlags::NONE,		0 },
+	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::TEXT),		eDescriptorType::IMAGE_SAMPLER, 1, eTechniqueDataEntryFlags::EXTERNAL,	0 },
+	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::SKYBOX),	eDescriptorType::IMAGE_SAMPLER, 1, eTechniqueDataEntryFlags::EXTERNAL,	0 },
 };
 
 const TechniqueDataEntry* GetDataEntry( uint32_t entryId )
@@ -135,24 +135,27 @@ TechniqueDescriptorSetDesc geoInstanceSetDesc =
 };
 
 
-static void FG_Geometry_CreateGraphNode(FG::RenderPassCreationData* renderPassCreationData, const Swapchain* swapchain)
+static FG::RenderPassCreationData FG_Geometry_CreateGraphNode( const Swapchain* swapchain )
 {
-	renderPassCreationData->name = "geometry_pass";
+	FG::RenderPassCreationData renderPassCreationData;
+	renderPassCreationData.name = "geometry_pass";
 
 	VkFormat swapchainFormat = swapchain->surfaceFormat.format;
 
-	FG::RenderColor(*renderPassCreationData, swapchainFormat, RT_SCENE_COLOR);
-	FG::RenderDepth(*renderPassCreationData, VK_FORMAT_D32_SFLOAT, RT_SCENE_DEPTH);
-	FG::ClearLast(*renderPassCreationData);
-	FG::ReadResource(*renderPassCreationData, RT_SHADOW_MAP);
+	FG::RenderColor( renderPassCreationData, swapchainFormat, RT_SCENE_COLOR );
+	FG::RenderDepth( renderPassCreationData, VK_FORMAT_D32_SFLOAT, RT_SCENE_DEPTH );
+	FG::ClearLast( renderPassCreationData );
+	FG::ReadResource( renderPassCreationData, RT_SHADOW_MAP );
 
-	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData->frame_graph_node;
+	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData.frame_graph_node;
 	frameGraphNode->RecordDrawCommands = GeometryRecordDrawCommandsBuffer;
 
 	frameGraphNode->gpuPipelineLayout = GetGeoPipelineLayout();
 	frameGraphNode->gpuPipelineState = GetGeoPipelineState();
 	frameGraphNode->instanceSet = &geoInstanceSetDesc;
 	frameGraphNode->passSet = &geoPassSetDesc;
+
+	return renderPassCreationData;
 }
 
 TechniqueDescriptorSetDesc shadowPassSet =
@@ -171,20 +174,23 @@ TechniqueDescriptorSetDesc shadowInstanceSet =
 	1
 };
 
-static void FG_Shadow_CreateGraphNode(FG::RenderPassCreationData* renderPassCreationData, const Swapchain* swapchain)
+static FG::RenderPassCreationData FG_Shadow_CreateGraphNode( const Swapchain* swapchain )
 {
-	renderPassCreationData->name = "shadow_pass";
+	FG::RenderPassCreationData renderPassCreationData;
+	renderPassCreationData.name = "shadow_pass";
 
-	FG::RenderDepth(*renderPassCreationData, VK_FORMAT_D32_SFLOAT, RT_SHADOW_MAP);
-	FG::ClearLast(*renderPassCreationData);
+	FG::RenderDepth(renderPassCreationData, VK_FORMAT_D32_SFLOAT, RT_SHADOW_MAP);
+	FG::ClearLast(renderPassCreationData);
 
-	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData->frame_graph_node;
+	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData.frame_graph_node;
 	frameGraphNode->RecordDrawCommands = ShadowRecordDrawCommandsBuffer;
 
 	frameGraphNode->gpuPipelineLayout = GetShadowPipelineLayout();
 	frameGraphNode->gpuPipelineState = GetShadowPipelineState();
 	frameGraphNode->instanceSet = &shadowInstanceSet;
 	frameGraphNode->passSet = &shadowPassSet;
+
+	return renderPassCreationData;
 }
 
 TechniqueDescriptorSetDesc skyboxPassSetDesc =
@@ -197,22 +203,25 @@ TechniqueDescriptorSetDesc skyboxPassSetDesc =
 	2
 };
 
-static void FG_Skybox_CreateGraphNode(FG::RenderPassCreationData* renderPassCreationData, const Swapchain* swapchain)
+static FG::RenderPassCreationData FG_Skybox_CreateGraphNode( const Swapchain* swapchain )
 {
-	renderPassCreationData->name = "skybox_pass";
+	FG::RenderPassCreationData renderPassCreationData;
+	renderPassCreationData.name = "skybox_pass";
 
 	VkFormat swapchainFormat = swapchain->surfaceFormat.format;
 
-	FG::RenderColor(*renderPassCreationData, swapchainFormat, RT_SCENE_COLOR);
-	FG::RenderDepth(*renderPassCreationData, VK_FORMAT_D32_SFLOAT, RT_SCENE_DEPTH);
+	FG::RenderColor( renderPassCreationData, swapchainFormat, RT_SCENE_COLOR );
+	FG::RenderDepth( renderPassCreationData, VK_FORMAT_D32_SFLOAT, RT_SCENE_DEPTH );
 
-	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData->frame_graph_node;
+	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData.frame_graph_node;
 	frameGraphNode->RecordDrawCommands = SkyboxRecordDrawCommandsBuffer;
 
 	frameGraphNode->gpuPipelineLayout = GetSkyboxPipelineLayout();
 	frameGraphNode->gpuPipelineState = GetSkyboxPipelineState();
 	frameGraphNode->instanceSet = nullptr;
 	frameGraphNode->passSet = &skyboxPassSetDesc;
+
+	return renderPassCreationData;
 }
 
 TechniqueDescriptorSetDesc textPassSet =
@@ -223,15 +232,16 @@ TechniqueDescriptorSetDesc textPassSet =
 	1
 };
 
-static void FG_TextOverlay_CreateGraphNode(FG::RenderPassCreationData* renderPassCreationData, const Swapchain* swapchain)
+static FG::RenderPassCreationData FG_TextOverlay_CreateGraphNode( const Swapchain* swapchain )
 {
-	renderPassCreationData->name = "skybox_pass";
+	FG::RenderPassCreationData renderPassCreationData;
+	renderPassCreationData.name = "skybox_pass";
 
 	VkFormat swapchainFormat = swapchain->surfaceFormat.format;
 
-	FG::RenderColor(*renderPassCreationData, swapchainFormat, RT_SCENE_COLOR);
+	FG::RenderColor( renderPassCreationData, swapchainFormat, RT_SCENE_COLOR );
 
-	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData->frame_graph_node;
+	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData.frame_graph_node;
 	frameGraphNode->RecordDrawCommands = TextRecordDrawCommandsBuffer;
 
 	frameGraphNode->gpuPipelineLayout = GetTextPipelineLayout();
@@ -239,6 +249,8 @@ static void FG_TextOverlay_CreateGraphNode(FG::RenderPassCreationData* renderPas
 	frameGraphNode->instanceSet = nullptr;
 	//TODO: we don't need one set per frame for this one
 	frameGraphNode->passSet = &textPassSet;
+
+	return renderPassCreationData;
 }
 
 static VkDescriptorType DescriptorTypeToVkType( eDescriptorType type, eDescriptorAccess access )
@@ -460,21 +472,10 @@ void InitializeScript(const Swapchain* swapchain)
 	std::vector<FG::RenderPassCreationData> _rpCreationData;
 
 	//Setup passes	
-	FG::RenderPassCreationData shadowPass;
-	FG_Shadow_CreateGraphNode(&shadowPass, swapchain);
-	_rpCreationData.push_back(shadowPass);
-
-	FG::RenderPassCreationData geoPass;
-	FG_Geometry_CreateGraphNode(&geoPass, swapchain);
-	_rpCreationData.push_back(geoPass);
-
-	FG::RenderPassCreationData skyPass;
-	FG_Skybox_CreateGraphNode(&skyPass, swapchain);
-	_rpCreationData.push_back(skyPass);
-
-	FG::RenderPassCreationData textPass;
-	FG_TextOverlay_CreateGraphNode(&textPass, swapchain);
-	_rpCreationData.push_back(textPass);
+	_rpCreationData.push_back( FG_Shadow_CreateGraphNode( swapchain ) );
+	_rpCreationData.push_back( FG_Geometry_CreateGraphNode( swapchain ) );
+	_rpCreationData.push_back( FG_Skybox_CreateGraphNode( swapchain ) );
+	_rpCreationData.push_back( FG_TextOverlay_CreateGraphNode( swapchain ) );
 
 	FG::CreateGraph(swapchain, &_rpCreationData, &_rtCreationData, backBuffer, _descriptorPool, &CreateTechniqueCallback );
 }
