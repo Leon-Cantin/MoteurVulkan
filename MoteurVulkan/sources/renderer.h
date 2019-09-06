@@ -4,6 +4,7 @@
 #include "scene_instance.h"
 #include "scene_frame_data.h"
 #include "swapchain.h"
+#include "frame_graph.h"
 
 #include "vk_image.h"
 #include <vector>
@@ -11,7 +12,7 @@
 #include <glm/mat4x4.hpp>
 
 void InitRenderer();
-void CompileFrameGraph( void( *FGScriptInitialize )(const Swapchain* swapchain) );
+void CompileFrameGraph( FG::FrameGraph( *FGScriptInitialize )(const Swapchain* swapchain) );
 void CleanupRenderer();
 void WaitForFrame(uint32_t currentFrame);
 void draw_frame(uint32_t currentFrame, const SceneFrameData* frameData);

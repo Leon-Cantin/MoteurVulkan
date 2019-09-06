@@ -9,34 +9,58 @@
 
 namespace FG
 {
-	GfxImage _output_buffers[SIMULTANEOUS_FRAMES];
-
-	constexpr size_t MAX_RENDERTARGETS = 8;
-	size_t RENDERTARGETS_COUNT;
-	uint32_t RT_OUTPUT_TARGET;
-	GfxImage _render_targets[MAX_RENDERTARGETS];
-
-
-	const GfxImage* GetRenderTarget(uint32_t render_target_id)
+	struct FrameGraphCreationData
 	{
-		return &_render_targets[render_target_id];
+		std::vector<RenderTargetCreationData> renderTargets;
+		std::vector<RenderPassCreationData> renderPasses;
+		uint32_t RT_OUTPUT_TARGET;
+	};
+
+	class FrameGraphInternal
+	{
+	public:
+		GfxImage _output_buffers[SIMULTANEOUS_FRAMES];
+		#define MAX_RENDERTARGETS 8
+		
+		GfxImage _render_targets[MAX_RENDERTARGETS];
+		uint32_t _render_targets_count;
+
+		const GfxImage* GetRenderTarget( uint32_t render_target_id )
+		{
+			return &_render_targets[render_target_id];
+		}
+
+		std::array<RenderPass, 8> _render_passes;
+		uint32_t _render_passes_count = 0;
+
+		std::array<Technique, 8> _techniques;
+		uint32_t _techniques_count = 0;
+
+		const RenderPass* GetRenderPass( uint32_t id )
+		{
+			return &_render_passes[id];
+		}
+
+		FrameGraphCreationData creationData;
+	};
+
+	const RenderPass* FrameGraph::GetRenderPass( uint32_t id )
+	{
+		return imp->GetRenderPass( id );
 	}
 
-	std::array<RenderPass, 8> _render_passes;
-	uint32_t _render_passes_count = 0;
-
-	std::array<Technique, 8> _techniques;
-	uint32_t _techniques_count = 0;
-
-	const RenderPass* GetRenderPass(uint32_t id)
+	const GfxImage* FrameGraph::GetRenderTarget( uint32_t render_target_id )
 	{
-		return &_render_passes[id];
+		return imp->GetRenderTarget( render_target_id );
 	}
 
-	std::vector<RenderTargetCreationData> _rtCreationData;
-	std::vector<RenderPassCreationData> _rpCreationData;
+	FrameGraph::FrameGraph()
+		: imp( nullptr ) {}
 
-	void CreateImage(VkFormat format, VkExtent2D extent, GfxImage* image, VkImageUsageFlagBits usage_flags, VkImageAspectFlagBits aspect_flags, VkImageLayout image_layout)
+	FrameGraph::FrameGraph( FrameGraphInternal* imp )
+		: imp( imp ) {}
+
+	static void CreateImage(VkFormat format, VkExtent2D extent, GfxImage* image, VkImageUsageFlagBits usage_flags, VkImageAspectFlagBits aspect_flags, VkImageLayout image_layout)
 	{
 		image->extent = extent;
 		image->format = format;
@@ -45,7 +69,7 @@ namespace FG
 		transitionImageLayout(image->image, format, VK_IMAGE_LAYOUT_UNDEFINED, image_layout, 1, 1);
 	}
 
-	void CreateRTCommon(RenderPassCreationData& resource, VkFormat format, uint32_t render_target, VkImageLayout optimalLayout)
+	static void CreateRTCommon(RenderPassCreationData& resource, VkFormat format, uint32_t render_target, VkImageLayout optimalLayout)
 	{
 		assert(resource.attachmentCount < MAX_ATTACHMENTS_COUNT);
 
@@ -87,7 +111,7 @@ namespace FG
 		resource.descriptions[resource.attachmentCount - 1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	}
 
-	void TransitionToReadOnly(RenderPassCreationData& resource)
+	static void TransitionToReadOnly(RenderPassCreationData& resource)
 	{
 		assert(resource.attachmentCount > 0);
 
@@ -111,13 +135,14 @@ namespace FG
 		return -1;
 	}
 
-	static void ComposeGraph(std::vector<RenderPassCreationData>& passesCreationData, std::vector<RenderTargetCreationData>& rtCreationDatas)
+	static void ComposeGraph( FrameGraphCreationData& creationData, FrameGraphInternal* o_frameGraph )
 	{
+		o_frameGraph->_render_targets_count = creationData.renderTargets.size();
 		std::map< uint32_t, RenderPassCreationData*> lastPass;
 
-		for (uint32_t i = 0; i < passesCreationData.size(); ++i)
+		for (uint32_t i = 0; i < creationData.renderPasses.size(); ++i)
 		{
-			RenderPassCreationData& pass = passesCreationData[i];
+			RenderPassCreationData& pass = creationData.renderPasses[i];
 
 			//RenderTargets
 			for (uint32_t resource_index = 0; resource_index < pass.attachmentCount; ++resource_index)
@@ -132,10 +157,10 @@ namespace FG
 					lastPass[renderTargetId] = &pass;
 
 					//Create a new image when we encounter it for the first time.
-					RenderTargetCreationData* rtCreationData = &rtCreationDatas[renderTargetId];
-					if (renderTargetId != RT_OUTPUT_TARGET)
+					RenderTargetCreationData* rtCreationData = &creationData.renderTargets[renderTargetId];
+					if (renderTargetId != creationData.RT_OUTPUT_TARGET)
 					{
-						GfxImage* rt_image = &_render_targets[renderTargetId];
+						GfxImage* rt_image = &o_frameGraph->_render_targets[renderTargetId];
 						CreateImage(rtCreationData->format, rtCreationData->extent, rt_image, rtCreationData->usage_flags, rtCreationData->aspect_flags, rtCreationData->image_layout);
 					}
 				}
@@ -186,20 +211,21 @@ namespace FG
 		}
 
 		//Transition the last pass with RT_OUTPUT_TARGET to present
-		auto it_found = lastPass.find(RT_OUTPUT_TARGET);
+		auto it_found = lastPass.find( creationData.RT_OUTPUT_TARGET );
 		RenderPassCreationData* lastPassWithResource = it_found->second;
-		int32_t otherPassReferenceIndex = FindResourceIndex(*lastPassWithResource, RT_OUTPUT_TARGET);
+		int32_t otherPassReferenceIndex = FindResourceIndex(*lastPassWithResource, creationData.RT_OUTPUT_TARGET );
 		lastPassWithResource->descriptions[otherPassReferenceIndex].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 	}
 
-	static void CreateFrameBuffer(RenderPass* renderpass, const RenderPassCreationData& passCreationData, uint32_t colorCount, bool containsDepth)
+	//TODO: probably doesn't need the frame graph
+	static void CreateFrameBuffer( RenderPass* renderpass, const RenderPassCreationData& passCreationData, uint32_t outputTargetIndex, uint32_t colorCount, bool containsDepth, FrameGraphInternal* frameGraph )
 	{
-		int32_t outputBufferIndex = FindResourceIndex(passCreationData, RT_OUTPUT_TARGET);
-		VkExtent2D extent = _render_targets[passCreationData.e_render_targets[0]].extent;
+		int32_t outputBufferIndex = FindResourceIndex( passCreationData, outputTargetIndex );
+		VkExtent2D extent = frameGraph->_render_targets[passCreationData.e_render_targets[0]].extent;
 		GfxImage colorImages[MAX_ATTACHMENTS_COUNT];
 		for (uint32_t i = 0; i < colorCount; ++i)
-			colorImages[i] = _render_targets[passCreationData.e_render_targets[i]];
-		GfxImage* depthImage = containsDepth ? &_render_targets[passCreationData.e_render_targets[colorCount]] : nullptr;
+			colorImages[i] = frameGraph->_render_targets[passCreationData.e_render_targets[i]];
+		GfxImage* depthImage = containsDepth ? &frameGraph->_render_targets[passCreationData.e_render_targets[colorCount]] : nullptr;
 
 		if (outputBufferIndex < 0)
 		{
@@ -209,13 +235,13 @@ namespace FG
 		{
 			for (uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
 			{
-				colorImages[outputBufferIndex] = _output_buffers[i];
+				colorImages[outputBufferIndex] = frameGraph->_output_buffers[i];
 				createFrameBuffer(colorImages, colorCount, depthImage, extent, renderpass->vk_renderpass, &renderpass->outputFrameBuffer[i]);
 			}
 		}
 	}
 
-	static void CreateRenderPass(const RenderPassCreationData& passCreationData, const char* name, RenderPass* o_renderPass)
+	static void CreateRenderPass(const RenderPassCreationData& passCreationData, uint32_t outputBufferIndex, const char* name, RenderPass* o_renderPass, FrameGraphInternal* frameGraph)
 	{
 		assert(passCreationData.attachmentCount > 0);
 		bool containsDepth = passCreationData.references[passCreationData.attachmentCount - 1].layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
@@ -257,61 +283,70 @@ namespace FG
 		MarkVkObject((uint64_t)o_renderPass->vk_renderpass, VK_OBJECT_TYPE_RENDER_PASS, name);
 
 		//Create the frame buffer of the render pass
-		CreateFrameBuffer(o_renderPass, passCreationData, colorCount, containsDepth);
+		CreateFrameBuffer( o_renderPass, passCreationData, outputBufferIndex, colorCount, containsDepth, frameGraph );
 	}
 
-	static void CreateResourceCreationData(const Swapchain* swapchain)
+	static void CreateResourceCreationData( const Swapchain* swapchain, FrameGraphCreationData* creationData, FrameGraphInternal* o_frameGraph )
 	{
 		//setup hacks for outside resources
-		_render_targets[RT_OUTPUT_TARGET] = swapchain->images[0];
+		o_frameGraph->_render_targets[creationData->RT_OUTPUT_TARGET] = swapchain->images[0];
 		for (uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
-			_output_buffers[i] = swapchain->images[i];
+			o_frameGraph->_output_buffers[i] = swapchain->images[i];
 
-		for (uint32_t i = 0; i < RENDERTARGETS_COUNT; ++i)
+		for (uint32_t i = 0; i < o_frameGraph->_render_targets_count; ++i)
 		{
-			if (_rtCreationData[i].swapChainSized)
-				_rtCreationData[i].extent = swapchain->extent;
+			if ( creationData->renderTargets[i].swapChainSized)
+				creationData->renderTargets[i].extent = swapchain->extent;
 		}
 	}
 
-	void CreateGraph(const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<RenderTargetCreationData> *inRtCreationData, uint32_t backbufferId, VkDescriptorPool descriptorPool,
-		void(*createTechniqueCallback)(const RenderPass*, const RenderPassCreationData*, Technique*) )
+	FrameGraph CreateGraph(const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<RenderTargetCreationData> *inRtCreationData, uint32_t backbufferId, VkDescriptorPool descriptorPool,
+		void(*createTechniqueCallback)(const RenderPass*, const RenderPassCreationData*, Technique*, FrameGraph*) )
 	{
+		FrameGraphInternal* frameGraph = new FrameGraphInternal();
+		FrameGraph frameGraphExternal( frameGraph );
+		FrameGraphCreationData& creationData = frameGraph->creationData;
 		//Setup resources
-		RENDERTARGETS_COUNT = inRtCreationData->size();
-		RT_OUTPUT_TARGET = backbufferId;
-		_rtCreationData = *inRtCreationData;
-		CreateResourceCreationData(swapchain);
+		creationData.RT_OUTPUT_TARGET = backbufferId;
+		creationData.renderTargets = *inRtCreationData;
+		CreateResourceCreationData( swapchain, &creationData, frameGraph );
 
 		//Setup passes
-		_rpCreationData = *inRpCreationData;
+		creationData.renderPasses = *inRpCreationData;
 
-		ComposeGraph(_rpCreationData, _rtCreationData);
+		ComposeGraph( creationData, frameGraph );
 
-		for (uint32_t i = 0; i < _rpCreationData.size(); ++i)
+		for (uint32_t i = 0; i < creationData.renderPasses.size(); ++i)
 		{
 			//Create the pass
-			RenderPassCreationData* rpCreationData = &_rpCreationData[i];
-			CreateRenderPass( *rpCreationData, rpCreationData->name, &_render_passes[_render_passes_count++] );
+			RenderPassCreationData* rpCreationData = &creationData.renderPasses[i];
+			CreateRenderPass( *rpCreationData, creationData.RT_OUTPUT_TARGET, rpCreationData->name, &frameGraph->_render_passes[frameGraph->_render_passes_count++], frameGraph );
 
 			//Create the descriptor set and layout
-			createTechniqueCallback( GetRenderPass( i ), rpCreationData, &_techniques[_techniques_count++] );
+			createTechniqueCallback( frameGraph->GetRenderPass( i ),  rpCreationData, &frameGraph->_techniques[frameGraph->_techniques_count++], &frameGraphExternal );
 		}
+
+		return frameGraphExternal;
 	}
 
-	void Cleanup()
+	void Cleanup( FrameGraph* frameGraphExternal )
 	{
-		for (uint32_t i = 0; i < RENDERTARGETS_COUNT; ++i)
+		if( !frameGraphExternal->imp )
+			return;
+
+		FrameGraphInternal* frameGraph = frameGraphExternal->imp;
+
+		for (uint32_t i = 0; i < frameGraph->_render_targets_count; ++i)
 		{
-			GfxImage& image = _render_targets[i];
-			if (image.image && i != RT_OUTPUT_TARGET)
+			GfxImage& image = frameGraph->_render_targets[i];
+			if (image.image && i != frameGraph->creationData.RT_OUTPUT_TARGET)
 				DestroyImage(image);
 		}
-		RENDERTARGETS_COUNT = 0;
+		frameGraph->_render_targets_count = 0;
 
-		for (uint32_t i = 0; i < _render_passes_count; ++i)
+		for (uint32_t i = 0; i < frameGraph->_render_passes_count; ++i)
 		{
-			RenderPass& renderpass = _render_passes[i];
+			RenderPass& renderpass = frameGraph->_render_passes[i];
 			if (renderpass.frameBuffer.frameBuffer)
 			{
 				vkDestroyFramebuffer(g_vk.device, renderpass.frameBuffer.frameBuffer, nullptr);
@@ -325,12 +360,12 @@ namespace FG
 			vkDestroyRenderPass(g_vk.device, renderpass.vk_renderpass, nullptr);
 			renderpass.vk_renderpass = VK_NULL_HANDLE;
 		}
-		_render_passes_count = 0;
+		frameGraph->_render_passes_count = 0;
 
 		//Cleanup technique
-		for( uint32_t i = 0; i < _techniques_count; ++i )
+		for( uint32_t i = 0; i < frameGraph->_techniques_count; ++i )
 		{
-			Technique& technique = _techniques[i];
+			Technique& technique = frameGraph->_techniques[i];
 			vkDestroyPipeline( g_vk.device, technique.pipeline, nullptr );
 			vkDestroyPipelineLayout( g_vk.device, technique.pipelineLayout, nullptr );
 			vkDestroyDescriptorSetLayout( g_vk.device, technique.renderpass_descriptor_layout, nullptr );
@@ -343,15 +378,19 @@ namespace FG
 					vkFreeDescriptorSets( g_vk.device, technique.parentDescriptorPool, 1, &technique.renderPass_descriptor[j] );
 			technique = {};
 		}
-		_techniques_count = 0;
+		frameGraph->_techniques_count = 0;
+
+		delete frameGraph;
+		frameGraphExternal->imp = nullptr;
 	}
 
-	void RecordDrawCommands(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent)
+	void RecordDrawCommands(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, FrameGraph* frameGraphExternal)
 	{
-		for (uint32_t i = 0; i < _rpCreationData.size(); ++i)
+		FrameGraphInternal* frameGraph = frameGraphExternal->imp;
+		for (uint32_t i = 0; i < frameGraph->_render_passes_count; ++i)
 		{
 			//TODO: _render_passes[i] _techniques[i] doesn't mean is the right one
-			_rpCreationData[i].frame_graph_node.RecordDrawCommands(currentFrame, frameData, graphicsCommandBuffer, extent, &_render_passes[i], &_techniques[i]);
+			frameGraph->creationData.renderPasses[i].frame_graph_node.RecordDrawCommands(currentFrame, frameData, graphicsCommandBuffer, extent, &frameGraph->_render_passes[i], &frameGraph->_techniques[i]);
 		}
 	}
 }

@@ -44,16 +44,25 @@ namespace FG
 		bool swapChainSized = false;
 	};
 
-	void CreateGraph( const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<RenderTargetCreationData> *inRtCreationData, uint32_t backbufferId, VkDescriptorPool descriptorPool,
-		void( *createTechniqueCallback )(const RenderPass*, const RenderPassCreationData*, Technique*) );
-	const RenderPass* GetRenderPass(uint32_t id);
-	const GfxImage* GetRenderTarget(uint32_t render_target_id);
-	void Cleanup();
+
+	class FrameGraph
+	{
+	public:
+		class FrameGraphInternal* imp;
+		FrameGraph( class FrameGraphInternal* );
+		FrameGraph();
+		const RenderPass* GetRenderPass( uint32_t id );
+		const GfxImage* GetRenderTarget( uint32_t render_target_id );
+	};
+
+	FrameGraph CreateGraph( const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<RenderTargetCreationData> *inRtCreationData, uint32_t backbufferId, VkDescriptorPool descriptorPool,
+		void( *createTechniqueCallback )(const RenderPass*, const RenderPassCreationData*, Technique*, FrameGraph*) );
+	void Cleanup( FrameGraph* frameGraph );
 
 	void RenderColor(RenderPassCreationData& resource, VkFormat format, uint32_t render_target);
 	void RenderDepth(RenderPassCreationData& resource, VkFormat format, uint32_t render_target);
 	void ReadResource(RenderPassCreationData& resource, uint32_t render_target);
 	void ClearLast(RenderPassCreationData& resource);
 
-	void RecordDrawCommands(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent);
+	void RecordDrawCommands( uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, FrameGraph* frameGraphExternal );
 }

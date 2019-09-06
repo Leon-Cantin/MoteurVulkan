@@ -353,7 +353,7 @@ static void CreateDescriptorSet( const GpuInputData* inputData, const TechniqueD
 	UpdateDescriptorSets( 1, &writeDescriptorSet, o_descriptorSet );
 }
 
-static void SetOrCreateDataIfNeeded( std::array< GpuInputData, SIMULTANEOUS_FRAMES>* inputBuffers, const TechniqueDescriptorSetDesc* descriptorSetDesc )
+static void SetOrCreateDataIfNeeded( std::array< GpuInputData, SIMULTANEOUS_FRAMES>* inputBuffers, const TechniqueDescriptorSetDesc* descriptorSetDesc, FG::FrameGraph* frameGraph )
 {
 	for( uint32_t i = 0; i < descriptorSetDesc->dataCount; ++i )
 	{
@@ -377,7 +377,7 @@ static void SetOrCreateDataIfNeeded( std::array< GpuInputData, SIMULTANEOUS_FRAM
 		else
 		{
 			const ImageDataEntrySomething& imageDataEntrySomething = dataEntryToFGImage.at( static_cast< eTechniqueDataEntryImageName >(dataEntry->id) );
-			const GfxImage* image = FG::GetRenderTarget( imageDataEntrySomething.renderTarget );
+			const GfxImage* image = frameGraph->GetRenderTarget( imageDataEntrySomething.renderTarget );
 			VkDescriptorImageInfo* imageInfo = &_allImages[dataEntry->id];
 			if( imageInfo->imageView == VK_NULL_HANDLE )
 			{
@@ -390,7 +390,7 @@ static void SetOrCreateDataIfNeeded( std::array< GpuInputData, SIMULTANEOUS_FRAM
 	}
 }
 
-void CreateTechniqueCallback (const RenderPass* renderpass, const FG::RenderPassCreationData* passCreationData, Technique* technique)
+void CreateTechniqueCallback (const RenderPass* renderpass, const FG::RenderPassCreationData* passCreationData, Technique* technique, FG::FrameGraph* frameGraph )
 {
 	std::array< GpuInputData, SIMULTANEOUS_FRAMES>& inputBuffers = *_pInputBuffers;
 
@@ -399,9 +399,9 @@ void CreateTechniqueCallback (const RenderPass* renderpass, const FG::RenderPass
 
 	//Create buffers if required
 	if( passSet )
-		SetOrCreateDataIfNeeded( &inputBuffers, passSet );
+		SetOrCreateDataIfNeeded( &inputBuffers, passSet, frameGraph );
 	if( instanceSet )
-		SetOrCreateDataIfNeeded( &inputBuffers, instanceSet );
+		SetOrCreateDataIfNeeded( &inputBuffers, instanceSet, frameGraph );
 
 	//Create descriptors
 	if( passSet )
@@ -453,7 +453,7 @@ void CreateTechniqueCallback (const RenderPass* renderpass, const FG::RenderPass
 constexpr VkFormat RT_FORMAT_SHADOW_DEPTH = VK_FORMAT_D32_SFLOAT;
 constexpr VkExtent2D RT_EXTENT_SHADOW = { 1024, 1024 };
 
-void InitializeScript(const Swapchain* swapchain)
+FG::FrameGraph InitializeScript(const Swapchain* swapchain)
 {
 	HACKCleanUpFrameGraphScriptResources();
 
@@ -477,5 +477,5 @@ void InitializeScript(const Swapchain* swapchain)
 	_rpCreationData.push_back( FG_Skybox_CreateGraphNode( swapchain ) );
 	_rpCreationData.push_back( FG_TextOverlay_CreateGraphNode( swapchain ) );
 
-	FG::CreateGraph(swapchain, &_rpCreationData, &_rtCreationData, backBuffer, _descriptorPool, &CreateTechniqueCallback );
+	return FG::CreateGraph(swapchain, &_rpCreationData, &_rtCreationData, backBuffer, _descriptorPool, &CreateTechniqueCallback );
 }

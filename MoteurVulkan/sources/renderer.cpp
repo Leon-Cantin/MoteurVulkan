@@ -26,7 +26,9 @@ std::array<VkSemaphore, SIMULTANEOUS_FRAMES> imageAvailableSemaphores;
 std::array<VkSemaphore, SIMULTANEOUS_FRAMES> renderFinishedSemaphores;
 std::array<VkFence, SIMULTANEOUS_FRAMES> inFlightFences;
 
-void( *_fFGScriptInitialize )(const Swapchain*);
+FG::FrameGraph( *_fFGScriptInitialize )(const Swapchain*);
+
+FG::FrameGraph _frameGraph;
 
 static void CreateCommandBuffer()
 {
@@ -86,7 +88,7 @@ static void cleanup_swap_chain()
 	vkFreeCommandBuffers(g_vk.device, g_vk.transferCommandPool, static_cast<uint32_t>(g_transferCommandBuffers.size()), g_transferCommandBuffers.data());
 	vkFreeCommandBuffers(g_vk.device, g_vk.computeCommandPool, static_cast<uint32_t>(g_computeCommandBuffers.size()), g_computeCommandBuffers.data());
 
-	FG::Cleanup();
+	FG::Cleanup( &_frameGraph );
 
 	for (auto image : g_swapchain.images)
 		vkDestroyImageView(g_vk.device, image.imageView, nullptr);
@@ -114,6 +116,11 @@ void InitRenderer()
 	CreateTimeStampsQueryPool( SIMULTANEOUS_FRAMES );
 }
 
+static void CompileFrameGraph()
+{
+	_frameGraph = _fFGScriptInitialize( &g_swapchain );
+}
+
 void recreate_swap_chain()
 {
 	//TODO: find a better way of handling window minimization
@@ -134,16 +141,16 @@ void recreate_swap_chain()
 	WH::GetFramebufferSize(&width, &height);
 	createSwapChain(g_vk.windowSurface, width, height, g_swapchain);
 
-	_fFGScriptInitialize( &g_swapchain );
+	CompileFrameGraph();
 
 	CreateCommandBuffer();
 	CreateTransferCommandBuffer();
 }
 
-void CompileFrameGraph( void( *FGScriptInitialize )( const Swapchain* ) )
+void CompileFrameGraph( FG::FrameGraph( *FGScriptInitialize )( const Swapchain* ) )
 {
 	_fFGScriptInitialize = FGScriptInitialize;
-	_fFGScriptInitialize( &g_swapchain );
+	CompileFrameGraph();
 }
 
 bool verify_swap_chain(VkResult result)
@@ -163,7 +170,7 @@ void RecordCommandBuffer(uint32_t currentFrame, const SceneFrameData* frameData)
 
 	CmdWriteTimestamp(graphicsCommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, Timestamp::COMMAND_BUFFER_START, currentFrame);
 
-	FG::RecordDrawCommands(currentFrame, frameData, graphicsCommandBuffer, g_swapchain.extent);
+	FG::RecordDrawCommands(currentFrame, frameData, graphicsCommandBuffer, g_swapchain.extent, &_frameGraph );
 
 	CmdWriteTimestamp(graphicsCommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, Timestamp::COMMAND_BUFFER_END, currentFrame);
 
@@ -235,7 +242,7 @@ void CleanupRenderer() {
 
 	DestroySamplers();
 
-	FG::Cleanup();
+	FG::Cleanup( &_frameGraph );
 
 	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
 	{
