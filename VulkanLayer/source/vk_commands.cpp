@@ -76,21 +76,3 @@ void EndCommandBufferRecording(VkCommandBuffer commandBuffer)
 	if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
 		throw std::runtime_error("failed to record command buffer!");
 }
-
-void CmdDrawIndexed(VkCommandBuffer commandBuffer, const GfxModel& gfxModel)
-{
-	VkBuffer vertexBuffers[viBindingCount];
-	VkDeviceSize offsets[viBindingCount];
-	for( uint32_t i = 0; i < viBindingCount; ++i )
-	{
-		const GfxModelVertexInput& modelVI = gfxModel.vertAttribBuffers[( uint32_t )VIBindings[i].desc.dataType];
-		assert( VIBindings[i].desc == modelVI.desc );
-		assert( modelVI.vertAttribBuffers != VK_NULL_HANDLE );
-		vertexBuffers[i] = modelVI.vertAttribBuffers;
-		
-		offsets[i] = 0;
-	}
-	vkCmdBindVertexBuffers(commandBuffer, 0, viBindingCount, vertexBuffers, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, gfxModel.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-	vkCmdDrawIndexed(commandBuffer, gfxModel.indexCount, 1, 0, 0, 0);
-}

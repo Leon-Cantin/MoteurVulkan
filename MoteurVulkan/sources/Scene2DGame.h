@@ -6,7 +6,7 @@
 #include "input.h"
 #include "tick_system.h"
 #include "asset_library.h"
-#include "window_handler.h"
+#include "window_handler_vk.h"
 
 #include "shadow_renderpass.h"
 #include "text_overlay.h"
@@ -166,7 +166,9 @@ namespace Scene2DGame
 
 	void Init()
 	{
-		InitFramework( WIDTH, HEIGHT, "2D game" );
+		VK::Initialize();
+		WH::VK::InitializeWindow( WIDTH, HEIGHT, "2D game" );
+		VK::PickSuitablePhysicalDevice();
 
 		//Input callbacks
 		IH::InitInputs();
@@ -227,6 +229,7 @@ namespace Scene2DGame
 		Init();
 		mainLoop();
 		cleanup();
-		ShutdownFramework();
+		VK::Shutdown();
+		WH::VK::ShutdownWindow();
 	}
 }

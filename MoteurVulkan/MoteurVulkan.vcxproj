@@ -101,14 +101,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\ThirdParties\assimp\include;..\ThirdParties\tiny_obj_loader\;..\ThirdParties\stb;..\ThirdParties\glm-0.9.9-a2;..\ThirdParties\nlohmann_json\include;D:\Programme\VulkanSDK\1.1.92.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\ThirdParties\assimp\include;..\ThirdParties\tiny_obj_loader\;..\ThirdParties\stb;..\ThirdParties\glm-0.9.9-a2;..\ThirdParties\nlohmann_json\include;..\VulkanLayer\includes;D:\Programme\VulkanSDK\1.1.92.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>vulkan-1.lib;assimp-vc140-mt.lib;assimp-vc140-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>D:\Programme\VulkanSDK\1.1.92.1\Lib;..\ThirdParties\assimp\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;assimp-vc140-mt.lib;assimp-vc140-mt.lib;%(AdditionalDependencies);VulkanLayer_x64_Debug.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\VulkanLayer\bin;D:\Programme\VulkanSDK\1.1.92.1\Lib;..\ThirdParties\assimp\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -119,13 +119,13 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>..\ThirdParties\assimp\include;..\ThirdParties\tiny_obj_loader\;..\ThirdParties\stb;..\ThirdParties\glm-0.9.9-a2;..\ThirdParties\nlohmann_json\include;D:\Programme\VulkanSDK\1.1.92.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\ThirdParties\assimp\include;..\ThirdParties\tiny_obj_loader\;..\ThirdParties\stb;..\ThirdParties\glm-0.9.9-a2;..\ThirdParties\nlohmann_json\include;..\VulkanLayer\includes;D:\Programme\VulkanSDK\1.1.92.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>vulkan-1.lib;assimp-vc140-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>D:\Programme\VulkanSDK\1.1.92.1\Lib;..\ThirdParties\assimp\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;assimp-vc140-mt.lib;%(AdditionalDependencies);VulkanLayer_x64_Debug.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\VulkanLayer\bin;D:\Programme\VulkanSDK\1.1.92.1\Lib;..\ThirdParties\assimp\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -137,7 +137,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\ThirdParties\assimp\include;..\ThirdParties\tiny_obj_loader\;..\ThirdParties\stb;..\ThirdParties\glm-0.9.9-a2;..\ThirdParties\nlohmann_json\include;D:\Programme\VulkanSDK\1.1.92.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\ThirdParties\assimp\include;..\ThirdParties\tiny_obj_loader\;..\ThirdParties\stb;..\ThirdParties\glm-0.9.9-a2;..\ThirdParties\nlohmann_json\include;..\VulkanLayer\includes;D:\Programme\VulkanSDK\1.1.92.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -145,8 +145,8 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>vulkan-1.lib;assimp-vc140-mt.lib;assimp-vc140-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>D:\Programme\VulkanSDK\1.1.92.1\Lib;..\ThirdParties\assimp\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\VulkanLayer\bin;D:\Programme\VulkanSDK\1.1.92.1\Lib;..\ThirdParties\assimp\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;assimp-vc140-mt.lib;VulkanLayer_x64_Release.lib;;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -158,7 +158,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\ThirdParties\assimp\include;..\ThirdParties\tiny_obj_loader\;..\ThirdParties\stb;..\ThirdParties\glm-0.9.9-a2;..\ThirdParties\nlohmann_json\include;D:\Programme\VulkanSDK\1.1.92.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\ThirdParties\assimp\include;..\ThirdParties\tiny_obj_loader\;..\ThirdParties\stb;..\ThirdParties\glm-0.9.9-a2;..\ThirdParties\nlohmann_json\include;..\VulkanLayer\includes;D:\Programme\VulkanSDK\1.1.92.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -166,8 +166,8 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>vulkan-1.lib;assimp-vc140-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>D:\Programme\VulkanSDK\1.1.92.1\Lib;..\ThirdParties\assimp\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\VulkanLayer\bin;D:\Programme\VulkanSDK\1.1.92.1\Lib;..\ThirdParties\assimp\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;assimp-vc140-mt.lib;VulkanLayer_x64_Release.lib;;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -175,11 +175,10 @@
     <ClCompile Include="sources\bitfield.cpp" />
     <ClCompile Include="sources\camera_orbit.cpp" />
     <ClCompile Include="sources\console_command.cpp" />
-    <ClCompile Include="sources\descriptors.cpp" />
     <ClCompile Include="sources\file_system.cpp" />
-    <ClCompile Include="sources\framebuffer.cpp" />
     <ClCompile Include="sources\frame_graph.cpp" />
     <ClCompile Include="sources\geometry_renderpass.cpp" />
+    <ClCompile Include="sources\gfx_image.cpp" />
     <ClCompile Include="sources\glTF_loader.cpp" />
     <ClCompile Include="sources\input.cpp" />
     <ClCompile Include="sources\material.cpp" />
@@ -191,21 +190,11 @@
     <ClCompile Include="sources\text_compute_overlay.cpp" />
     <ClCompile Include="sources\text_overlay.cpp" />
     <ClCompile Include="sources\tick_system.cpp" />
-    <ClCompile Include="sources\vk_debug.cpp" />
-    <ClCompile Include="sources\vk_framework.cpp" />
-    <ClCompile Include="sources\gpu_synchronization.cpp" />
     <ClCompile Include="sources\main.cpp" />
     <ClCompile Include="sources\model_asset.cpp" />
     <ClCompile Include="sources\renderpass.cpp" />
     <ClCompile Include="sources\skybox.cpp" />
     <ClCompile Include="sources\swapchain.cpp" />
-    <ClCompile Include="sources\vk_buffer.cpp" />
-    <ClCompile Include="sources\vk_commands.cpp" />
-    <ClCompile Include="sources\vk_globals.cpp" />
-    <ClCompile Include="sources\vk_image.cpp" />
-    <ClCompile Include="sources\vk_loader.cpp" />
-    <ClCompile Include="sources\vk_memory.cpp" />
-    <ClCompile Include="sources\vk_shader.cpp" />
     <ClCompile Include="sources\window_handler.cpp" />
     <ClCompile Include="sources\window_handler_vk.cpp" />
   </ItemGroup>
@@ -213,7 +202,6 @@
     <None Include="shaders\triangle.frag" />
     <None Include="shaders\triangle.vert" />
     <None Include="sources\stb_font_consolas_24_latin1.inl" />
-    <None Include="sources\vk_functions_def.inl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sources\asset_library.h" />
@@ -221,11 +209,10 @@
     <ClInclude Include="sources\camera_orbit.h" />
     <ClInclude Include="sources\console_command.h" />
     <ClInclude Include="sources\defines_global.h" />
-    <ClInclude Include="sources\descriptors.h" />
     <ClInclude Include="sources\file_system.h" />
-    <ClInclude Include="sources\framebuffer.h" />
     <ClInclude Include="sources\frame_graph.h" />
     <ClInclude Include="sources\frame_graph_script.h" />
+    <ClInclude Include="sources\gfx_image.h" />
     <ClInclude Include="sources\glTF_loader.h" />
     <ClInclude Include="sources\input.h" />
     <ClInclude Include="sources\inputs_def.h" />
@@ -238,7 +225,6 @@
     <ClInclude Include="sources\scene_frame_data.h" />
     <ClInclude Include="sources\scene_instance.h" />
     <ClInclude Include="sources\geometry_renderpass.h" />
-    <ClInclude Include="sources\gpu_synchronization.h" />
     <ClInclude Include="sources\ktx_loader.h" />
     <ClInclude Include="sources\model_asset.h" />
     <ClInclude Include="sources\profile.h" />
@@ -249,16 +235,6 @@
     <ClInclude Include="sources\text_compute_overlay.h" />
     <ClInclude Include="sources\text_overlay.h" />
     <ClInclude Include="sources\tick_system.h" />
-    <ClInclude Include="sources\vk_buffer.h" />
-    <ClInclude Include="sources\vk_commands.h" />
-    <ClInclude Include="sources\vk_debug.h" />
-    <ClInclude Include="sources\vk_framework.h" />
-    <ClInclude Include="sources\vk_functions.h" />
-    <ClInclude Include="sources\vk_globals.h" />
-    <ClInclude Include="sources\vk_image.h" />
-    <ClInclude Include="sources\vk_loader.h" />
-    <ClInclude Include="sources\vk_memory.h" />
-    <ClInclude Include="sources\vk_shader.h" />
     <ClInclude Include="sources\window_handler.h" />
     <ClInclude Include="sources\window_handler_vk.h" />
   </ItemGroup>

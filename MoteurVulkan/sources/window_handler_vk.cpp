@@ -13,5 +13,23 @@ namespace WH
 			if (vkCreateWin32SurfaceKHR(vkInstance, &surface_create_info, nullptr, windowSurface) != VK_SUCCESS)
 				throw std::runtime_error("failed to create window surface!");
 		}
+
+		bool framebuffer_resized = false;
+		static void framebuffer_resize_callback( int width, int height )
+		{
+			framebuffer_resized = true;
+		}
+
+		void InitializeWindow( int windowWidth, int windowHeight, const char * windowName )
+		{
+			WH::init_window( windowWidth, windowHeight, windowName );
+			WH::add_framebuffer_resize_callback( framebuffer_resize_callback );
+			WH::VK::create_surface( g_vk.vk_instance, WH::g_window, WH::g_instance, &g_vk.windowSurface );
+		}
+
+		void ShutdownWindow()
+		{
+			WH::terminate();
+		}
 	}
 }

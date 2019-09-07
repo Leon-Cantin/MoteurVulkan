@@ -1,7 +1,6 @@
 #pragma once
 
 #include "vk_globals.h"
-#include "vk_image.h"
 
 #include <array>
 #include <cassert>
@@ -15,4 +14,4 @@ struct FrameBuffer
 	uint32_t depthCount;
 };
 
-void createFrameBuffer(GfxImage* colors, uint32_t colorCount, GfxImage* depth, VkExtent2D extent, VkRenderPass renderPass, FrameBuffer* o_frameBuffer);
+void createFrameBuffer( VkImageView* colors, uint32_t colorCount, VkImageView* opt_depth, VkExtent2D extent, VkRenderPass renderPass, FrameBuffer* o_frameBuffer );

@@ -4,6 +4,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 15.0.27703.2042
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MoteurVulkan", "MoteurVulkan\MoteurVulkan.vcxproj", "{AD681D9D-AFDA-4B8D-BDB4-FDBF7A280BAD}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E5E0851A-9109-46CF-A4F5-975967EF61C8} = {E5E0851A-9109-46CF-A4F5-975967EF61C8}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VulkanLayer", "VulkanLayer\VulkanLayer.vcxproj", "{E5E0851A-9109-46CF-A4F5-975967EF61C8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +26,14 @@ Global
 		{AD681D9D-AFDA-4B8D-BDB4-FDBF7A280BAD}.Release|x64.Build.0 = Release|x64
 		{AD681D9D-AFDA-4B8D-BDB4-FDBF7A280BAD}.Release|x86.ActiveCfg = Release|Win32
 		{AD681D9D-AFDA-4B8D-BDB4-FDBF7A280BAD}.Release|x86.Build.0 = Release|Win32
+		{E5E0851A-9109-46CF-A4F5-975967EF61C8}.Debug|x64.ActiveCfg = Debug|x64
+		{E5E0851A-9109-46CF-A4F5-975967EF61C8}.Debug|x64.Build.0 = Debug|x64
+		{E5E0851A-9109-46CF-A4F5-975967EF61C8}.Debug|x86.ActiveCfg = Debug|Win32
+		{E5E0851A-9109-46CF-A4F5-975967EF61C8}.Debug|x86.Build.0 = Debug|Win32
+		{E5E0851A-9109-46CF-A4F5-975967EF61C8}.Release|x64.ActiveCfg = Release|x64
+		{E5E0851A-9109-46CF-A4F5-975967EF61C8}.Release|x64.Build.0 = Release|x64
+		{E5E0851A-9109-46CF-A4F5-975967EF61C8}.Release|x86.ActiveCfg = Release|Win32
+		{E5E0851A-9109-46CF-A4F5-975967EF61C8}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

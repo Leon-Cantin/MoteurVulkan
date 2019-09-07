@@ -4,7 +4,6 @@
 #include "glm/mat4x4.hpp"
 #include "model_asset.h"
 #include "scene_instance.h"
-#include "vk_image.h"
 #include "renderpass.h"
 #include "swapchain.h"
 #include "scene_frame_data.h"

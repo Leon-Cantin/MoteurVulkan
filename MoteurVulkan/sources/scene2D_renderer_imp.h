@@ -2,7 +2,7 @@
 
 #include "vk_globals.h"
 #include "scene_instance.h"
-#include "vk_image.h"
+#include "gfx_image.h"
 
 struct LightUniform {
 	glm::mat4 shadowMatrix;

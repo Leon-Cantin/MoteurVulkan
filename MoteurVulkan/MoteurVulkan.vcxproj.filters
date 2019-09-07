@@ -25,9 +25,6 @@
     <Filter Include="sources\window_handler">
       <UniqueIdentifier>{d2e57807-d23a-4704-9e9d-0e30a8305f65}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sources\vulkan_layer">
-      <UniqueIdentifier>{9acd1455-ed17-4b43-bb77-40655941da8e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="sources\containers">
       <UniqueIdentifier>{578f5277-2293-48e1-a30c-813b6fb3ab32}</UniqueIdentifier>
     </Filter>
@@ -99,42 +96,6 @@
     <ClCompile Include="sources\window_handler_vk.cpp">
       <Filter>sources\window_handler</Filter>
     </ClCompile>
-    <ClCompile Include="sources\vk_buffer.cpp">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\vk_commands.cpp">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\vk_debug.cpp">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\descriptors.cpp">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\framebuffer.cpp">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\gpu_synchronization.cpp">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\vk_globals.cpp">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\vk_image.cpp">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\vk_loader.cpp">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\vk_memory.cpp">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\vk_shader.cpp">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\vk_framework.cpp">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClCompile>
     <ClCompile Include="sources\renderer.cpp">
       <Filter>sources\renderer</Filter>
     </ClCompile>
@@ -150,6 +111,9 @@
     <ClCompile Include="sources\material.cpp">
       <Filter>sources\renderer</Filter>
     </ClCompile>
+    <ClCompile Include="sources\gfx_image.cpp">
+      <Filter>sources\renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\triangle.frag">
@@ -160,9 +124,6 @@
     </None>
     <None Include="sources\stb_font_consolas_24_latin1.inl">
       <Filter>sources</Filter>
-    </None>
-    <None Include="sources\vk_functions_def.inl">
-      <Filter>sources\vulkan_layer</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -244,45 +205,6 @@
     <ClInclude Include="sources\window_handler_vk.h">
       <Filter>sources\window_handler</Filter>
     </ClInclude>
-    <ClInclude Include="sources\vk_buffer.h">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\vk_commands.h">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\vk_debug.h">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\gpu_synchronization.h">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\descriptors.h">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\framebuffer.h">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\vk_globals.h">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\vk_image.h">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\vk_loader.h">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\vk_functions.h">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\vk_memory.h">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\vk_shader.h">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\vk_framework.h">
-      <Filter>sources\vulkan_layer</Filter>
-    </ClInclude>
     <ClInclude Include="sources\renderer.h">
       <Filter>sources\renderer</Filter>
     </ClInclude>
@@ -300,6 +222,9 @@
     </ClInclude>
     <ClInclude Include="sources\memory.h">
       <Filter>sources\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\gfx_image.h">
+      <Filter>sources\renderer</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

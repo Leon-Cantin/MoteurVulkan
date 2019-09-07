@@ -87,20 +87,20 @@ static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cam
 
 	VkExtent2D swapChainExtent = g_swapchain.extent;
 
-	GpuInputData inputbuffers = _inputBuffers[currentFrame];
+	GpuInputData currentGpuInputData = _inputBuffers[currentFrame];
 
 	//Update GeometryUniformBuffer
 	for( auto& drawNode : drawList )
-		UpdateGeometryUniformBuffer( drawNode.first, drawNode.second->descriptorSet, GetBuffer( &inputbuffers, eTechniqueDataEntryName::INSTANCE_DATA ) );
+		UpdateGeometryUniformBuffer( drawNode.first, drawNode.second->descriptorSet, GetBuffer( &currentGpuInputData, eTechniqueDataEntryName::INSTANCE_DATA ) );
 
-	UpdateSceneUniformBuffer( world_view_matrix, swapChainExtent, GetBuffer( &inputbuffers, eTechniqueDataEntryName::SCENE_DATA ) );
+	UpdateSceneUniformBuffer( world_view_matrix, swapChainExtent, GetBuffer( &currentGpuInputData, eTechniqueDataEntryName::SCENE_DATA ) );
 
 	SceneMatricesUniform shadowSceneMatrices;
 	computeShadowMatrix( light->position, &shadowSceneMatrices.view, &shadowSceneMatrices.proj );
 
-	UpdateLightUniformBuffer( &shadowSceneMatrices, light, GetBuffer( &inputbuffers, eTechniqueDataEntryName::LIGHT_DATA ), GetBuffer( &inputbuffers, eTechniqueDataEntryName::SHADOW_DATA ) );
+	UpdateLightUniformBuffer( &shadowSceneMatrices, light, GetBuffer( &currentGpuInputData, eTechniqueDataEntryName::LIGHT_DATA ), GetBuffer( &currentGpuInputData, eTechniqueDataEntryName::SHADOW_DATA ) );
 
-	UpdateSkyboxUniformBuffers( GetBuffer( &inputbuffers, eTechniqueDataEntryName::SKYBOX_DATA ), world_view_matrix );
+	UpdateSkyboxUniformBuffers( GetBuffer( &currentGpuInputData, eTechniqueDataEntryName::SKYBOX_DATA ), world_view_matrix );
 
 	updateTextOverlayBuffer( currentFrame );
 }

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "vk_globals.h"
-#include "vk_image.h"
 #include "renderpass.h"
 #include "scene_frame_data.h"
 #include "material.h"

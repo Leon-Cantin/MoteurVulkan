@@ -1,5 +1,6 @@
 #pragma once
 #include "vk_globals.h"
+#include "gfx_image.h"
 #include "renderpass.h"
 #include "swapchain.h"
 #include "scene_frame_data.h"
@@ -55,14 +56,17 @@ namespace FG
 		const GfxImage* GetRenderTarget( uint32_t render_target_id );
 	};
 
+	//Compilation
 	FrameGraph CreateGraph( const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<RenderTargetCreationData> *inRtCreationData, uint32_t backbufferId, VkDescriptorPool descriptorPool,
 		void( *createTechniqueCallback )(const RenderPass*, const RenderPassCreationData*, Technique*, FrameGraph*) );
 	void Cleanup( FrameGraph* frameGraph );
 
+	//Graph creation
 	void RenderColor(RenderPassCreationData& resource, VkFormat format, uint32_t render_target);
 	void RenderDepth(RenderPassCreationData& resource, VkFormat format, uint32_t render_target);
 	void ReadResource(RenderPassCreationData& resource, uint32_t render_target);
 	void ClearLast(RenderPassCreationData& resource);
 
+	//Frame graph stuff
 	void RecordDrawCommands( uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, FrameGraph* frameGraphExternal );
 }

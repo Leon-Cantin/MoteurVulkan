@@ -1,14 +1,14 @@
 #include "framebuffer.h"
 
-void createFrameBuffer(GfxImage* colors, uint32_t colorCount, GfxImage* depth, VkExtent2D extent, VkRenderPass renderPass, FrameBuffer* o_frameBuffer)
+void createFrameBuffer( VkImageView* colors, uint32_t colorCount, VkImageView* opt_depth, VkExtent2D extent, VkRenderPass renderPass, FrameBuffer* o_frameBuffer)
 {
-	uint32_t attachementsCount = colorCount + (depth ? 1 : 0);
+	uint32_t attachementsCount = colorCount + (opt_depth ? 1 : 0);
 	assert(attachementsCount <= 5);
 	std::array<VkImageView, 5> attachments;
 	for (uint32_t i = 0; i < colorCount; ++i)
-		attachments[i] = colors[i].imageView;
-	if (depth)
-		attachments[colorCount] = depth->imageView;
+		attachments[i] = colors[i];
+	if ( opt_depth )
+		attachments[colorCount] = *opt_depth;
 
 	VkFramebufferCreateInfo framebuffer_info = {};
 	framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -22,7 +22,7 @@ void createFrameBuffer(GfxImage* colors, uint32_t colorCount, GfxImage* depth, V
 
 	o_frameBuffer->extent = extent;
 	o_frameBuffer->colorCount = colorCount;
-	o_frameBuffer->depthCount = depth ? 1 : 0;
+	o_frameBuffer->depthCount = opt_depth ? 1 : 0;
 	o_frameBuffer->layerCount = 1;
 
 	if (vkCreateFramebuffer(g_vk.device, &framebuffer_info, nullptr, &o_frameBuffer->frameBuffer))

@@ -7,7 +7,6 @@
 
 #include "model_asset.h"
 #include "vk_shader.h"
-#include "vk_image.h"
 #include "swapchain.h"
 #include "scene_frame_data.h"
 #include "material.h"

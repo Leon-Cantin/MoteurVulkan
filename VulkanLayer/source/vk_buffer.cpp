@@ -3,7 +3,8 @@
 #include "vk_memory.h"
 #include "vk_commands.h"
 
-#include<stdexcept>
+#include <cassert>
+#include <stdexcept>
 
 static void create_buffer( VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags, VkMemoryPropertyFlags memoryProperties, VkBuffer& o_buffer, VkDeviceMemory& o_deviceMemory )
 {

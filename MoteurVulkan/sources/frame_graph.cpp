@@ -1,7 +1,7 @@
 #include "frame_graph.h"
 
 #include "framebuffer.h"
-#include "vk_image.h"
+#include "gfx_image.h"
 #include "vk_debug.h"
 
 #include <vector>
@@ -222,10 +222,10 @@ namespace FG
 	{
 		int32_t outputBufferIndex = FindResourceIndex( passCreationData, outputTargetIndex );
 		VkExtent2D extent = frameGraph->_render_targets[passCreationData.e_render_targets[0]].extent;
-		GfxImage colorImages[MAX_ATTACHMENTS_COUNT];
+		VkImageView colorImages[MAX_ATTACHMENTS_COUNT];
 		for (uint32_t i = 0; i < colorCount; ++i)
-			colorImages[i] = frameGraph->_render_targets[passCreationData.e_render_targets[i]];
-		GfxImage* depthImage = containsDepth ? &frameGraph->_render_targets[passCreationData.e_render_targets[colorCount]] : nullptr;
+			colorImages[i] = frameGraph->_render_targets[passCreationData.e_render_targets[i]].imageView;
+		VkImageView* depthImage = containsDepth ? &frameGraph->_render_targets[passCreationData.e_render_targets[colorCount]].imageView : nullptr;
 
 		if (outputBufferIndex < 0)
 		{
@@ -235,7 +235,7 @@ namespace FG
 		{
 			for (uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
 			{
-				colorImages[outputBufferIndex] = frameGraph->_output_buffers[i];
+				colorImages[outputBufferIndex] = frameGraph->_output_buffers[i].imageView;
 				createFrameBuffer(colorImages, colorCount, depthImage, extent, renderpass->vk_renderpass, &renderpass->outputFrameBuffer[i]);
 			}
 		}

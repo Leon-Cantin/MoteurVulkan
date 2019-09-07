@@ -3,6 +3,7 @@
 
 #include "file_system.h"
 #include "descriptors.h"
+#include "renderer.h"
 #include "vk_commands.h"
 #include "vk_debug.h"
 

@@ -8,13 +8,11 @@
 #include "vk_framework.h"
 #include "console_command.h"
 #include "gpu_synchronization.h"
-#include "window_handler.h"
+#include "window_handler_vk.h"
 #include "frame_graph.h"
 
 #include <array>
 #include <iostream>
-
-extern bool framebuffer_resized;
 
 Swapchain g_swapchain;
 std::array<VkCommandBuffer, SIMULTANEOUS_FRAMES> g_graphicsCommandBuffers;
@@ -102,7 +100,7 @@ void InitRenderer()
 	WH::GetFramebufferSize( &width, &height );
 	createSwapChain( g_vk.windowSurface, width, height, g_swapchain );
 
-	QueueFamilyIndices queue_family_indices = find_queue_families( g_vk.physicalDevice );
+	VK::QueueFamilyIndices queue_family_indices = VK::find_queue_families( g_vk.physicalDevice );
 	CreateCommandPool( queue_family_indices.graphics_family.value(), &g_vk.graphicsCommandPool );
 	CreateCommandPool( queue_family_indices.transfer_family.value(), &g_vk.transferCommandPool );
 	CreateSingleUseCommandPool( queue_family_indices.graphics_family.value(), &g_vk.graphicsSingleUseCommandPool );
@@ -131,7 +129,7 @@ void recreate_swap_chain()
 		//glfwWaitEvents();
 	}
 
-	framebuffer_resized = false;
+	WH::VK::framebuffer_resized = false;
 
 	vkDeviceWaitIdle(g_vk.device);
 
@@ -158,7 +156,7 @@ bool verify_swap_chain(VkResult result)
 	//if (result != VK_SUCCESS)
 		//throw std::runtime_error("failed to acquire swap chain image");
 
-	return result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebuffer_resized ? false : true;
+	return result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || WH::VK::framebuffer_resized ? false : true;
 }
 
 void RecordCommandBuffer(uint32_t currentFrame, const SceneFrameData* frameData)
@@ -258,4 +256,22 @@ void CleanupRenderer() {
 	vkDestroyCommandPool(g_vk.device, g_vk.transferCommandPool, nullptr);
 
 	DestroyTimeStampsPool();
+}
+
+void CmdDrawIndexed( VkCommandBuffer commandBuffer, const GfxModel& gfxModel )
+{
+	VkBuffer vertexBuffers[viBindingCount];
+	VkDeviceSize offsets[viBindingCount];
+	for( uint32_t i = 0; i < viBindingCount; ++i )
+	{
+		const GfxModelVertexInput& modelVI = gfxModel.vertAttribBuffers[( uint32_t )VIBindings[i].desc.dataType];
+		assert( VIBindings[i].desc == modelVI.desc );
+		assert( modelVI.vertAttribBuffers != VK_NULL_HANDLE );
+		vertexBuffers[i] = modelVI.vertAttribBuffers;
+
+		offsets[i] = 0;
+	}
+	vkCmdBindVertexBuffers( commandBuffer, 0, viBindingCount, vertexBuffers, offsets );
+	vkCmdBindIndexBuffer( commandBuffer, gfxModel.indexBuffer, 0, VK_INDEX_TYPE_UINT32 );
+	vkCmdDrawIndexed( commandBuffer, gfxModel.indexCount, 1, 0, 0, 0 );
 }

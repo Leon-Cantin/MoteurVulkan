@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vk_image.h"
+#include "gfx_image.h"
 
 struct Swapchain {
 	std::vector<GfxImage> images;

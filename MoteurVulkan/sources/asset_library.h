@@ -1,5 +1,5 @@
 #pragma once
-#include "vk_image.h"
+#include "gfx_image.h"
 #include "model_asset.h"
 
 #include "glm/vec4.hpp"

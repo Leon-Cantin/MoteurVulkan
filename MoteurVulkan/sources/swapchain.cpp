@@ -45,7 +45,7 @@ VkExtent2D choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities, uint
 
 void createSwapChain(VkSurfaceKHR vkSurface, uint32_t maxWidth, uint32_t maxHeight, Swapchain& o_swapchain)
 {
-	SwapChainSupportDetails swapChainSupport = query_swap_chain_support(g_vk.physicalDevice, vkSurface);
+	VK::SwapChainSupportDetails swapChainSupport = VK::query_swap_chain_support(g_vk.physicalDevice, vkSurface);
 
 	VkSurfaceFormatKHR surfaceFormat = choose_swap_surface_format(swapChainSupport.formats);
 	VkPresentModeKHR presentMode = choose_swap_present_mode(swapChainSupport.present_modes);
@@ -66,7 +66,7 @@ void createSwapChain(VkSurfaceKHR vkSurface, uint32_t maxWidth, uint32_t maxHeig
 	create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
 
 	//Add queue info
-	QueueFamilyIndices indices = find_queue_families(g_vk.physicalDevice);
+	VK::QueueFamilyIndices indices = VK::find_queue_families(g_vk.physicalDevice);
 	uint32_t queueFamilyIndices[] = { indices.graphics_family.value(), indices.present_family.value() };
 
 	if (indices.graphics_family != indices.present_family) {

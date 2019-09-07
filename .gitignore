@@ -1,5 +1,7 @@
 /.vs/
 /MoteurVulkan/Intermediate
+/VulkanLayer/bin
+/VulkanLayer/Intermediate
 /output
 !/output/assets
 /*.txt
