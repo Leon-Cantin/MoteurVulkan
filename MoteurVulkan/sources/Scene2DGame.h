@@ -166,9 +166,10 @@ namespace Scene2DGame
 
 	void Init()
 	{
+		WH::InitializeWindow( WIDTH, HEIGHT, "2D game" );
 		VK::Initialize();
-		WH::VK::InitializeWindow( WIDTH, HEIGHT, "2D game" );
-		VK::PickSuitablePhysicalDevice();
+		WH::VK::InitializeWindow();
+		VK::PickSuitablePhysicalDevice( WH::VK::_windowSurface );
 
 		//Input callbacks
 		IH::InitInputs();
@@ -195,7 +196,7 @@ namespace Scene2DGame
 		RegisterTickFunction( &TickObjectCallback );
 
 		//Init renderer stuff
-		InitRendererImp();
+		InitRendererImp( WH::VK::_windowSurface );
 
 		//LoadAssets
 		GfxImage* skyboxTexture = AL::LoadCubeTexture( "SkyboxTexture", "assets/mountaincube.ktx" );
@@ -229,7 +230,8 @@ namespace Scene2DGame
 		Init();
 		mainLoop();
 		cleanup();
-		VK::Shutdown();
 		WH::VK::ShutdownWindow();
+		VK::Shutdown();
+		WH::ShutdownWindow();
 	}
 }

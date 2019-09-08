@@ -10,7 +10,7 @@
 
 #include <glm/mat4x4.hpp>
 
-void InitRenderer();
+void InitRenderer( VkSurfaceKHR swapchainSurface );
 void CompileFrameGraph( FG::FrameGraph( *FGScriptInitialize )(const Swapchain* swapchain) );
 void CleanupRenderer();
 void WaitForFrame(uint32_t currentFrame);

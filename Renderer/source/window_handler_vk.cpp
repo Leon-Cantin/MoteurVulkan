@@ -6,7 +6,9 @@ namespace WH
 {
 	namespace VK 
 	{
-		void create_surface(VkInstance vkInstance, HWND window, HINSTANCE instance, VkSurfaceKHR * windowSurface)
+		VkSurfaceKHR _windowSurface;
+
+		static void create_surface(VkInstance vkInstance, HWND window, HINSTANCE instance, VkSurfaceKHR * windowSurface)
 		{
 			VkWin32SurfaceCreateInfoKHR surface_create_info = { VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR, nullptr, 0, instance, window };
 
@@ -20,16 +22,14 @@ namespace WH
 			framebuffer_resized = true;
 		}
 
-		void InitializeWindow( int windowWidth, int windowHeight, const char * windowName )
+		void InitializeWindow()
 		{
-			WH::init_window( windowWidth, windowHeight, windowName );
-			WH::add_framebuffer_resize_callback( framebuffer_resize_callback );
-			WH::VK::create_surface( g_vk.vk_instance, WH::g_window, WH::g_instance, &g_vk.windowSurface );
+			create_surface( g_vk.vk_instance, WH::g_window, WH::g_instance, &_windowSurface );
 		}
 
 		void ShutdownWindow()
 		{
-			WH::terminate();
+			vkDestroySurfaceKHR( g_vk.vk_instance, _windowSurface, nullptr );
 		}
 	}
 }

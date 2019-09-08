@@ -18,7 +18,6 @@ struct Vk_Globals {
 	VkCommandPool graphicsCommandPool = VK_NULL_HANDLE;
 	VkCommandPool computeCommandPool = VK_NULL_HANDLE;
 	VkCommandPool transferCommandPool = VK_NULL_HANDLE;
-	VkSurfaceKHR windowSurface = VK_NULL_HANDLE;
 };
 
 extern Vk_Globals g_vk;

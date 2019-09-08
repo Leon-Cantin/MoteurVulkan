@@ -25,13 +25,10 @@ namespace VK
 	};
 
 	void Initialize();
-	void PickSuitablePhysicalDevice();
+	void PickSuitablePhysicalDevice( VkSurfaceKHR swapchainSurface );
 	void Shutdown();
 
-	void InitializeWindow( int windowWidth, int windowHeight, const char * windowName );
-	void ShutdownWindow();
-
 	//TODO try to get rid of this
-	QueueFamilyIndices find_queue_families( const VkPhysicalDevice device );
+	QueueFamilyIndices find_queue_families( const VkPhysicalDevice device, VkSurfaceKHR swapchainSurface );
 	SwapChainSupportDetails query_swap_chain_support( VkPhysicalDevice device, VkSurfaceKHR surface );
 }

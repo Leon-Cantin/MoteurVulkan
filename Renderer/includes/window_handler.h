@@ -8,6 +8,7 @@
 
 namespace WH
 {
+	extern bool framebuffer_resized;
 	extern HWND g_window;
 	extern HINSTANCE g_instance;
 
@@ -23,4 +24,7 @@ namespace WH
 	void GetFramebufferSize(uint64_t *width, uint64_t *height);
 	size_t GetTime();
 	void ProcessMessages();
+
+	void InitializeWindow( int windowWidth, int windowHeight, const char * windowName );
+	void ShutdownWindow();
 }

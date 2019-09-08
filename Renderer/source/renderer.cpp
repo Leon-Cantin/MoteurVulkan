@@ -27,6 +27,8 @@ FG::FrameGraph( *_fFGScriptInitialize )(const Swapchain*);
 
 FG::FrameGraph _frameGraph;
 
+VkSurfaceKHR _swapchainSurface;
+
 static void CreateCommandBuffer()
 {
 	VkCommandBufferAllocateInfo allocInfo = {};
@@ -93,13 +95,14 @@ static void cleanup_swap_chain()
 	vkDestroySwapchainKHR(g_vk.device, g_swapchain.vkSwapchain, nullptr);
 }
 
-void InitRenderer()
+void InitRenderer( VkSurfaceKHR swapchainSurface )
 {
 	uint64_t width, height;
 	WH::GetFramebufferSize( &width, &height );
-	createSwapChain( g_vk.windowSurface, width, height, g_swapchain );
+	_swapchainSurface = swapchainSurface;
+	createSwapChain( swapchainSurface, width, height, g_swapchain );
 
-	VK::QueueFamilyIndices queue_family_indices = VK::find_queue_families( g_vk.physicalDevice );
+	VK::QueueFamilyIndices queue_family_indices = VK::find_queue_families( g_vk.physicalDevice, swapchainSurface );
 	CreateCommandPool( queue_family_indices.graphics_family.value(), &g_vk.graphicsCommandPool );
 	CreateCommandPool( queue_family_indices.transfer_family.value(), &g_vk.transferCommandPool );
 	CreateSingleUseCommandPool( queue_family_indices.graphics_family.value(), &g_vk.graphicsSingleUseCommandPool );
@@ -118,7 +121,7 @@ static void CompileFrameGraph()
 	_frameGraph = _fFGScriptInitialize( &g_swapchain );
 }
 
-void recreate_swap_chain()
+void recreate_swap_chain( VkSurfaceKHR swapchainSurface )
 {
 	//TODO: find a better way of handling window minimization
 	uint64_t width = 0, height = 0;
@@ -128,7 +131,7 @@ void recreate_swap_chain()
 		//glfwWaitEvents();
 	}
 
-	WH::VK::framebuffer_resized = false;
+	WH::framebuffer_resized = false;
 
 	vkDeviceWaitIdle(g_vk.device);
 
@@ -136,7 +139,7 @@ void recreate_swap_chain()
 
 	//TODO: try to use the "oldSwapchain" parameter to optimize when recreating swap chains
 	WH::GetFramebufferSize(&width, &height);
-	createSwapChain(g_vk.windowSurface, width, height, g_swapchain);
+	createSwapChain( swapchainSurface, width, height, g_swapchain );
 
 	CompileFrameGraph();
 
@@ -155,7 +158,7 @@ bool verify_swap_chain(VkResult result)
 	//if (result != VK_SUCCESS)
 		//throw std::runtime_error("failed to acquire swap chain image");
 
-	return result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || WH::VK::framebuffer_resized ? false : true;
+	return result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || WH::framebuffer_resized ? false : true;
 }
 
 void RecordCommandBuffer(uint32_t currentFrame, const SceneFrameData* frameData)
@@ -187,7 +190,7 @@ void draw_frame(uint32_t currentFrame, const SceneFrameData* frameData)
 	VkResult result = vkAcquireNextImageKHR(g_vk.device, g_swapchain.vkSwapchain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 	if (!verify_swap_chain(result)) {
 		unsignalSemaphore(imageAvailableSemaphores[currentFrame]);
-		recreate_swap_chain();
+		recreate_swap_chain( _swapchainSurface );
 		return;
 	}
 
@@ -230,7 +233,7 @@ void draw_frame(uint32_t currentFrame, const SceneFrameData* frameData)
 	if (!verify_swap_chain(result))
 	{
 		std::cout << "recreating swap chain " << imageIndex << currentFrame << std::endl;
-		recreate_swap_chain();
+		recreate_swap_chain( _swapchainSurface );
 	}
 }
 

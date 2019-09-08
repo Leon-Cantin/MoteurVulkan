@@ -8,15 +8,15 @@ namespace WH
 	HWND g_window = nullptr;
 	HINSTANCE g_instance = nullptr;
 
-	FrameBufferResizeCallback_T framebuffer_resize_callback;
+	FrameBufferResizeCallback_T _framebuffer_resize_callback;
 	CharCallback_T charCallback;
 	bool shouldQuit = false;
 
 	LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
 		switch (message) {
 		case WM_SIZE:
-			if(framebuffer_resize_callback)
-				framebuffer_resize_callback(LOWORD(lParam), HIWORD(lParam));
+			if(_framebuffer_resize_callback)
+				_framebuffer_resize_callback(LOWORD(lParam), HIWORD(lParam));
 			break;
 		case WM_CHAR:
 			if (charCallback)
@@ -74,7 +74,7 @@ namespace WH
 	
 	void add_framebuffer_resize_callback(FrameBufferResizeCallback_T cbfun )
 	{
-		framebuffer_resize_callback = cbfun;
+		_framebuffer_resize_callback = cbfun;
 	}
 
 	void SetCharCallback(CharCallback_T callback)
@@ -106,5 +106,22 @@ namespace WH
 		std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
 		static std::chrono::system_clock::time_point start = now;
 		return std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
+	}
+
+	bool framebuffer_resized = false;
+	static void framebuffer_resize_callback( int width, int height )
+	{
+		framebuffer_resized = true;
+	}
+
+	void InitializeWindow( int windowWidth, int windowHeight, const char * windowName )
+	{
+		init_window( windowWidth, windowHeight, windowName );
+		add_framebuffer_resize_callback( framebuffer_resize_callback );
+	}
+
+	void ShutdownWindow()
+	{
+		terminate();
 	}
 }

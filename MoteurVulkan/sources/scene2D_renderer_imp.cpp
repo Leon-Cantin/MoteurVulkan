@@ -151,9 +151,9 @@ static void CreateBuffers( const GfxImage* albedoImage, const GfxImage* normalIm
 	}
 }
 
-void InitRendererImp()
+void InitRendererImp( VkSurfaceKHR swapchainSurface )
 {
-	InitRenderer();
+	InitRenderer( swapchainSurface );
 
 	const uint32_t geometryDescriptorSets = 2 * SIMULTANEOUS_FRAMES;
 	const uint32_t geometryBuffersCount = 2 * SIMULTANEOUS_FRAMES;

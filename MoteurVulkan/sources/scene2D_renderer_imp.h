@@ -17,5 +17,5 @@ void ForceReloadShaders();
 
 void ReloadSceneShaders();
 
-void InitRendererImp();
+void InitRendererImp( VkSurfaceKHR swapchainSurface );
 void CleanupRendererImp();

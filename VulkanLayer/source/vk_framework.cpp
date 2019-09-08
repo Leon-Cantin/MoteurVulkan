@@ -214,7 +214,7 @@ namespace VK
 		return requiredExtensions.empty();
 	}
 
-	static bool is_device_suitable( const VkPhysicalDevice device )
+	static bool is_device_suitable( const VkPhysicalDevice device, VkSurfaceKHR swapchain_surface )
 	{
 		VkPhysicalDeviceProperties deviceProperties;
 		vkGetPhysicalDeviceProperties( device, &deviceProperties );
@@ -223,21 +223,21 @@ namespace VK
 		vkGetPhysicalDeviceFeatures( device, &deviceFeatures );
 
 		bool suitable = deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
-		suitable |= find_queue_families( device ).is_complete();
+		suitable |= find_queue_families( device, swapchain_surface ).is_complete();
 		suitable |= check_device_extension_support( device );
 		suitable |= deviceFeatures.samplerAnisotropy == VK_TRUE;
 		suitable |= deviceFeatures.depthClamp == VK_TRUE;
 		suitable |= deviceFeatures.shaderSampledImageArrayDynamicIndexing == VK_TRUE;
 
 		if( suitable ) {
-			SwapChainSupportDetails swapchain_details = query_swap_chain_support( device, g_vk.windowSurface );
+			SwapChainSupportDetails swapchain_details = query_swap_chain_support( device, swapchain_surface );
 			suitable |= !swapchain_details.formats.empty() && !swapchain_details.present_modes.empty();
 		}
 
 		return suitable;
 	}
 
-	static void pick_physical_device()
+	static void pick_physical_device( VkSurfaceKHR swapchainSurface )
 	{
 		uint32_t device_count = 0;
 		vkEnumeratePhysicalDevices( g_vk.vk_instance, &device_count, nullptr );
@@ -249,7 +249,7 @@ namespace VK
 		vkEnumeratePhysicalDevices( g_vk.vk_instance, &device_count, devices.data() );
 
 		for( const auto& device : devices ) {
-			if( is_device_suitable( device ) ) {
+			if( is_device_suitable( device, swapchainSurface ) ) {
 				g_vk.physicalDevice = device;
 				break;
 			}
@@ -261,10 +261,10 @@ namespace VK
 
 	}
 
-	static void create_logical_device()
+	static void create_logical_device( VkSurfaceKHR swapchainSurface )
 	{
 		//Queues
-		QueueFamilyIndices indices = find_queue_families( g_vk.physicalDevice );
+		QueueFamilyIndices indices = find_queue_families( g_vk.physicalDevice, swapchainSurface );
 
 		std::set<uint32_t> unique_queue_families = { indices.graphics_family.value(), indices.present_family.value(), indices.compute_family.value(), indices.transfer_family.value() };
 		std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
@@ -345,7 +345,7 @@ namespace VK
 		return details;
 	}
 
-	QueueFamilyIndices find_queue_families( const VkPhysicalDevice device ) {
+	QueueFamilyIndices find_queue_families( const VkPhysicalDevice device, VkSurfaceKHR swapchainSurface ) {
 		QueueFamilyIndices indices;
 
 		uint32_t queueFamilyCount = 0;
@@ -375,7 +375,7 @@ namespace VK
 					indices.transfer_family = i;
 
 				VkBool32 present_support = false;
-				vkGetPhysicalDeviceSurfaceSupportKHR( device, i, g_vk.windowSurface, &present_support );
+				vkGetPhysicalDeviceSurfaceSupportKHR( device, i, swapchainSurface, &present_support );
 				if( present_support && !indices.present_family.has_value() )
 					indices.present_family = i;
 
@@ -394,10 +394,10 @@ namespace VK
 			SetupDebugCallback();
 	}
 
-	void PickSuitablePhysicalDevice()
+	void PickSuitablePhysicalDevice( VkSurfaceKHR swapchainSurface )
 	{
-		pick_physical_device();
-		create_logical_device();
+		pick_physical_device( swapchainSurface );
+		create_logical_device( swapchainSurface );
 	}
 
 	void Shutdown()
@@ -407,7 +407,6 @@ namespace VK
 		if( enableValidationLayers )
 			DestroyDebugCallback();
 
-		vkDestroySurfaceKHR( g_vk.vk_instance, g_vk.windowSurface, nullptr );
 		vkDestroyInstance( g_vk.vk_instance, nullptr );		
 	}
 }
