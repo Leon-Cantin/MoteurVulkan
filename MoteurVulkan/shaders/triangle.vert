@@ -1,7 +1,7 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-#include "shadersCommon.h"
+#include "shadersCommon/shadersCommon.h"
 
 layout(set = RENDERPASS_SET, binding = 0) uniform SceneMatrices {
     mat4 view;

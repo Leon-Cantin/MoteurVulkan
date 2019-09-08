@@ -2,6 +2,8 @@
 /MoteurVulkan/Intermediate
 /VulkanLayer/bin
 /VulkanLayer/Intermediate
+/Renderer/bin
+/Renderer/Intermediate
 /output
 !/output/assets
 /*.txt

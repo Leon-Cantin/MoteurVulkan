@@ -1,0 +1,102 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="source">
+      <UniqueIdentifier>{db53a738-62c5-4922-a7ef-f8ce2597886a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\renderer">
+      <UniqueIdentifier>{43d5498b-7846-471f-8c6a-04095e214e4b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\window_handler">
+      <UniqueIdentifier>{506acfe0-5dc3-497a-ab5a-28fe5da656cc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\glTF">
+      <UniqueIdentifier>{a1099fb2-fb1b-458a-afe3-499a790c0293}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\frame_graph">
+      <UniqueIdentifier>{d8f03f52-5185-415f-80cc-bf6af0383946}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="source\frame_graph.cpp">
+      <Filter>source\frame_graph</Filter>
+    </ClCompile>
+    <ClCompile Include="source\glTF_loader.cpp">
+      <Filter>source\glTF</Filter>
+    </ClCompile>
+    <ClCompile Include="source\window_handler_vk.cpp">
+      <Filter>source\window_handler</Filter>
+    </ClCompile>
+    <ClCompile Include="source\window_handler.cpp">
+      <Filter>source\window_handler</Filter>
+    </ClCompile>
+    <ClCompile Include="source\gfx_image.cpp">
+      <Filter>source\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="source\material.cpp">
+      <Filter>source\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="source\model_asset.cpp">
+      <Filter>source\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="source\profile.cpp">
+      <Filter>source\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="source\renderer.cpp">
+      <Filter>source\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="source\renderpass.cpp">
+      <Filter>source\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="source\swapchain.cpp">
+      <Filter>source\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="source\scene_instance.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="includes\frame_graph.h">
+      <Filter>source\frame_graph</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\gfx_image.h">
+      <Filter>source\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\material.h">
+      <Filter>source\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\model_asset.h">
+      <Filter>source\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\profile.h">
+      <Filter>source\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\renderer.h">
+      <Filter>source\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\renderpass.h">
+      <Filter>source\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\swapchain.h">
+      <Filter>source\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\glTF_loader.h">
+      <Filter>source\glTF</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\window_handler_vk.h">
+      <Filter>source\window_handler</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\window_handler.h">
+      <Filter>source\window_handler</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\scene_frame_data.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\ktx_loader.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\scene_instance.h">
+      <Filter>source</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

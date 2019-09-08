@@ -6,7 +6,6 @@
 #include "vk_commands.h"
 #include "profile.h"
 #include "vk_framework.h"
-#include "console_command.h"
 #include "gpu_synchronization.h"
 #include "window_handler_vk.h"
 #include "frame_graph.h"

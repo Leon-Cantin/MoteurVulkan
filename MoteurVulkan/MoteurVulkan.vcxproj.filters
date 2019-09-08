@@ -7,29 +7,17 @@
     <Filter Include="shaders">
       <UniqueIdentifier>{5be189bb-3fe3-48ba-a088-73674fc68012}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sources\frame_graph">
-      <UniqueIdentifier>{ceb28dfb-3079-4480-a577-aef4398bcc0a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="sources\asset_library">
       <UniqueIdentifier>{02a230d6-fdfe-48d5-901d-10a0d3fd1996}</UniqueIdentifier>
     </Filter>
     <Filter Include="sources\input_handler">
       <UniqueIdentifier>{89a2f53d-18fb-4ede-b728-c49e2e95ba9f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sources\renderer">
-      <UniqueIdentifier>{e92fe4c5-614b-474f-bba5-848ece7468e4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="sources\console_commands_handler">
       <UniqueIdentifier>{b346f247-a4d9-448d-8359-73ac3cb63b0e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sources\window_handler">
-      <UniqueIdentifier>{d2e57807-d23a-4704-9e9d-0e30a8305f65}</UniqueIdentifier>
-    </Filter>
     <Filter Include="sources\containers">
       <UniqueIdentifier>{578f5277-2293-48e1-a30c-813b6fb3ab32}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="sources\glTF">
-      <UniqueIdentifier>{259a04e2-61f9-4d56-a89c-fe7f1bef1b81}</UniqueIdentifier>
     </Filter>
     <Filter Include="sources\memory">
       <UniqueIdentifier>{5141f1e7-ea7c-470d-8d0c-8d5d18d6b788}</UniqueIdentifier>
@@ -54,32 +42,14 @@
     <ClCompile Include="sources\shadow_renderpass.cpp">
       <Filter>sources</Filter>
     </ClCompile>
-    <ClCompile Include="sources\scene_instance.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
     <ClCompile Include="sources\tick_system.cpp">
       <Filter>sources</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\frame_graph.cpp">
-      <Filter>sources\frame_graph</Filter>
     </ClCompile>
     <ClCompile Include="sources\asset_library.cpp">
       <Filter>sources\asset_library</Filter>
     </ClCompile>
     <ClCompile Include="sources\input.cpp">
       <Filter>sources\input_handler</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\swapchain.cpp">
-      <Filter>sources\renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\profile.cpp">
-      <Filter>sources\renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\renderpass.cpp">
-      <Filter>sources\renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\model_asset.cpp">
-      <Filter>sources\renderer</Filter>
     </ClCompile>
     <ClCompile Include="sources\console_command.cpp">
       <Filter>sources\console_commands_handler</Filter>
@@ -90,29 +60,11 @@
     <ClCompile Include="sources\text_overlay.cpp">
       <Filter>sources</Filter>
     </ClCompile>
-    <ClCompile Include="sources\window_handler.cpp">
-      <Filter>sources\window_handler</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\window_handler_vk.cpp">
-      <Filter>sources\window_handler</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\renderer.cpp">
-      <Filter>sources\renderer</Filter>
-    </ClCompile>
     <ClCompile Include="sources\scene2D_renderer_imp.cpp">
       <Filter>sources</Filter>
     </ClCompile>
     <ClCompile Include="sources\bitfield.cpp">
       <Filter>sources\containers</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\glTF_loader.cpp">
-      <Filter>sources\glTF</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\material.cpp">
-      <Filter>sources\renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\gfx_image.cpp">
-      <Filter>sources\renderer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -130,9 +82,6 @@
     <ClInclude Include="sources\skybox.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="sources\ktx_loader.h">
-      <Filter>sources</Filter>
-    </ClInclude>
     <ClInclude Include="sources\camera_orbit.h">
       <Filter>sources</Filter>
     </ClInclude>
@@ -140,9 +89,6 @@
       <Filter>sources</Filter>
     </ClInclude>
     <ClInclude Include="sources\geometry_renderpass.h">
-      <Filter>sources</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\scene_instance.h">
       <Filter>sources</Filter>
     </ClInclude>
     <ClInclude Include="sources\shadow_renderpass.h">
@@ -154,34 +100,16 @@
     <ClInclude Include="sources\defines_global.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="sources\frame_graph.h">
-      <Filter>sources\frame_graph</Filter>
-    </ClInclude>
     <ClInclude Include="sources\asset_library.h">
       <Filter>sources\asset_library</Filter>
     </ClInclude>
     <ClInclude Include="sources\input.h">
       <Filter>sources\input_handler</Filter>
     </ClInclude>
-    <ClInclude Include="sources\swapchain.h">
-      <Filter>sources\renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\profile.h">
-      <Filter>sources\renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\renderpass.h">
-      <Filter>sources\renderer</Filter>
-    </ClInclude>
     <ClInclude Include="sources\console_command.h">
       <Filter>sources\console_commands_handler</Filter>
     </ClInclude>
-    <ClInclude Include="sources\model_asset.h">
-      <Filter>sources\renderer</Filter>
-    </ClInclude>
     <ClInclude Include="sources\frame_graph_script.h">
-      <Filter>sources</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\scene_frame_data.h">
       <Filter>sources</Filter>
     </ClInclude>
     <ClInclude Include="sources\Scene2DGame.h">
@@ -199,32 +127,14 @@
     <ClInclude Include="sources\inputs_def.h">
       <Filter>sources\input_handler</Filter>
     </ClInclude>
-    <ClInclude Include="sources\window_handler.h">
-      <Filter>sources\window_handler</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\window_handler_vk.h">
-      <Filter>sources\window_handler</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\renderer.h">
-      <Filter>sources\renderer</Filter>
-    </ClInclude>
     <ClInclude Include="sources\scene2D_renderer_imp.h">
       <Filter>sources</Filter>
     </ClInclude>
     <ClInclude Include="sources\bitfield.h">
       <Filter>sources\containers</Filter>
     </ClInclude>
-    <ClInclude Include="sources\glTF_loader.h">
-      <Filter>sources\glTF</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\material.h">
-      <Filter>sources\renderer</Filter>
-    </ClInclude>
     <ClInclude Include="sources\memory.h">
       <Filter>sources\memory</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\gfx_image.h">
-      <Filter>sources\renderer</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
