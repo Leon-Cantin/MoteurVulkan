@@ -7,9 +7,6 @@
     <Filter Include="source\renderer">
       <UniqueIdentifier>{43d5498b-7846-471f-8c6a-04095e214e4b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="source\window_handler">
-      <UniqueIdentifier>{506acfe0-5dc3-497a-ab5a-28fe5da656cc}</UniqueIdentifier>
-    </Filter>
     <Filter Include="source\glTF">
       <UniqueIdentifier>{a1099fb2-fb1b-458a-afe3-499a790c0293}</UniqueIdentifier>
     </Filter>
@@ -23,12 +20,6 @@
     </ClCompile>
     <ClCompile Include="source\glTF_loader.cpp">
       <Filter>source\glTF</Filter>
-    </ClCompile>
-    <ClCompile Include="source\window_handler_vk.cpp">
-      <Filter>source\window_handler</Filter>
-    </ClCompile>
-    <ClCompile Include="source\window_handler.cpp">
-      <Filter>source\window_handler</Filter>
     </ClCompile>
     <ClCompile Include="source\gfx_image.cpp">
       <Filter>source\renderer</Filter>
@@ -82,12 +73,6 @@
     </ClInclude>
     <ClInclude Include="includes\glTF_loader.h">
       <Filter>source\glTF</Filter>
-    </ClInclude>
-    <ClInclude Include="includes\window_handler_vk.h">
-      <Filter>source\window_handler</Filter>
-    </ClInclude>
-    <ClInclude Include="includes\window_handler.h">
-      <Filter>source\window_handler</Filter>
     </ClInclude>
     <ClInclude Include="includes\scene_frame_data.h">
       <Filter>source</Filter>

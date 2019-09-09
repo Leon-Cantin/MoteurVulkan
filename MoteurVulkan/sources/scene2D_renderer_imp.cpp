@@ -1,11 +1,11 @@
 #include "scene2D_renderer_imp.h"
 
-#include "vk_buffer.h"
 #include "frame_graph_script.h"
 #include "renderer.h"
 #include "descriptors.h"
 #include "profile.h"
 #include "console_command.h"
+#include "window_handler.h"
 
 #include <glm/glm.hpp>
 #include <glm/vec4.hpp>
@@ -151,9 +151,16 @@ static void CreateBuffers( const GfxImage* albedoImage, const GfxImage* normalIm
 	}
 }
 
+static bool NeedResize()
+{
+	bool value = WH::framebuffer_resized;
+	WH::framebuffer_resized = false;
+	return value;
+}
+
 void InitRendererImp( VkSurfaceKHR swapchainSurface )
 {
-	InitRenderer( swapchainSurface );
+	InitRenderer( swapchainSurface, NeedResize, WH::GetFramebufferSize );
 
 	const uint32_t geometryDescriptorSets = 2 * SIMULTANEOUS_FRAMES;
 	const uint32_t geometryBuffersCount = 2 * SIMULTANEOUS_FRAMES;

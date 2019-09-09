@@ -16,12 +16,6 @@ namespace WH
 				throw std::runtime_error("failed to create window surface!");
 		}
 
-		bool framebuffer_resized = false;
-		static void framebuffer_resize_callback( int width, int height )
-		{
-			framebuffer_resized = true;
-		}
-
 		void InitializeWindow()
 		{
 			create_surface( g_vk.vk_instance, WH::g_window, WH::g_instance, &_windowSurface );

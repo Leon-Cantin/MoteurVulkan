@@ -7,7 +7,6 @@
 #include "profile.h"
 #include "vk_framework.h"
 #include "gpu_synchronization.h"
-#include "window_handler_vk.h"
 #include "frame_graph.h"
 
 #include <array>
@@ -26,6 +25,9 @@ std::array<VkFence, SIMULTANEOUS_FRAMES> inFlightFences;
 FG::FrameGraph( *_fFGScriptInitialize )(const Swapchain*);
 
 FG::FrameGraph _frameGraph;
+
+bool( *_needResize )();
+void( *_getFrameBufferSize )(uint64_t* width, uint64_t* height);
 
 VkSurfaceKHR _swapchainSurface;
 
@@ -95,10 +97,14 @@ static void cleanup_swap_chain()
 	vkDestroySwapchainKHR(g_vk.device, g_swapchain.vkSwapchain, nullptr);
 }
 
-void InitRenderer( VkSurfaceKHR swapchainSurface )
+void InitRenderer( VkSurfaceKHR swapchainSurface, bool( *needResize )(), void( *getFrameBufferSize )(uint64_t* width, uint64_t* height) )
 {
+	//TODO: do better than this shit
+	_getFrameBufferSize = getFrameBufferSize;
+	_needResize = needResize;
+
 	uint64_t width, height;
-	WH::GetFramebufferSize( &width, &height );
+	_getFrameBufferSize( &width, &height );
 	_swapchainSurface = swapchainSurface;
 	createSwapChain( swapchainSurface, width, height, g_swapchain );
 
@@ -126,19 +132,17 @@ void recreate_swap_chain( VkSurfaceKHR swapchainSurface )
 	//TODO: find a better way of handling window minimization
 	uint64_t width = 0, height = 0;
 	while (width == 0 || height == 0) {
-		WH::GetFramebufferSize( &width, &height );
+		_getFrameBufferSize( &width, &height );
 		//TODO
 		//glfwWaitEvents();
 	}
-
-	WH::framebuffer_resized = false;
 
 	vkDeviceWaitIdle(g_vk.device);
 
 	cleanup_swap_chain();
 
 	//TODO: try to use the "oldSwapchain" parameter to optimize when recreating swap chains
-	WH::GetFramebufferSize(&width, &height);
+	_getFrameBufferSize(&width, &height);
 	createSwapChain( swapchainSurface, width, height, g_swapchain );
 
 	CompileFrameGraph();
@@ -158,7 +162,7 @@ bool verify_swap_chain(VkResult result)
 	//if (result != VK_SUCCESS)
 		//throw std::runtime_error("failed to acquire swap chain image");
 
-	return result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || WH::framebuffer_resized ? false : true;
+	return result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _needResize() ? false : true;
 }
 
 void RecordCommandBuffer(uint32_t currentFrame, const SceneFrameData* frameData)
@@ -188,6 +192,7 @@ void draw_frame(uint32_t currentFrame, const SceneFrameData* frameData)
 
 	uint32_t imageIndex;
 	VkResult result = vkAcquireNextImageKHR(g_vk.device, g_swapchain.vkSwapchain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+	//TODO: Do I really need 2 check for recreate swap chain in this function?
 	if (!verify_swap_chain(result)) {
 		unsignalSemaphore(imageAvailableSemaphores[currentFrame]);
 		recreate_swap_chain( _swapchainSurface );

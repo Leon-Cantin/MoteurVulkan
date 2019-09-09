@@ -101,14 +101,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\ThirdParties\glm-0.9.9-a2;..\ThirdParties\nlohmann_json\include;..\Renderer\includes;..\VulkanLayer\includes;D:\Programme\VulkanSDK\1.1.92.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\ThirdParties\glm-0.9.9-a2;..\ThirdParties\nlohmann_json\include;..\Renderer\includes;..\WindowHandler\include;..\VulkanLayer\includes;D:\Programme\VulkanSDK\1.1.92.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <AdditionalDependencies>assimp-vc140-mt.lib;%(AdditionalDependencies);VulkanLayer_x64_Debug.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\Renderer\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\Renderer\bin;..\WindowHandler\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -119,13 +119,13 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>..\ThirdParties\glm-0.9.9-a2;..\ThirdParties\nlohmann_json\include;..\Renderer\includes;..\VulkanLayer\includes;D:\Programme\VulkanSDK\1.1.92.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\ThirdParties\glm-0.9.9-a2;..\ThirdParties\nlohmann_json\include;..\Renderer\includes;..\WindowHandler\include;..\VulkanLayer\includes;D:\Programme\VulkanSDK\1.1.92.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>%(AdditionalDependencies);Renderer_x64_Debug.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\Renderer\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>%(AdditionalDependencies);Renderer_x64_Debug.lib;WindowHandler_x64_Debug.lib;</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\Renderer\bin;..\WindowHandler\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -137,7 +137,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\ThirdParties\glm-0.9.9-a2;..\ThirdParties\nlohmann_json\include;..\Renderer\includes;..\VulkanLayer\includes;D:\Programme\VulkanSDK\1.1.92.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\ThirdParties\glm-0.9.9-a2;..\ThirdParties\nlohmann_json\include;..\Renderer\includes;..\WindowHandler\include;..\VulkanLayer\includes;D:\Programme\VulkanSDK\1.1.92.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -145,7 +145,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalLibraryDirectories>..\Renderer\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\Renderer\bin;..\WindowHandler\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>VulkanLayer_x64_Release.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -158,7 +158,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\ThirdParties\glm-0.9.9-a2;..\ThirdParties\nlohmann_json\include;..\Renderer\includes;..\VulkanLayer\includes;D:\Programme\VulkanSDK\1.1.92.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\ThirdParties\glm-0.9.9-a2;..\ThirdParties\nlohmann_json\include;..\Renderer\includes;..\WindowHandler\include;..\VulkanLayer\includes;D:\Programme\VulkanSDK\1.1.92.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -166,8 +166,8 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalLibraryDirectories>..\Renderer\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Renderer_x64_Release.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\Renderer\bin;..\WindowHandler\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Renderer_x64_Release.lib;WindowHandler_x64_Release.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -177,7 +177,6 @@
     <ClCompile Include="sources\console_command.cpp" />
     <ClCompile Include="sources\file_system.cpp" />
     <ClCompile Include="sources\geometry_renderpass.cpp" />
-    <ClCompile Include="sources\input.cpp" />
     <ClCompile Include="sources\scene2D_renderer_imp.cpp" />
     <ClCompile Include="sources\shadow_renderpass.cpp" />
     <ClCompile Include="sources\text_compute_overlay.cpp" />
@@ -185,6 +184,7 @@
     <ClCompile Include="sources\tick_system.cpp" />
     <ClCompile Include="sources\main.cpp" />
     <ClCompile Include="sources\skybox.cpp" />
+    <ClCompile Include="sources\window_handler_vk.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\triangle.frag" />
@@ -199,8 +199,6 @@
     <ClInclude Include="sources\defines_global.h" />
     <ClInclude Include="sources\file_system.h" />
     <ClInclude Include="sources\frame_graph_script.h" />
-    <ClInclude Include="sources\input.h" />
-    <ClInclude Include="sources\inputs_def.h" />
     <ClInclude Include="sources\memory.h" />
     <ClInclude Include="sources\Scene2DGame.h" />
     <ClInclude Include="sources\scene2D_renderer_imp.h" />
@@ -211,6 +209,7 @@
     <ClInclude Include="sources\text_compute_overlay.h" />
     <ClInclude Include="sources\text_overlay.h" />
     <ClInclude Include="sources\tick_system.h" />
+    <ClInclude Include="sources\window_handler_vk.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -4,6 +4,8 @@
 /VulkanLayer/Intermediate
 /Renderer/bin
 /Renderer/Intermediate
+/WindowHandler/bin
+/WindowHandler/Intermediate
 /output
 !/output/assets
 /*.txt
