@@ -33,33 +33,57 @@ enum class eTechniqueDataEntryImageName
 {
 	ALBEDOS = static_cast<uint32_t>(eTechniqueDataEntryName::COUNT),
 	NORMALS,
-	SHADOWS,
 	TEXT,
 	SKYBOX,
+
+	SCENE_COLOR,
+	SCENE_DEPTH,
+	SHADOW_MAP,
+
 	COUNT
 };
 
+// TODO: find a way to handle double buffering, I could increase the number of buffers created but then it will write it as an array of buffers?
+// TODO: frame graph doesn't need to know about external resources... But I need them to build the descriptor sets layout. And I want one definition for all data.
+// Render pass and techniques are as one here, use that idea to define them.
+// Have a list of descriptor sets instead of instance and pass to keep things generic. Check the binding point to know to which (instance or pass) it belongs.
 const uint32_t maxModelsCount = 5;
-static const TechniqueDataEntry techniqueDataEntries[static_cast< size_t >(eTechniqueDataEntryImageName::COUNT)] =
+constexpr VkFormat RT_FORMAT_SHADOW_DEPTH = VK_FORMAT_D32_SFLOAT;
+constexpr VkExtent2D RT_EXTENT_SHADOW = { 1024, 1024 };
+constexpr VkExtent2D SWAPCHAIN_SIZED = { 0, 0 };
+#define EXTERNAL_IMAGE {(VkFormat)0,{0,0},( VkImageUsageFlagBits )0, (VkImageAspectFlagBits)0,(VkImageLayout)0,false}
+#define CREATE_IMAGE_COLOR( id, format, extent, usage, swapchainSized ) { (uint32_t)id, eDescriptorType::IMAGE, 1,  eTechniqueDataEntryFlags::NONE, { format , extent, ( VkImageUsageFlagBits )( VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | usage ), VK_IMAGE_ASPECT_COLOR_BIT,  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, swapchainSized }, Samplers::Count }
+#define CREATE_IMAGE_DEPTH( id, format, extent, usage, swapchainSized ) { (uint32_t)id, eDescriptorType::IMAGE, 1,  eTechniqueDataEntryFlags::NONE, { format , extent, ( VkImageUsageFlagBits )( VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | usage ), VK_IMAGE_ASPECT_DEPTH_BIT,  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, swapchainSized },  Samplers::Count }
+#define CREATE_IMAGE_DEPTH_SAMPLER( id, format, extent, usage, swapchainSized, sampler ) { static_cast< uint32_t >( id ), eDescriptorType::IMAGE_SAMPLER, 1,  eTechniqueDataEntryFlags::NONE, { format , extent, ( VkImageUsageFlagBits )( VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | usage ), VK_IMAGE_ASPECT_DEPTH_BIT,  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, swapchainSized }, sampler }
+#define CREATE_IMAGE_SAMPLER_EXTERNAL( id, count ){ static_cast< uint32_t >(id), eDescriptorType::IMAGE_SAMPLER, count, eTechniqueDataEntryFlags::EXTERNAL,	EXTERNAL_IMAGE }
+
+#define CREATE_BUFFER_IMAGE_INTERNAL( objectSize, objectCount ) { (VkFormat)0, {objectSize, objectCount}, ( VkImageUsageFlagBits )0, (VkImageAspectFlagBits)0, (VkImageLayout)0, false }
+#define CREATE_BUFFER( id, size ) { (uint32_t)id, eDescriptorType::BUFFER, 1,  eTechniqueDataEntryFlags::NONE, CREATE_BUFFER_IMAGE_INTERNAL( size, 0 ), Samplers::Count }
+#define CREATE_BUFFER_DYNAMIC( id, objectSize, objectCount ) { (uint32_t)id, eDescriptorType::BUFFER_DYNAMIC, 1,  eTechniqueDataEntryFlags::NONE, CREATE_BUFFER_IMAGE_INTERNAL( objectSize, objectCount ), Samplers::Count }
+
+static FG::TechniqueDataEntry techniqueDataEntries[static_cast< size_t >(eTechniqueDataEntryImageName::COUNT)] =
 {
 	//Buffers
-	{ static_cast< uint32_t >(eTechniqueDataEntryName::INSTANCE_DATA),	eDescriptorType::BUFFER_DYNAMIC, 1, eTechniqueDataEntryFlags::NONE,		sizeof( InstanceMatrices ) * maxModelsCount},
-	{ static_cast< uint32_t >(eTechniqueDataEntryName::SHADOW_DATA),	eDescriptorType::BUFFER,		1, eTechniqueDataEntryFlags::NONE,		sizeof( SceneMatricesUniform )},
-	{ static_cast< uint32_t >(eTechniqueDataEntryName::SCENE_DATA),		eDescriptorType::BUFFER,		1, eTechniqueDataEntryFlags::NONE,		sizeof( SceneMatricesUniform )},
-	{ static_cast< uint32_t >(eTechniqueDataEntryName::LIGHT_DATA),		eDescriptorType::BUFFER,		1, eTechniqueDataEntryFlags::NONE,		sizeof( LightUniform )},
-	{ static_cast< uint32_t >(eTechniqueDataEntryName::SKYBOX_DATA),	eDescriptorType::BUFFER,		1, eTechniqueDataEntryFlags::NONE,		sizeof( SkyboxUniformBufferObject )},
+	CREATE_BUFFER_DYNAMIC( eTechniqueDataEntryName::INSTANCE_DATA, sizeof( InstanceMatrices ),  maxModelsCount ),
+	CREATE_BUFFER( eTechniqueDataEntryName::SHADOW_DATA, sizeof( SceneMatricesUniform ) ),
+	CREATE_BUFFER( eTechniqueDataEntryName::SCENE_DATA, sizeof( SceneMatricesUniform ) ),
+	CREATE_BUFFER( eTechniqueDataEntryName::LIGHT_DATA, sizeof( LightUniform ) ),
+	CREATE_BUFFER( eTechniqueDataEntryName::SKYBOX_DATA, sizeof( SkyboxUniformBufferObject ) ),
 
 	//images
-	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::ALBEDOS),	eDescriptorType::IMAGE_SAMPLER, 5, eTechniqueDataEntryFlags::EXTERNAL,	0 },
-	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::NORMALS),	eDescriptorType::IMAGE_SAMPLER, 1, eTechniqueDataEntryFlags::EXTERNAL,	0 },
-	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::SHADOWS),	eDescriptorType::IMAGE_SAMPLER, 1, eTechniqueDataEntryFlags::NONE,		0 },
-	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::TEXT),		eDescriptorType::IMAGE_SAMPLER, 1, eTechniqueDataEntryFlags::EXTERNAL,	0 },
-	{ static_cast< uint32_t >(eTechniqueDataEntryImageName::SKYBOX),	eDescriptorType::IMAGE_SAMPLER, 1, eTechniqueDataEntryFlags::EXTERNAL,	0 },
+	CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::ALBEDOS, 5 ),
+	CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::NORMALS, 1 ),
+	CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::TEXT, 1 ),
+	CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::SKYBOX, 1 ),
+
+	CREATE_IMAGE_COLOR( eTechniqueDataEntryImageName::SCENE_COLOR, VkFormat( 0 ), SWAPCHAIN_SIZED, 0, true ),
+	CREATE_IMAGE_DEPTH( eTechniqueDataEntryImageName::SCENE_DEPTH, VK_FORMAT_D32_SFLOAT, SWAPCHAIN_SIZED, 0, true ),
+	CREATE_IMAGE_DEPTH_SAMPLER( eTechniqueDataEntryImageName::SHADOW_MAP, RT_FORMAT_SHADOW_DEPTH, RT_EXTENT_SHADOW, VK_IMAGE_USAGE_SAMPLED_BIT, false, Samplers::Shadow ),
 };
 
-const TechniqueDataEntry* GetDataEntry( uint32_t entryId )
+const FG::TechniqueDataEntry* GetDataEntry( uint32_t entryId )
 {
-	const TechniqueDataEntry* dataEntry = &techniqueDataEntries[entryId];
+	const FG::TechniqueDataEntry* dataEntry = &techniqueDataEntries[entryId];
 	assert( dataEntry->id == entryId );
 	return dataEntry;
 }
@@ -98,21 +122,6 @@ void HACKCleanUpFrameGraphScriptResources()
 	_allImages = {};
 }
 
-enum eRenderTarget : uint32_t
-{
-	RT_SCENE_COLOR = 0,
-	RT_SCENE_DEPTH,
-	RT_SHADOW_MAP,
-	RT_COUNT
-};
-
-struct ImageDataEntrySomething
-{
-	eRenderTarget renderTarget;
-	Samplers sampler;
-};
-std::unordered_map< eTechniqueDataEntryImageName, ImageDataEntrySomething > dataEntryToFGImage = { {eTechniqueDataEntryImageName::SHADOWS, { RT_SHADOW_MAP, Samplers::Shadow } } };
-
 TechniqueDescriptorSetDesc geoPassSetDesc =
 {
 	{
@@ -121,17 +130,15 @@ TechniqueDescriptorSetDesc geoPassSetDesc =
 
 		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::ALBEDOS), 2, eDescriptorAccess::READ, VK_SHADER_STAGE_FRAGMENT_BIT },
 		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::NORMALS), 3, eDescriptorAccess::READ, VK_SHADER_STAGE_FRAGMENT_BIT },
-		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::SHADOWS), 4, eDescriptorAccess::READ, VK_SHADER_STAGE_FRAGMENT_BIT },
-	},
-	5
+		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::SHADOW_MAP), 4, eDescriptorAccess::READ, VK_SHADER_STAGE_FRAGMENT_BIT },
+	}
 };
 
 TechniqueDescriptorSetDesc geoInstanceSetDesc =
 {
 	{
 		{ static_cast< uint32_t >(eTechniqueDataEntryName::INSTANCE_DATA), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
-	},
-	1
+	}
 };
 
 
@@ -142,10 +149,10 @@ static FG::RenderPassCreationData FG_Geometry_CreateGraphNode( const Swapchain* 
 
 	VkFormat swapchainFormat = swapchain->surfaceFormat.format;
 
-	FG::RenderColor( renderPassCreationData, swapchainFormat, RT_SCENE_COLOR );
-	FG::RenderDepth( renderPassCreationData, VK_FORMAT_D32_SFLOAT, RT_SCENE_DEPTH );
+	FG::RenderColor( renderPassCreationData, swapchainFormat, ( uint32_t )eTechniqueDataEntryImageName::SCENE_COLOR );
+	FG::RenderDepth( renderPassCreationData, VK_FORMAT_D32_SFLOAT, ( uint32_t )eTechniqueDataEntryImageName::SCENE_DEPTH );
 	FG::ClearLast( renderPassCreationData );
-	FG::ReadResource( renderPassCreationData, RT_SHADOW_MAP );
+	FG::ReadResource( renderPassCreationData, ( uint32_t )eTechniqueDataEntryImageName::SHADOW_MAP );
 
 	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData.frame_graph_node;
 	frameGraphNode->RecordDrawCommands = GeometryRecordDrawCommandsBuffer;
@@ -162,16 +169,14 @@ TechniqueDescriptorSetDesc shadowPassSet =
 {
 	{
 		{ static_cast< uint32_t >(eTechniqueDataEntryName::SHADOW_DATA), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_VERTEX_BIT }
-	},
-	1
+	}
 };
 
 TechniqueDescriptorSetDesc shadowInstanceSet =
 {
 	{
 		{ static_cast< uint32_t >(eTechniqueDataEntryName::INSTANCE_DATA), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_VERTEX_BIT }
-	},
-	1
+	}
 };
 
 static FG::RenderPassCreationData FG_Shadow_CreateGraphNode( const Swapchain* swapchain )
@@ -179,7 +184,7 @@ static FG::RenderPassCreationData FG_Shadow_CreateGraphNode( const Swapchain* sw
 	FG::RenderPassCreationData renderPassCreationData;
 	renderPassCreationData.name = "shadow_pass";
 
-	FG::RenderDepth(renderPassCreationData, VK_FORMAT_D32_SFLOAT, RT_SHADOW_MAP);
+	FG::RenderDepth(renderPassCreationData, VK_FORMAT_D32_SFLOAT, ( uint32_t )eTechniqueDataEntryImageName::SHADOW_MAP );
 	FG::ClearLast(renderPassCreationData);
 
 	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData.frame_graph_node;
@@ -199,8 +204,7 @@ TechniqueDescriptorSetDesc skyboxPassSetDesc =
 		{ static_cast< uint32_t >(eTechniqueDataEntryName::SKYBOX_DATA), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_VERTEX_BIT },
 
 		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::SKYBOX), 1, eDescriptorAccess::READ, VK_SHADER_STAGE_FRAGMENT_BIT },
-	},
-	2
+	}
 };
 
 static FG::RenderPassCreationData FG_Skybox_CreateGraphNode( const Swapchain* swapchain )
@@ -210,8 +214,8 @@ static FG::RenderPassCreationData FG_Skybox_CreateGraphNode( const Swapchain* sw
 
 	VkFormat swapchainFormat = swapchain->surfaceFormat.format;
 
-	FG::RenderColor( renderPassCreationData, swapchainFormat, RT_SCENE_COLOR );
-	FG::RenderDepth( renderPassCreationData, VK_FORMAT_D32_SFLOAT, RT_SCENE_DEPTH );
+	FG::RenderColor( renderPassCreationData, swapchainFormat, ( uint32_t )eTechniqueDataEntryImageName::SCENE_COLOR );
+	FG::RenderDepth( renderPassCreationData, VK_FORMAT_D32_SFLOAT, ( uint32_t )eTechniqueDataEntryImageName::SCENE_DEPTH );
 
 	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData.frame_graph_node;
 	frameGraphNode->RecordDrawCommands = SkyboxRecordDrawCommandsBuffer;
@@ -228,8 +232,7 @@ TechniqueDescriptorSetDesc textPassSet =
 {
 	{
 		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::TEXT), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_FRAGMENT_BIT }
-	},
-	1
+	}
 };
 
 static FG::RenderPassCreationData FG_TextOverlay_CreateGraphNode( const Swapchain* swapchain )
@@ -239,7 +242,7 @@ static FG::RenderPassCreationData FG_TextOverlay_CreateGraphNode( const Swapchai
 
 	VkFormat swapchainFormat = swapchain->surfaceFormat.format;
 
-	FG::RenderColor( renderPassCreationData, swapchainFormat, RT_SCENE_COLOR );
+	FG::RenderColor( renderPassCreationData, swapchainFormat, ( uint32_t )eTechniqueDataEntryImageName::SCENE_COLOR );
 
 	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData.frame_graph_node;
 	frameGraphNode->RecordDrawCommands = TextRecordDrawCommandsBuffer;
@@ -272,7 +275,7 @@ static VkDescriptorType DescriptorTypeToVkType( eDescriptorType type, eDescripto
 	}
 }
 
-static VkDescriptorSetLayoutBinding CreateSetLayoutBinding( const TechniqueDataBinding* dataBinding, const TechniqueDataEntry* dataEntry )
+static VkDescriptorSetLayoutBinding CreateSetLayoutBinding( const TechniqueDataBinding* dataBinding, const FG::TechniqueDataEntry* dataEntry )
 {
 	VkDescriptorSetLayoutBinding layoutBinding;
 	layoutBinding.binding = dataBinding->binding;
@@ -288,10 +291,10 @@ static void CreateDescriptorSetLayout( const TechniqueDescriptorSetDesc * desc, 
 	std::array<VkDescriptorSetLayoutBinding, 8> tempBindings;
 	uint32_t count = 0;
 
-	for( uint32_t i = 0; i < desc->dataCount; ++i, ++count )
+	for( uint32_t i = 0; i < desc->dataBindings.size(); ++i, ++count )
 	{
 		const TechniqueDataBinding* dataBinding = &desc->dataBindings[i];
-		const TechniqueDataEntry* dataEntry = GetDataEntry(dataBinding->id);
+		const FG::TechniqueDataEntry* dataEntry = GetDataEntry(dataBinding->id);
 
 		tempBindings[count] = CreateSetLayoutBinding( dataBinding, dataEntry );
 	}
@@ -303,10 +306,10 @@ static void CreateDescriptorSet( const GpuInputData* inputData, const TechniqueD
 {
 	CreateDescriptorSets( descriptorPool, 1, &descriptorSetLayout, o_descriptorSet );
 
-	assert( descriptorSetDesc->dataCount <= MAX_DATA_ENTRIES );
+	assert( descriptorSetDesc->dataBindings.size() <= MAX_DATA_ENTRIES );
 	WriteDescriptor writeDescriptors[8];
 	uint32_t writeDescriptorsCount = 0;
-	WriteDescriptorSet writeDescriptorSet = { writeDescriptors, descriptorSetDesc->dataCount };
+	WriteDescriptorSet writeDescriptorSet = { writeDescriptors, descriptorSetDesc->dataBindings.size() };
 
 	VkDescriptorBufferInfo descriptorBuffersInfos[16];
 	uint32_t descriptorBuffersInfosCount = 0;
@@ -314,10 +317,10 @@ static void CreateDescriptorSet( const GpuInputData* inputData, const TechniqueD
 	uint32_t descriptorImagesInfosCount = 0;
 
 	//Fill in buffer
-	for( uint32_t i = 0; i < descriptorSetDesc->dataCount; ++i )
+	for( uint32_t i = 0; i < descriptorSetDesc->dataBindings.size(); ++i )
 	{
 		const TechniqueDataBinding* dataBinding = &descriptorSetDesc->dataBindings[i];
-		const TechniqueDataEntry* techniqueDataEntry = GetDataEntry( dataBinding->id );
+		const FG::TechniqueDataEntry* techniqueDataEntry = GetDataEntry( dataBinding->id );
 
 		if( IsBufferType( techniqueDataEntry->descriptorType ) )//Buffers
 		{
@@ -353,12 +356,28 @@ static void CreateDescriptorSet( const GpuInputData* inputData, const TechniqueD
 	UpdateDescriptorSets( 1, &writeDescriptorSet, o_descriptorSet );
 }
 
+static void CreatePerFrameBuffer( const FG::TechniqueDataEntry* techniqueDataEntry, const TechniqueDataBinding* dataBinding, PerFrameBuffer* o_buffer )
+{
+	VkDeviceSize size;
+	switch( techniqueDataEntry->descriptorType )
+	{
+		case eDescriptorType::BUFFER:
+			size = techniqueDataEntry->resourceDesc.extent.width;
+			break;
+		case eDescriptorType::BUFFER_DYNAMIC:
+			size = techniqueDataEntry->resourceDesc.extent.width * techniqueDataEntry->resourceDesc.extent.height;
+	}
+
+	//TODO: could have to change VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT if we write (store). Will have to check all bindings to know.
+	CreatePerFrameBuffer( size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, o_buffer );
+}
+
 static void SetOrCreateDataIfNeeded( std::array< GpuInputData, SIMULTANEOUS_FRAMES>* inputBuffers, const TechniqueDescriptorSetDesc* descriptorSetDesc, FG::FrameGraph* frameGraph )
 {
-	for( uint32_t i = 0; i < descriptorSetDesc->dataCount; ++i )
+	for( uint32_t i = 0; i < descriptorSetDesc->dataBindings.size(); ++i )
 	{
 		const TechniqueDataBinding* dataBinding = &descriptorSetDesc->dataBindings[i];
-		const TechniqueDataEntry* dataEntry = GetDataEntry( dataBinding->id );
+		const FG::TechniqueDataEntry* dataEntry = GetDataEntry( dataBinding->id );
 
 		if( dataEntry->flags & eTechniqueDataEntryFlags::EXTERNAL )
 			continue;
@@ -368,21 +387,19 @@ static void SetOrCreateDataIfNeeded( std::array< GpuInputData, SIMULTANEOUS_FRAM
 			PerFrameBuffer* buffer = &_allbuffers[dataEntry->id];
 			if( buffer->memory == VK_NULL_HANDLE )
 			{
-				//TODO: could have to change VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT if we write (store).
-				CreatePerFrameBuffer( dataEntry->size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, buffer );
+				CreatePerFrameBuffer( dataEntry, dataBinding, buffer );
 				for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 					SetBuffers( &(*inputBuffers)[i], dataEntry->id, &buffer->buffers[i] );
 			}
 		}
 		else
 		{
-			const ImageDataEntrySomething& imageDataEntrySomething = dataEntryToFGImage.at( static_cast< eTechniqueDataEntryImageName >(dataEntry->id) );
-			const GfxImage* image = frameGraph->GetRenderTarget( imageDataEntrySomething.renderTarget );
+			const GfxImage* image = frameGraph->GetImage( dataEntry->id ); //TODO: GetResource( (uint32_t) id ) --------------------
 			VkDescriptorImageInfo* imageInfo = &_allImages[dataEntry->id];
 			if( imageInfo->imageView == VK_NULL_HANDLE )
 			{
 				//TODO: layout might be different for different shaders, probably just need write, works so far.
-				*imageInfo = { GetSampler( imageDataEntrySomething.sampler ), image->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+				*imageInfo = { GetSampler( dataEntry->sampler ), image->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
 				for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 					SetImages( &(*inputBuffers)[i], dataEntry->id, imageInfo );
 			}
@@ -450,9 +467,6 @@ void CreateTechniqueCallback (const RenderPass* renderpass, const FG::RenderPass
 		&technique->pipeline );
 }
 
-constexpr VkFormat RT_FORMAT_SHADOW_DEPTH = VK_FORMAT_D32_SFLOAT;
-constexpr VkExtent2D RT_EXTENT_SHADOW = { 1024, 1024 };
-
 FG::FrameGraph InitializeScript(const Swapchain* swapchain)
 {
 	HACKCleanUpFrameGraphScriptResources();
@@ -460,22 +474,21 @@ FG::FrameGraph InitializeScript(const Swapchain* swapchain)
 	//Setup resources
 	VkFormat swapchainFormat = swapchain->surfaceFormat.format;
 	VkExtent2D swapchainExtent = swapchain->extent;
-	std::vector<FG::RenderTargetCreationData> _rtCreationData;
-	_rtCreationData.resize(RT_COUNT);
 
-	eRenderTarget backBuffer = RT_SCENE_COLOR;
+	uint32_t backBufferId = (uint32_t) eTechniqueDataEntryImageName::SCENE_COLOR;
 
-	_rtCreationData[RT_SCENE_COLOR] = { RT_SCENE_COLOR, swapchainFormat , swapchainExtent, (VkImageUsageFlagBits)(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT), VK_IMAGE_ASPECT_COLOR_BIT,  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, true };
-	_rtCreationData[RT_SCENE_DEPTH] = { RT_SCENE_DEPTH, VK_FORMAT_D32_SFLOAT , swapchainExtent, (VkImageUsageFlagBits)(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT), VK_IMAGE_ASPECT_DEPTH_BIT,  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, true };
-	_rtCreationData[RT_SHADOW_MAP] = { RT_SHADOW_MAP, RT_FORMAT_SHADOW_DEPTH , RT_EXTENT_SHADOW, (VkImageUsageFlagBits)(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT), VK_IMAGE_ASPECT_DEPTH_BIT,  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
+	std::vector<FG::RenderPassCreationData> rpCreationData;
+	std::vector<FG::TechniqueDataEntry> dataEntries ( techniqueDataEntries, techniqueDataEntries + sizeof( techniqueDataEntries ) / sizeof( techniqueDataEntries[0] ) );
 
-	std::vector<FG::RenderPassCreationData> _rpCreationData;
+	dataEntries[( uint32_t )eTechniqueDataEntryImageName::SCENE_COLOR].resourceDesc.format = swapchainFormat;
+	dataEntries[( uint32_t )eTechniqueDataEntryImageName::SCENE_COLOR].resourceDesc.extent = swapchainExtent; // maybe not needed because FG does it
+	dataEntries[( uint32_t )eTechniqueDataEntryImageName::SCENE_DEPTH].resourceDesc.extent = swapchainExtent;
 
 	//Setup passes	
-	_rpCreationData.push_back( FG_Shadow_CreateGraphNode( swapchain ) );
-	_rpCreationData.push_back( FG_Geometry_CreateGraphNode( swapchain ) );
-	_rpCreationData.push_back( FG_Skybox_CreateGraphNode( swapchain ) );
-	_rpCreationData.push_back( FG_TextOverlay_CreateGraphNode( swapchain ) );
+	rpCreationData.push_back( FG_Shadow_CreateGraphNode( swapchain ) );
+	rpCreationData.push_back( FG_Geometry_CreateGraphNode( swapchain ) );
+	rpCreationData.push_back( FG_Skybox_CreateGraphNode( swapchain ) );
+	rpCreationData.push_back( FG_TextOverlay_CreateGraphNode( swapchain ) );
 
-	return FG::CreateGraph(swapchain, &_rpCreationData, &_rtCreationData, backBuffer, _descriptorPool, &CreateTechniqueCallback );
+	return FG::CreateGraph(swapchain, &rpCreationData, &dataEntries, backBufferId, _descriptorPool, &CreateTechniqueCallback );
 }

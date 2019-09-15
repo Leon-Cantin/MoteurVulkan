@@ -57,15 +57,6 @@ enum eDescriptorAccess
 	WRITE,
 };
 
-struct TechniqueDataEntry
-{
-	uint32_t id;
-	eDescriptorType descriptorType;
-	uint32_t count;
-	uint32_t flags;
-	uint32_t size;
-};
-
 struct TechniqueDataBinding
 {
 	uint32_t id;
@@ -74,13 +65,12 @@ struct TechniqueDataBinding
 	VkShaderStageFlags stageFlags;
 };
 
-constexpr size_t MAX_DATA_ENTRIES = 16;
-
 struct TechniqueDescriptorSetDesc
 {
-	TechniqueDataBinding dataBindings [MAX_DATA_ENTRIES];
-	uint32_t dataCount;
+	std::vector<TechniqueDataBinding> dataBindings;
 };
+
+constexpr size_t MAX_DATA_ENTRIES = 16;
 
 union GpuInputDataEntry
 {

@@ -34,9 +34,8 @@ namespace FG
 		const char* name;
 	};
 
-	struct RenderTargetCreationData
+	struct ResourceDesc
 	{
-		uint32_t id;
 		VkFormat format;
 		VkExtent2D extent;
 		VkImageUsageFlagBits usage_flags;
@@ -45,6 +44,15 @@ namespace FG
 		bool swapChainSized = false;
 	};
 
+	struct TechniqueDataEntry
+	{
+		uint32_t id;
+		eDescriptorType descriptorType;
+		uint32_t count;
+		uint32_t flags;
+		ResourceDesc resourceDesc;
+		Samplers sampler;
+	};
 
 	class FrameGraph
 	{
@@ -53,11 +61,11 @@ namespace FG
 		FrameGraph( class FrameGraphInternal* );
 		FrameGraph();
 		const RenderPass* GetRenderPass( uint32_t id );
-		const GfxImage* GetRenderTarget( uint32_t render_target_id );
+		const GfxImage* GetImage( uint32_t render_target_id );
 	};
 
 	//Compilation
-	FrameGraph CreateGraph( const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<RenderTargetCreationData> *inRtCreationData, uint32_t backbufferId, VkDescriptorPool descriptorPool,
+	FrameGraph CreateGraph( const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<TechniqueDataEntry> *inRtCreationData, uint32_t backbufferId, VkDescriptorPool descriptorPool,
 		void( *createTechniqueCallback )(const RenderPass*, const RenderPassCreationData*, Technique*, FrameGraph*) );
 	void Cleanup( FrameGraph* frameGraph );
 

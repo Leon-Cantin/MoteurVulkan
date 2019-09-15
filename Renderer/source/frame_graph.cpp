@@ -11,7 +11,7 @@ namespace FG
 {
 	struct FrameGraphCreationData
 	{
-		std::vector<RenderTargetCreationData> renderTargets;
+		std::vector<TechniqueDataEntry> resources;
 		std::vector<RenderPassCreationData> renderPasses;
 		uint32_t RT_OUTPUT_TARGET;
 	};
@@ -20,12 +20,12 @@ namespace FG
 	{
 	public:
 		GfxImage _output_buffers[SIMULTANEOUS_FRAMES];
-		#define MAX_RENDERTARGETS 8
+		#define MAX_RENDERTARGETS 32
 		
 		GfxImage _render_targets[MAX_RENDERTARGETS];
 		uint32_t _render_targets_count;
 
-		const GfxImage* GetRenderTarget( uint32_t render_target_id )
+		const GfxImage* GetImage( uint32_t render_target_id )
 		{
 			return &_render_targets[render_target_id];
 		}
@@ -49,9 +49,9 @@ namespace FG
 		return imp->GetRenderPass( id );
 	}
 
-	const GfxImage* FrameGraph::GetRenderTarget( uint32_t render_target_id )
+	const GfxImage* FrameGraph::GetImage( uint32_t render_target_id )
 	{
-		return imp->GetRenderTarget( render_target_id );
+		return imp->GetImage( render_target_id );
 	}
 
 	FrameGraph::FrameGraph()
@@ -137,7 +137,7 @@ namespace FG
 
 	static void ComposeGraph( FrameGraphCreationData& creationData, FrameGraphInternal* o_frameGraph )
 	{
-		o_frameGraph->_render_targets_count = creationData.renderTargets.size();
+		o_frameGraph->_render_targets_count = creationData.resources.size();
 		std::map< uint32_t, RenderPassCreationData*> lastPass;
 
 		for (uint32_t i = 0; i < creationData.renderPasses.size(); ++i)
@@ -157,11 +157,11 @@ namespace FG
 					lastPass[renderTargetId] = &pass;
 
 					//Create a new image when we encounter it for the first time.
-					RenderTargetCreationData* rtCreationData = &creationData.renderTargets[renderTargetId];
+					ResourceDesc* resourceDesc = &creationData.resources[renderTargetId].resourceDesc;
 					if (renderTargetId != creationData.RT_OUTPUT_TARGET)
 					{
 						GfxImage* rt_image = &o_frameGraph->_render_targets[renderTargetId];
-						CreateImage(rtCreationData->format, rtCreationData->extent, rt_image, rtCreationData->usage_flags, rtCreationData->aspect_flags, rtCreationData->image_layout);
+						CreateImage( resourceDesc->format, resourceDesc->extent, rt_image, resourceDesc->usage_flags, resourceDesc->aspect_flags, resourceDesc->image_layout);
 					}
 				}
 				else
@@ -295,12 +295,12 @@ namespace FG
 
 		for (uint32_t i = 0; i < o_frameGraph->_render_targets_count; ++i)
 		{
-			if ( creationData->renderTargets[i].swapChainSized)
-				creationData->renderTargets[i].extent = swapchain->extent;
+			if ( creationData->resources[i].resourceDesc.swapChainSized)
+				creationData->resources[i].resourceDesc.extent = swapchain->extent;
 		}
 	}
 
-	FrameGraph CreateGraph(const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<RenderTargetCreationData> *inRtCreationData, uint32_t backbufferId, VkDescriptorPool descriptorPool,
+	FrameGraph CreateGraph(const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<TechniqueDataEntry> *inRtCreationData, uint32_t backbufferId, VkDescriptorPool descriptorPool,
 		void(*createTechniqueCallback)(const RenderPass*, const RenderPassCreationData*, Technique*, FrameGraph*) )
 	{
 		FrameGraphInternal* frameGraph = new FrameGraphInternal();
@@ -308,7 +308,7 @@ namespace FG
 		FrameGraphCreationData& creationData = frameGraph->creationData;
 		//Setup resources
 		creationData.RT_OUTPUT_TARGET = backbufferId;
-		creationData.renderTargets = *inRtCreationData;
+		creationData.resources = *inRtCreationData;
 		CreateResourceCreationData( swapchain, &creationData, frameGraph );
 
 		//Setup passes
