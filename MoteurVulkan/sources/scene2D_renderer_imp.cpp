@@ -199,7 +199,6 @@ void CompileScene( const GfxImage* albedoImage, const GfxImage* normalImage, con
 
 void CleanupRendererImp()
 {
-	HACKCleanUpFrameGraphScriptResources();
 	CleanupTextRenderPass();
 	CleanupRenderer();	
 	vkDestroyDescriptorPool(g_vk.device, descriptorPool, nullptr);

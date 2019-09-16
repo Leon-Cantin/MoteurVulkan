@@ -1,7 +1,7 @@
 #include "frame_graph.h"
+#include "frame_graph_common_internal.h"
 
 #include "framebuffer.h"
-#include "gfx_image.h"
 #include "vk_debug.h"
 
 #include <vector>
@@ -9,41 +9,6 @@
 
 namespace FG
 {
-	struct FrameGraphCreationData
-	{
-		std::vector<TechniqueDataEntry> resources;
-		std::vector<RenderPassCreationData> renderPasses;
-		uint32_t RT_OUTPUT_TARGET;
-	};
-
-	class FrameGraphInternal
-	{
-	public:
-		GfxImage _output_buffers[SIMULTANEOUS_FRAMES];
-		#define MAX_RENDERTARGETS 32
-		
-		GfxImage _render_targets[MAX_RENDERTARGETS];
-		uint32_t _render_targets_count;
-
-		const GfxImage* GetImage( uint32_t render_target_id )
-		{
-			return &_render_targets[render_target_id];
-		}
-
-		std::array<RenderPass, 8> _render_passes;
-		uint32_t _render_passes_count = 0;
-
-		std::array<Technique, 8> _techniques;
-		uint32_t _techniques_count = 0;
-
-		const RenderPass* GetRenderPass( uint32_t id )
-		{
-			return &_render_passes[id];
-		}
-
-		FrameGraphCreationData creationData;
-	};
-
 	const RenderPass* FrameGraph::GetRenderPass( uint32_t id )
 	{
 		return imp->GetRenderPass( id );
@@ -300,8 +265,7 @@ namespace FG
 		}
 	}
 
-	FrameGraph CreateGraph(const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<TechniqueDataEntry> *inRtCreationData, uint32_t backbufferId, VkDescriptorPool descriptorPool,
-		void(*createTechniqueCallback)(const RenderPass*, const RenderPassCreationData*, Technique*, FrameGraph*) )
+	FrameGraph CreateGraph(const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<TechniqueDataEntry> *inRtCreationData, uint32_t backbufferId, VkDescriptorPool descriptorPool )
 	{
 		FrameGraphInternal* frameGraph = new FrameGraphInternal();
 		FrameGraph frameGraphExternal( frameGraph );
@@ -321,9 +285,6 @@ namespace FG
 			//Create the pass
 			RenderPassCreationData* rpCreationData = &creationData.renderPasses[i];
 			CreateRenderPass( *rpCreationData, creationData.RT_OUTPUT_TARGET, rpCreationData->name, &frameGraph->_render_passes[frameGraph->_render_passes_count++], frameGraph );
-
-			//Create the descriptor set and layout
-			createTechniqueCallback( frameGraph->GetRenderPass( i ),  rpCreationData, &frameGraph->_techniques[frameGraph->_techniques_count++], &frameGraphExternal );
 		}
 
 		return frameGraphExternal;
@@ -379,6 +340,13 @@ namespace FG
 			technique = {};
 		}
 		frameGraph->_techniques_count = 0;
+
+		for( uint32_t i = 0; i < frameGraph->creationData.resources.size(); ++i )
+		{
+			if( frameGraph->allbuffers[i].memory )
+				DestroyPerFrameBuffer( &frameGraph->allbuffers[i] );
+		}
+		frameGraph->allImages = {};
 
 		delete frameGraph;
 		frameGraphExternal->imp = nullptr;

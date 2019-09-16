@@ -45,6 +45,9 @@
     <ClCompile Include="source\scene_instance.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\frame_graph_bindings.cpp">
+      <Filter>source\frame_graph</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="includes\frame_graph.h">
@@ -82,6 +85,12 @@
     </ClInclude>
     <ClInclude Include="includes\scene_instance.h">
       <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\frame_graph_common_internal.h">
+      <Filter>source\frame_graph</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\frame_graph_bindings.h">
+      <Filter>source\frame_graph</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\frame_graph.cpp" />
+    <ClCompile Include="source\frame_graph_bindings.cpp" />
     <ClCompile Include="source\gfx_image.cpp" />
     <ClCompile Include="source\glTF_loader.cpp" />
     <ClCompile Include="source\material.cpp" />
@@ -32,6 +33,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="includes\frame_graph.h" />
+    <ClInclude Include="includes\frame_graph_bindings.h" />
     <ClInclude Include="includes\gfx_image.h" />
     <ClInclude Include="includes\glTF_loader.h" />
     <ClInclude Include="includes\ktx_loader.h" />
@@ -43,6 +45,7 @@
     <ClInclude Include="includes\scene_frame_data.h" />
     <ClInclude Include="includes\scene_instance.h" />
     <ClInclude Include="includes\swapchain.h" />
+    <ClInclude Include="source\frame_graph_common_internal.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

@@ -107,6 +107,3 @@ inline VkDescriptorImageInfo* GetImage( const GpuInputData* buffers, uint32_t id
 	assert( id < MAX_DATA_ENTRIES );
 	return buffers->data[id].image;
 }
-
-void CreateDescriptorSetLayout( const TechniqueDescriptorSetDesc * desc, VkDescriptorSetLayout * o_setLayout );
-void CreateDescriptorSet( const GpuInputData* buffers, const TechniqueDescriptorSetDesc* descriptorSetDesc, VkDescriptorSetLayout descriptorSetLayout, VkDescriptorPool descriptorPool, VkDescriptorSet* o_descriptorSet );
