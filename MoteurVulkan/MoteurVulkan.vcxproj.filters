@@ -57,14 +57,14 @@
     <ClCompile Include="sources\text_overlay.cpp">
       <Filter>sources</Filter>
     </ClCompile>
-    <ClCompile Include="sources\scene2D_renderer_imp.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
     <ClCompile Include="sources\bitfield.cpp">
       <Filter>sources\containers</Filter>
     </ClCompile>
     <ClCompile Include="sources\window_handler_vk.cpp">
       <Filter>sources\window_handler</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\3d_pbr_renderer_imp.cpp">
+      <Filter>sources</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -121,9 +121,6 @@
     <ClInclude Include="sources\text_overlay.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="sources\scene2D_renderer_imp.h">
-      <Filter>sources</Filter>
-    </ClInclude>
     <ClInclude Include="sources\bitfield.h">
       <Filter>sources\containers</Filter>
     </ClInclude>
@@ -132,6 +129,9 @@
     </ClInclude>
     <ClInclude Include="sources\window_handler_vk.h">
       <Filter>sources\window_handler</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\3d_pbr_renderer_imp.h">
+      <Filter>sources</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -3,13 +3,8 @@
 #include "vk_globals.h"
 
 #include "renderpass.h"
-#include "model_asset.h"
-#include "vk_image.h"
-#include "vk_buffer.h"
-#include "scene_instance.h"
-#include "swapchain.h"
-#include "scene_frame_data.h"
 #include "material.h"
+#include "scene_frame_data.h"
 
 GpuPipelineLayout GetGeoPipelineLayout();
 GpuPipelineState GetGeoPipelineState();

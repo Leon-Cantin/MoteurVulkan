@@ -1,20 +1,12 @@
 #include "shadow_renderpass.h"
-
-#include "descriptors.h"
-#include "glm/gtc/matrix_transform.hpp"
-#include "renderpass.h"
-#include "vk_debug.h"
-#include "renderer.h"
-#include "framebuffer.h"
-#include "vk_shader.h"
-#include "file_system.h"
-#include "vk_buffer.h"
-#include "scene_instance.h"
 #include "..\shaders\shadersCommon.h"
-#include "material.h"
 
-#include <vector>
-#include <array>
+#include "file_system.h"
+#include "renderer.h"
+#include "vk_commands.h"
+#include "vk_debug.h"
+
+#include "glm/gtc/matrix_transform.hpp"
 
 //TODO: this is redundant, also found in frame graph
 constexpr VkExtent2D RT_EXTENT_SHADOW = { 1024, 1024 };

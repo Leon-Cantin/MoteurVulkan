@@ -1,15 +1,10 @@
 #include "text_overlay.h"
 
-#include "model_asset.h"
-#include "vk_shader.h"
 #include "file_system.h"
-#include "stb_font_consolas_24_latin1.inl"
-#include "vk_buffer.h"
-#include "descriptors.h"
-#include "swapchain.h"
+#include "renderer.h"
+#include "vk_commands.h"
 #include "vk_debug.h"
-#include "console_command.h"
-#include "material.h"
+#include "stb_font_consolas_24_latin1.inl"
 
 GpuBuffer textVertexBuffer;
 GpuBuffer textIndexBuffer;

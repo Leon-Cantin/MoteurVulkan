@@ -2,12 +2,9 @@
 #include "..\shaders\shadersCommon.h"
 
 #include "file_system.h"
-#include "descriptors.h"
 #include "renderer.h"
 #include "vk_commands.h"
 #include "vk_debug.h"
-
-#include <vector>
 
 GpuPipelineLayout GetGeoPipelineLayout()
 {

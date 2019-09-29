@@ -1,14 +1,11 @@
 #include "skybox.h"
 
-#include "vk_shader.h"
 #include "file_system.h"
-#include "vk_buffer.h"
-#include "descriptors.h"
+#include "renderer.h"
+#include "vk_commands.h"
 #include "vk_debug.h"
-#include "material.h"
 
 #include <glm/gtc/matrix_transform.hpp>
-#include <array>
 
 GpuPipelineLayout GetSkyboxPipelineLayout()
 {

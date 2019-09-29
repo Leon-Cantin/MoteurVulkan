@@ -230,7 +230,7 @@ static FG::RenderPassCreationData FG_TextOverlay_CreateGraphNode( const Swapchai
 	return renderPassCreationData;
 }
 
-FG::FrameGraph InitializeScript(const Swapchain* swapchain)
+FG::FrameGraph InitializeScript( const Swapchain* swapchain )
 {
 	//Setup resources
 	VkFormat swapchainFormat = swapchain->surfaceFormat.format;
@@ -238,14 +238,13 @@ FG::FrameGraph InitializeScript(const Swapchain* swapchain)
 
 	uint32_t backBufferId = (uint32_t) eTechniqueDataEntryImageName::SCENE_COLOR;
 
-	std::vector<FG::RenderPassCreationData> rpCreationData;
 	std::vector<FG::TechniqueDataEntry> dataEntries ( techniqueDataEntries, techniqueDataEntries + sizeof( techniqueDataEntries ) / sizeof( techniqueDataEntries[0] ) );
-
 	dataEntries[( uint32_t )eTechniqueDataEntryImageName::SCENE_COLOR].resourceDesc.format = swapchainFormat;
 	dataEntries[( uint32_t )eTechniqueDataEntryImageName::SCENE_COLOR].resourceDesc.extent = swapchainExtent; // maybe not needed because FG does it
 	dataEntries[( uint32_t )eTechniqueDataEntryImageName::SCENE_DEPTH].resourceDesc.extent = swapchainExtent;
 
 	//Setup passes	
+	std::vector<FG::RenderPassCreationData> rpCreationData;
 	rpCreationData.push_back( FG_Shadow_CreateGraphNode( swapchain ) );
 	rpCreationData.push_back( FG_Geometry_CreateGraphNode( swapchain ) );
 	rpCreationData.push_back( FG_Skybox_CreateGraphNode( swapchain ) );

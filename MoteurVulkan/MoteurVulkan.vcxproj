@@ -177,7 +177,7 @@
     <ClCompile Include="sources\console_command.cpp" />
     <ClCompile Include="sources\file_system.cpp" />
     <ClCompile Include="sources\geometry_renderpass.cpp" />
-    <ClCompile Include="sources\scene2D_renderer_imp.cpp" />
+    <ClCompile Include="sources\3d_pbr_renderer_imp.cpp" />
     <ClCompile Include="sources\shadow_renderpass.cpp" />
     <ClCompile Include="sources\text_compute_overlay.cpp" />
     <ClCompile Include="sources\text_overlay.cpp" />
@@ -201,7 +201,7 @@
     <ClInclude Include="sources\frame_graph_script.h" />
     <ClInclude Include="sources\memory.h" />
     <ClInclude Include="sources\Scene2DGame.h" />
-    <ClInclude Include="sources\scene2D_renderer_imp.h" />
+    <ClInclude Include="sources\3d_pbr_renderer_imp.h" />
     <ClInclude Include="sources\SceneFPS.h" />
     <ClInclude Include="sources\geometry_renderpass.h" />
     <ClInclude Include="sources\shadow_renderpass.h" />

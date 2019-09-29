@@ -1,16 +1,12 @@
 #pragma once
 
-#include "scene2D_renderer_imp.h"
+#include "3d_pbr_renderer_imp.h"
 #include "vk_framework.h"
 #include "console_command.h"
 #include "input.h"
 #include "tick_system.h"
 #include "asset_library.h"
 #include "window_handler_vk.h"
-
-#include "shadow_renderpass.h"
-#include "text_overlay.h"
-#include "skybox.h"
 
 #include "model_asset.h"
 
@@ -24,9 +20,6 @@
 #include <vector>
 #include <algorithm>
 #include <assert.h>
-
-
-extern Swapchain g_swapchain;
 
 namespace Scene2DGame
 {
