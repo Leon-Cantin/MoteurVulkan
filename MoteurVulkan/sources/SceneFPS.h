@@ -46,13 +46,13 @@ namespace SceneFPS
 	size_t g_sceneInstancesCount = 0;
 
 	SceneInstance wandererSceneInstance = { glm::vec3(0.0f, -0.5f, 0.0f), glm::angleAxis(glm::radians(180.0f), glm::vec3{0.0f, 1.0f, 0.0f}), 1.0f };
-	SceneRenderableAsset wandererRenderable;
+	RenderableAsset wandererRenderable;
 
 	SceneInstance planeSceneInstance = { glm::vec3(0.0f, -0.5f, 0.0f), glm::angleAxis(glm::radians(0.0f), glm::vec3{0.0f, 1.0f, 0.0f}), 10.0f };
-	SceneRenderableAsset planeRenderable;
+	RenderableAsset planeRenderable;
 
 	SceneInstance cubeSceneInstance = { glm::vec3(0.0f, 0.0f, 2.0f), glm::angleAxis(glm::radians(0.0f), glm::vec3{0.0f, 1.0f, 0.0f}), 0.5f };
-	SceneRenderableAsset cubeRenderable;
+	RenderableAsset cubeRenderable;
 
 	SceneInstance cameraSceneInstance = { glm::vec3(0.0f, 0.0f, -2.0f), glm::angleAxis(glm::radians(0.0f), glm::vec3{0.0f, 1.0f, 0.0f}), 1.0f };
 

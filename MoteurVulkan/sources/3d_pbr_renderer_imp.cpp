@@ -6,6 +6,7 @@
 #include "profile.h"
 #include "console_command.h"
 #include "window_handler.h"
+#include "allocators.h"
 
 #include <glm/glm.hpp>
 #include <glm/vec4.hpp>
@@ -17,20 +18,8 @@ extern Swapchain g_swapchain;
 
 bool g_forceReloadShaders = false;
 
-SceneInstanceSet g_sceneInstanceDescriptorSets[5];
 size_t g_sceneInstancesCount = 0;
 std::array< GpuInputData, SIMULTANEOUS_FRAMES> _inputBuffers;
-
-/*
-	Create Stuff
-*/
-
-SceneInstanceSet*  CreateGeometryInstanceDescriptorSet()
-{
-	SceneInstanceSet* sceneInstanceDescriptorSet = &g_sceneInstanceDescriptorSets[g_sceneInstancesCount++];
-	CreateSceneInstanceDescriptorSet(sceneInstanceDescriptorSet);
-	return sceneInstanceDescriptorSet;
-}
 
 /*
 	Update Stuff
@@ -56,12 +45,16 @@ static void UpdateSceneUniformBuffer(const glm::mat4& world_view_matrix, VkExten
 	UpdateGpuBuffer( sceneUniformBuffer, &sceneMatrices, sizeof( sceneMatrices ), 0 );
 }
 
-static void UpdateGeometryUniformBuffer( const SceneInstance* sceneInstance, const SceneInstanceSet* sceneInstanceDescriptorSet, GpuBuffer* geometryUniformBuffer )
+static void UpdateGeometryUniformBuffer( const SceneInstance* sceneInstance, SceneInstanceSet* sceneInstanceDescriptorSet, BufferAllocator* allocator )
 {
 	InstanceMatrices instanceMatrices = {};
 	instanceMatrices.model = ComputeSceneInstanceModelMatrix( *sceneInstance );
 
-	UpdateGpuBuffer( geometryUniformBuffer, &instanceMatrices, sizeof( InstanceMatrices ), sceneInstanceDescriptorSet->geometryBufferOffsets[0] );//TODO checking only 0 is stupid, why do I have one for each frame?
+	size_t allocationSize = sizeof( InstanceMatrices );
+	size_t memoryOffset = AllocateGpuBufferSlot( allocator, allocationSize );
+	sceneInstanceDescriptorSet->geometryBufferOffsets = memoryOffset;
+
+	UpdateGpuBuffer( allocator->buffer, &instanceMatrices, allocationSize, memoryOffset );
 }
 
 static void updateTextOverlayBuffer( uint32_t currentFrame )
@@ -81,7 +74,7 @@ static void updateTextOverlayBuffer( uint32_t currentFrame )
 //TODO seperate the buffer update and computation of frame data
 //TODO Make light Uniform const
 //TODO Instead of preassigning descriptors to instances, just give them one before drawing
-static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<std::pair<const SceneInstance*, const SceneRenderableAsset*>>& drawList )
+static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<std::pair<const SceneInstance*, const RenderableAsset*>>& drawList, std::vector<DrawModel>& drawListReal )
 {
 	glm::mat4 world_view_matrix = ComputeCameraSceneInstanceViewMatrix( *cameraSceneInstance );
 
@@ -89,9 +82,12 @@ static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cam
 
 	GpuInputData currentGpuInputData = _inputBuffers[currentFrame];
 
-	//Update GeometryUniformBuffer
-	for( auto& drawNode : drawList )
-		UpdateGeometryUniformBuffer( drawNode.first, drawNode.second->descriptorSet, GetBuffer( &currentGpuInputData, eTechniqueDataEntryName::INSTANCE_DATA ) );
+	BufferAllocator allocator { GetBuffer( &currentGpuInputData, eTechniqueDataEntryName::INSTANCE_DATA ) };
+	for( uint32_t i = 0; i < drawList.size(); ++i )
+	{
+		UpdateGeometryUniformBuffer( drawList[i].first, &drawListReal[i].descriptorSet, &allocator );
+		drawListReal[i].asset = drawList[i].second;
+	}
 
 	UpdateSceneUniformBuffer( world_view_matrix, swapChainExtent, GetBuffer( &currentGpuInputData, eTechniqueDataEntryName::SCENE_DATA ) );
 
@@ -105,13 +101,10 @@ static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cam
 	updateTextOverlayBuffer( currentFrame );
 }
 
-static void PrepareSceneFrameData( SceneFrameData* frameData, uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<std::pair<const SceneInstance*, const SceneRenderableAsset*>>& drawList )
+static void PrepareSceneFrameData( SceneFrameData* frameData, uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<std::pair<const SceneInstance*, const RenderableAsset*>>& drawList )
 {
-	updateUniformBuffer( currentFrame, cameraSceneInstance, light, drawList );
-
-	frameData->renderableAssets.resize( drawList.size() );
-	for( size_t i = 0; i < drawList.size(); ++i )
-		frameData->renderableAssets[i] = drawList[i].second;
+	frameData->drawList.resize( drawList.size() );
+	updateUniformBuffer( currentFrame, cameraSceneInstance, light, drawList, frameData->drawList );
 }
 
 void ReloadSceneShaders()
@@ -204,7 +197,7 @@ void CleanupRendererImp()
 	vkDestroyDescriptorPool(g_vk.device, descriptorPool, nullptr);
 }
 
-void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<std::pair<const SceneInstance*, const SceneRenderableAsset*>>& drawList )
+void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<std::pair<const SceneInstance*, const RenderableAsset*>>& drawList )
 {
 	if (g_forceReloadShaders)
 	{

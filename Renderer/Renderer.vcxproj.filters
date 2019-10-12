@@ -48,6 +48,9 @@
     <ClCompile Include="source\frame_graph_bindings.cpp">
       <Filter>source\frame_graph</Filter>
     </ClCompile>
+    <ClCompile Include="source\allocators.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="includes\frame_graph.h">
@@ -91,6 +94,9 @@
     </ClInclude>
     <ClInclude Include="includes\frame_graph_bindings.h">
       <Filter>source\frame_graph</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\allocators.h">
+      <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

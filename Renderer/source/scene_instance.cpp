@@ -19,10 +19,3 @@ glm::mat4 ComputeCameraSceneInstanceViewMatrix(const SceneInstance& sceneInstanc
 	//Assume quaternions are of lenght 1 and thus conjugate == inverse
 	return glm::translate(glm::toMat4(glm::conjugate(sceneInstance.orientation)), -sceneInstance.location);
 }
-
-void CreateSceneInstanceDescriptorSet( SceneInstanceSet * o_set )
-{
-	const uint32_t index = instances_count++;
-	for(size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
-		o_set->geometryBufferOffsets[i] = sizeof(InstanceMatrices) * index;
-}

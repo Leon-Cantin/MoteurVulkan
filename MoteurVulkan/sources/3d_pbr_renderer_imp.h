@@ -10,9 +10,8 @@ struct LightUniform {
 	float intensity;
 };
 
-SceneInstanceSet*  CreateGeometryInstanceDescriptorSet();
 void CompileScene( const GfxImage* albedoImage, const GfxImage* normalImage, const GfxImage* skyboxImage );
-void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<std::pair<const SceneInstance*, const SceneRenderableAsset*>>& drawList );
+void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<std::pair<const SceneInstance*, const RenderableAsset*>>& drawList );
 void ForceReloadShaders();
 
 void ReloadSceneShaders();

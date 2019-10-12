@@ -56,26 +56,26 @@ void CmdEndGeometryRenderPass(VkCommandBuffer vkCommandBuffer)
 	CmdEndVkLabel(vkCommandBuffer);
 }
 
-static void CmdDrawModelAsset( VkCommandBuffer commandBuffer, const SceneRenderableAsset* renderableAsset, uint32_t currentFrame, const Technique* technique )
+static void CmdDrawModelAsset( VkCommandBuffer commandBuffer, const DrawModel* drawModel, uint32_t currentFrame, const Technique* technique )
 {	
 	//TODO: could do like the VIB, query a texture of X from an array using an enum index
 	//Have a list of all required paremeters for this pass.
-	vkCmdPushConstants( commandBuffer, technique->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof( uint32_t ), &renderableAsset->albedoIndex );
+	vkCmdPushConstants( commandBuffer, technique->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof( uint32_t ), &drawModel->asset->albedoIndex );
 
-	const SceneInstanceSet* instanceSet = renderableAsset->descriptorSet;
-	const GfxModel* modelAsset = renderableAsset->modelAsset;
+	const SceneInstanceSet* instanceSet = &drawModel->descriptorSet;
+	const GfxModel* modelAsset = drawModel->asset->modelAsset;
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, INSTANCE_SET, 1,
-		&technique->instance_descriptor[currentFrame], 1, &instanceSet->geometryBufferOffsets[currentFrame]);
+		&technique->instance_descriptor[currentFrame], 1, &instanceSet->geometryBufferOffsets);
 	CmdDrawIndexed(commandBuffer, *modelAsset);	
 }
 
 void GeometryRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique )
 {
 	CmdBeginGeometryRenderPass(graphicsCommandBuffer, extent, currentFrame, renderpass, technique);
-	for (size_t i = 0; i < frameData->renderableAssets.size(); ++i)
+	for (size_t i = 0; i < frameData->drawList.size(); ++i)
 	{
-		const SceneRenderableAsset* renderable = frameData->renderableAssets[i];
-		CmdDrawModelAsset(graphicsCommandBuffer, renderable, currentFrame, technique);
+		const DrawModel* drawModel = &frameData->drawList[i];
+		CmdDrawModelAsset(graphicsCommandBuffer, drawModel, currentFrame, technique);
 	}
 	CmdEndGeometryRenderPass(graphicsCommandBuffer);
 }

@@ -71,7 +71,7 @@ static void CmdBeginShadowPass( VkCommandBuffer commandBuffer, size_t currentFra
 static void CmdDrawModel( VkCommandBuffer commandBuffer, const SceneInstanceSet* instanceSet, const GfxModel* modelAsset, uint32_t currentFrame, const Technique * technique )
 {
 	vkCmdBindDescriptorSets( commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, INSTANCE_SET, 1,
-		&technique->instance_descriptor[currentFrame], 1, &instanceSet->geometryBufferOffsets[currentFrame] );
+		&technique->instance_descriptor[currentFrame], 1, &instanceSet->geometryBufferOffsets );
 	CmdDrawIndexed( commandBuffer, *modelAsset );
 }
 
@@ -84,10 +84,10 @@ static void CmdEndShadowPass( VkCommandBuffer commandBuffer )
 void ShadowRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique )
 {
 	CmdBeginShadowPass(graphicsCommandBuffer, currentFrame, renderpass, technique);
-	for (size_t i = 0; i < frameData->renderableAssets.size(); ++i)
+	for (size_t i = 0; i < frameData->drawList.size(); ++i)
 	{
-		const SceneRenderableAsset* renderable = frameData->renderableAssets[i];
-		CmdDrawModel(graphicsCommandBuffer, renderable->descriptorSet, renderable->modelAsset, currentFrame, technique);
+		const DrawModel* renderable = &frameData->drawList[i];
+		CmdDrawModel(graphicsCommandBuffer, &renderable->descriptorSet, renderable->asset->modelAsset, currentFrame, technique);
 	}
 	CmdEndShadowPass(graphicsCommandBuffer);
 }

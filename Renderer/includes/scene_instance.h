@@ -8,7 +8,7 @@
 
 struct SceneInstanceSet
 {
-	std::array<uint32_t, SIMULTANEOUS_FRAMES> geometryBufferOffsets;
+	uint32_t geometryBufferOffsets;
 };
 
 struct SceneInstance
@@ -27,13 +27,17 @@ struct SceneMatricesUniform {
 	glm::mat4 proj;
 };
 
-struct SceneRenderableAsset {
+struct RenderableAsset {
 	const GfxModel* modelAsset;
-	const SceneInstanceSet* descriptorSet;
 	uint32_t albedoIndex;
 	uint32_t normalIndex;
 };
 
+struct DrawModel
+{
+	const RenderableAsset* asset;
+	SceneInstanceSet descriptorSet;
+};
+
 glm::mat4 ComputeSceneInstanceModelMatrix(const SceneInstance& sceneInstance);
 glm::mat4 ComputeCameraSceneInstanceViewMatrix(const SceneInstance& sceneInstance);
-void CreateSceneInstanceDescriptorSet(SceneInstanceSet * o_set);

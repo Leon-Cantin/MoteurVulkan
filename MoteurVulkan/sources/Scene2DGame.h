@@ -29,10 +29,10 @@ namespace Scene2DGame
 	const int HEIGHT = 600;
 
 	SceneInstance planeSceneInstance;
-	SceneRenderableAsset planeRenderable;
+	RenderableAsset planeRenderable;
 
 	SceneInstance cubeSceneInstance;
-	SceneRenderableAsset cubeRenderable;
+	RenderableAsset cubeRenderable;
 
 	SceneInstance cameraSceneInstance;
 
@@ -142,7 +142,7 @@ namespace Scene2DGame
 			//Update objects
 			TickUpdate(frameDeltaTime);
 
-			std::vector<std::pair<const SceneInstance*, const SceneRenderableAsset*>> drawList = { {&planeSceneInstance, &planeRenderable}, { &cubeSceneInstance, &cubeRenderable} };
+			std::vector<std::pair<const SceneInstance*, const RenderableAsset*>> drawList = { {&planeSceneInstance, &planeRenderable}, { &cubeSceneInstance, &cubeRenderable} };
 			DrawFrame( current_frame, &cameraSceneInstance, &g_light, drawList);
 
 			current_frame = (++current_frame) % SIMULTANEOUS_FRAMES;
@@ -151,10 +151,9 @@ namespace Scene2DGame
 		vkDeviceWaitIdle(g_vk.device);
 	}
 
-	void CreateRenderable(const GfxModel* modelAsset, uint32_t albedoIndex, uint32_t normalIndex, SceneRenderableAsset* o_renderable)
+	void CreateRenderable(const GfxModel* modelAsset, uint32_t albedoIndex, uint32_t normalIndex, RenderableAsset* o_renderable)
 	{
-		SceneInstanceSet* sceneInstanceSet = CreateGeometryInstanceDescriptorSet();
-		*o_renderable = { modelAsset, sceneInstanceSet, albedoIndex, normalIndex };
+		*o_renderable = { modelAsset, albedoIndex, normalIndex };
 	}
 
 	void Init()

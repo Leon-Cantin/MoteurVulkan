@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="source\allocators.cpp" />
     <ClCompile Include="source\frame_graph.cpp" />
     <ClCompile Include="source\frame_graph_bindings.cpp" />
     <ClCompile Include="source\gfx_image.cpp" />
@@ -32,6 +33,7 @@
     <ClCompile Include="source\swapchain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="includes\allocators.h" />
     <ClInclude Include="includes\frame_graph.h" />
     <ClInclude Include="includes\frame_graph_bindings.h" />
     <ClInclude Include="includes\gfx_image.h" />
