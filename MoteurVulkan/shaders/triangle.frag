@@ -12,14 +12,13 @@ layout(set = RENDERPASS_SET, binding = 1) uniform Light
 	vec3 location;
 	float intensity;
 }light;
-layout(set = RENDERPASS_SET, binding = 2) uniform sampler2D albedoSampler[5];
-layout(set = RENDERPASS_SET, binding = 3) uniform sampler2D normalSampler;
+layout(set = RENDERPASS_SET, binding = 2) uniform sampler2D bindlessTextures[5];
 layout(set = RENDERPASS_SET, binding = 4) uniform sampler2DShadow shadowSampler;
 
 layout(set = INSTANCE_SET, binding = 0) uniform InstanceMatrices {
     mat4 model;
+	uint textureIndices[4];
 } instanceMat;
-
 
 layout(location = 0) in VS_OUT
 {
@@ -82,11 +81,11 @@ float roughness = 0.65;
 	mat3 view_tangent_matrix = mat3(normalize(fs_in.tangent_vs),
 							normalize(fs_in.bitangent_vs),
 							normalize(fs_in.normal_vs));
-	vec3 normal_ts = texture(normalSampler, fs_in.fragTexCoord).rgb;
+	vec3 normal_ts = texture(bindlessTextures[instanceMat.textureIndices[1]], fs_in.fragTexCoord).rgb;
 	vec3 normal_vs = view_tangent_matrix * normal_ts;
 
 	float diffuse_factor = saturate( dot(normal_vs, surface_to_light));
-	vec3 albedo = texture(albedoSampler[pushConsts.index] , fs_in.fragTexCoord).rgb;
+	vec3 albedo = texture(bindlessTextures[instanceMat.textureIndices[0]] , fs_in.fragTexCoord).rgb;
 	vec3 diffuse = albedo * (diffuse_factor);
 	
 	vec3 viewVector = normalize(fs_in.viewVector);

@@ -77,6 +77,27 @@
     <None Include="sources\stb_font_consolas_24_latin1.inl">
       <Filter>sources</Filter>
     </None>
+    <None Include="shaders\shadows.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\skybox.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\skybox.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\text.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\text.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\textCompute.comp">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\shadows.frag">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sources\skybox.h">

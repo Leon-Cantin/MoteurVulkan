@@ -187,6 +187,13 @@
     <ClCompile Include="sources\window_handler_vk.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\shadows.frag" />
+    <None Include="shaders\shadows.vert" />
+    <None Include="shaders\skybox.frag" />
+    <None Include="shaders\skybox.vert" />
+    <None Include="shaders\text.frag" />
+    <None Include="shaders\text.vert" />
+    <None Include="shaders\textCompute.comp" />
     <None Include="shaders\triangle.frag" />
     <None Include="shaders\triangle.vert" />
     <None Include="sources\stb_font_consolas_24_latin1.inl" />

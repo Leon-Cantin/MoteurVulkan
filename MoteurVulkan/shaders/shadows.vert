@@ -8,6 +8,7 @@ layout(set = RENDERPASS_SET, binding = 0) uniform SceneMatrices {
 } sceneMatrices;
 layout(set = INSTANCE_SET, binding = 0) uniform InstanceMatrices {
     mat4 model;
+	uint textureIndices[4];
 } instanceMat;
 
 layout (location = 0) in vec3 position;

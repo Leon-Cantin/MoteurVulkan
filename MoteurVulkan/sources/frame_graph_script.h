@@ -36,8 +36,7 @@ enum class eTechniqueDataEntryImageName
 {
 	FIRST = (uint32_t)eTechniqueDataEntryName::COUNT,
 
-	ALBEDOS = FIRST,
-	NORMALS,
+	BINDLESS_TEXTURES = FIRST,
 	TEXT,
 	SKYBOX,
 
@@ -59,15 +58,14 @@ constexpr VkExtent2D RT_EXTENT_SHADOW = { 1024, 1024 };
 static FG::TechniqueDataEntry techniqueDataEntries[static_cast< size_t >(eTechniqueDataEntryImageName::COUNT)] =
 {
 	//Buffers
-	CREATE_BUFFER_DYNAMIC( eTechniqueDataEntryName::INSTANCE_DATA, sizeof( InstanceMatrices ),  maxModelsCount ),
+	CREATE_BUFFER_DYNAMIC( eTechniqueDataEntryName::INSTANCE_DATA, sizeof( GfxInstanceData ),  maxModelsCount ),
 	CREATE_BUFFER( eTechniqueDataEntryName::SHADOW_DATA, sizeof( SceneMatricesUniform ) ),
 	CREATE_BUFFER( eTechniqueDataEntryName::SCENE_DATA, sizeof( SceneMatricesUniform ) ),
 	CREATE_BUFFER( eTechniqueDataEntryName::LIGHT_DATA, sizeof( LightUniform ) ),
 	CREATE_BUFFER( eTechniqueDataEntryName::SKYBOX_DATA, sizeof( SkyboxUniformBufferObject ) ),
 
 	//images
-	CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::ALBEDOS, 5 ),
-	CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::NORMALS, 1 ),
+	CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::BINDLESS_TEXTURES, 5 ),
 	CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::TEXT, 1 ),
 	CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::SKYBOX, 1 ),
 
@@ -102,8 +100,7 @@ TechniqueDescriptorSetDesc geoPassSetDesc =
 		{ static_cast< uint32_t >(eTechniqueDataEntryName::SCENE_DATA), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
 		{ static_cast< uint32_t >(eTechniqueDataEntryName::LIGHT_DATA), 1, eDescriptorAccess::READ, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
 
-		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::ALBEDOS), 2, eDescriptorAccess::READ, VK_SHADER_STAGE_FRAGMENT_BIT },
-		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::NORMALS), 3, eDescriptorAccess::READ, VK_SHADER_STAGE_FRAGMENT_BIT },
+		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::BINDLESS_TEXTURES), 2, eDescriptorAccess::READ, VK_SHADER_STAGE_FRAGMENT_BIT },
 		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::SHADOW_MAP), 4, eDescriptorAccess::READ, VK_SHADER_STAGE_FRAGMENT_BIT },
 	}
 };

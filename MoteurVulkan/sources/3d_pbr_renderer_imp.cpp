@@ -45,15 +45,17 @@ static void UpdateSceneUniformBuffer(const glm::mat4& world_view_matrix, VkExten
 	UpdateGpuBuffer( sceneUniformBuffer, &sceneMatrices, sizeof( sceneMatrices ), 0 );
 }
 
-static void UpdateGeometryUniformBuffer( const SceneInstance* sceneInstance, SceneInstanceSet* sceneInstanceDescriptorSet, BufferAllocator* allocator )
+static void UpdateGfxInstanceData( const SceneInstance* sceneInstance, const RenderableAsset* asset, SceneInstanceSet* sceneInstanceDescriptorSet, BufferAllocator* allocator )
 {
-	InstanceMatrices instanceMatrices = {};
+	GfxInstanceData instanceMatrices = {};
 	instanceMatrices.model = ComputeSceneInstanceModelMatrix( *sceneInstance );
+	instanceMatrices.texturesIndexes[0] = asset->albedoIndex;
+	instanceMatrices.texturesIndexes[1] = asset->normalIndex;
 
-	size_t allocationSize = sizeof( InstanceMatrices );
+	size_t allocationSize = sizeof( GfxInstanceData );
 	size_t memoryOffset = AllocateGpuBufferSlot( allocator, allocationSize );
-	sceneInstanceDescriptorSet->geometryBufferOffsets = memoryOffset;
 
+	sceneInstanceDescriptorSet->geometryBufferOffsets = memoryOffset;
 	UpdateGpuBuffer( allocator->buffer, &instanceMatrices, allocationSize, memoryOffset );
 }
 
@@ -85,7 +87,7 @@ static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cam
 	BufferAllocator allocator { GetBuffer( &currentGpuInputData, eTechniqueDataEntryName::INSTANCE_DATA ) };
 	for( uint32_t i = 0; i < drawList.size(); ++i )
 	{
-		UpdateGeometryUniformBuffer( drawList[i].first, &drawListReal[i].descriptorSet, &allocator );
+		UpdateGfxInstanceData( drawList[i].first, drawList[i].second, &drawListReal[i].descriptorSet, &allocator );
 		drawListReal[i].asset = drawList[i].second;
 	}
 
@@ -115,30 +117,36 @@ void ReloadSceneShaders()
 	ReloadGeometryShaders(extent);*/
 }
 
-VkDescriptorImageInfo albedos[5];
-VkDescriptorImageInfo normalTextures[1];
+VkDescriptorImageInfo _bindlessTextures[5];
+uint32_t _bindlessTexturesCount = 0;
 VkDescriptorImageInfo textTextures[1];
 VkDescriptorImageInfo skyboxImages[1];
 
-static void CreateBuffers( const GfxImage* albedoImage, const GfxImage* normalImage, const GfxImage* skyboxImage )
+uint32_t RegisterBindlessTexture( const GfxImage* image )
+{
+	VkSampler sampler = GetSampler( Samplers::Trilinear );
+	_bindlessTextures[_bindlessTexturesCount] = { sampler, image->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+	return _bindlessTexturesCount++;
+}
+
+static VkDescriptorImageInfo* GetBindlessTextures()
+{
+	return _bindlessTextures;
+}
+
+static void CreateBuffers( const GfxImage* skyboxImage )
 {
 	CreateTextVertexBuffer( 256 );
 
 	VkSampler sampler = GetSampler( Samplers::Trilinear );
 
-	albedos[0] = { sampler, albedoImage->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
-	albedos[1] = { sampler, albedoImage->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
-	albedos[2] = { sampler, albedoImage->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
-	albedos[3] = { sampler, albedoImage->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
-	albedos[4] = { sampler, albedoImage->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
-	normalTextures[0] = { sampler, normalImage->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+	VkDescriptorImageInfo* bindlessTextures = GetBindlessTextures();
 	textTextures[0] = { sampler, GetTextImage()->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
 	skyboxImages[0] = { sampler, skyboxImage->imageView };
 	
 	for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 	{
-		SetImages( &_inputBuffers[i], eTechniqueDataEntryImageName::ALBEDOS, albedos);
-		SetImages( &_inputBuffers[i], eTechniqueDataEntryImageName::NORMALS, normalTextures);
+		SetImages( &_inputBuffers[i], eTechniqueDataEntryImageName::BINDLESS_TEXTURES, bindlessTextures );
 		SetImages( &_inputBuffers[i], eTechniqueDataEntryImageName::TEXT, textTextures);
 		SetImages( &_inputBuffers[i], eTechniqueDataEntryImageName::SKYBOX, skyboxImages );
 	}
@@ -183,9 +191,9 @@ void InitRendererImp( VkSurfaceKHR swapchainSurface )
 	LoadFontTexture();
 }
 
-void CompileScene( const GfxImage* albedoImage, const GfxImage* normalImage, const GfxImage* skyboxImage )
+void CompileScene( const GfxImage* skyboxImage )
 {
-	CreateBuffers( albedoImage, normalImage, skyboxImage );
+	CreateBuffers( skyboxImage );
 	SetInputBuffers( &_inputBuffers, descriptorPool );
 	CompileFrameGraph( InitializeScript );
 }

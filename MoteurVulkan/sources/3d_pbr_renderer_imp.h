@@ -10,7 +10,8 @@ struct LightUniform {
 	float intensity;
 };
 
-void CompileScene( const GfxImage* albedoImage, const GfxImage* normalImage, const GfxImage* skyboxImage );
+uint32_t RegisterBindlessTexture( const GfxImage* image );
+void CompileScene( const GfxImage* skyboxImage );
 void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<std::pair<const SceneInstance*, const RenderableAsset*>>& drawList );
 void ForceReloadShaders();
 

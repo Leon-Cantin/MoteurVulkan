@@ -60,7 +60,7 @@ static void CmdDrawModelAsset( VkCommandBuffer commandBuffer, const DrawModel* d
 {	
 	//TODO: could do like the VIB, query a texture of X from an array using an enum index
 	//Have a list of all required paremeters for this pass.
-	vkCmdPushConstants( commandBuffer, technique->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof( uint32_t ), &drawModel->asset->albedoIndex );
+	//vkCmdPushConstants( commandBuffer, technique->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof( uint32_t ), &drawModel->asset->albedoIndex );
 
 	const SceneInstanceSet* instanceSet = &drawModel->descriptorSet;
 	const GfxModel* modelAsset = drawModel->asset->modelAsset;

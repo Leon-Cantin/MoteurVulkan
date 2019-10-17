@@ -18,8 +18,9 @@ struct SceneInstance
 	float scale;
 };
 
-struct InstanceMatrices {
+struct GfxInstanceData {
 	glm::mat4 model;
+	uint32_t texturesIndexes[4];
 };
 
 struct SceneMatricesUniform {
