@@ -51,6 +51,9 @@
     <ClCompile Include="source\allocators.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\bindless_textures.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="includes\frame_graph.h">
@@ -96,6 +99,9 @@
       <Filter>source\frame_graph</Filter>
     </ClInclude>
     <ClInclude Include="includes\allocators.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\bindless_textures.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

@@ -74,14 +74,14 @@ static FG::TechniqueDataEntry techniqueDataEntries[static_cast< size_t >(eTechni
 	CREATE_IMAGE_DEPTH_SAMPLER( eTechniqueDataEntryImageName::SHADOW_MAP, RT_FORMAT_SHADOW_DEPTH, RT_EXTENT_SHADOW, VK_IMAGE_USAGE_SAMPLED_BIT, false, Samplers::Shadow ),
 };
 
-inline void SetBuffers( GpuInputData* buffers, eTechniqueDataEntryName id, GpuBuffer* input )
+inline void SetBuffers( GpuInputData* buffers, eTechniqueDataEntryName id, GpuBuffer* input, uint32_t count )
 {
-	SetBuffers( buffers, static_cast< uint32_t >(id), input );
+	SetBuffers( buffers, static_cast< uint32_t >(id), input, count );
 }
 
-inline void SetImages( GpuInputData* buffers, eTechniqueDataEntryImageName id, VkDescriptorImageInfo* input )
+inline void SetImages( GpuInputData* buffers, eTechniqueDataEntryImageName id, VkDescriptorImageInfo* input, uint32_t count )
 {
-	SetImages( buffers, static_cast< uint32_t >(id), input );
+	SetImages( buffers, static_cast< uint32_t >(id), input, count );
 }
 
 inline GpuBuffer* GetBuffer( const GpuInputData* buffers, eTechniqueDataEntryName id )
@@ -249,6 +249,7 @@ FG::FrameGraph InitializeScript( const Swapchain* swapchain )
 
 	FG::FrameGraph fg = FG::CreateGraph( swapchain, &rpCreationData, &dataEntries, backBufferId, _descriptorPool );
 	FG::CreateTechniques( &fg, _descriptorPool, *_pInputBuffers );
+	FG::UpdateTechniqueDescriptorSets( &fg, *_pInputBuffers );
 
 	return fg;
 }

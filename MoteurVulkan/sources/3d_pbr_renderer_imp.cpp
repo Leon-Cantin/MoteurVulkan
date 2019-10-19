@@ -117,38 +117,24 @@ void ReloadSceneShaders()
 	ReloadGeometryShaders(extent);*/
 }
 
-VkDescriptorImageInfo _bindlessTextures[5];
-uint32_t _bindlessTexturesCount = 0;
+
 VkDescriptorImageInfo textTextures[1];
 VkDescriptorImageInfo skyboxImages[1];
 
-uint32_t RegisterBindlessTexture( const GfxImage* image )
-{
-	VkSampler sampler = GetSampler( Samplers::Trilinear );
-	_bindlessTextures[_bindlessTexturesCount] = { sampler, image->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
-	return _bindlessTexturesCount++;
-}
-
-static VkDescriptorImageInfo* GetBindlessTextures()
-{
-	return _bindlessTextures;
-}
-
-static void CreateBuffers( const GfxImage* skyboxImage )
+static void CreateBuffers( BindlessTexturesState* bindlessTexturesState, const GfxImage* skyboxImage )
 {
 	CreateTextVertexBuffer( 256 );
 
 	VkSampler sampler = GetSampler( Samplers::Trilinear );
 
-	VkDescriptorImageInfo* bindlessTextures = GetBindlessTextures();
 	textTextures[0] = { sampler, GetTextImage()->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
 	skyboxImages[0] = { sampler, skyboxImage->imageView };
 	
 	for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 	{
-		SetImages( &_inputBuffers[i], eTechniqueDataEntryImageName::BINDLESS_TEXTURES, bindlessTextures );
-		SetImages( &_inputBuffers[i], eTechniqueDataEntryImageName::TEXT, textTextures);
-		SetImages( &_inputBuffers[i], eTechniqueDataEntryImageName::SKYBOX, skyboxImages );
+		SetImages( &_inputBuffers[i], eTechniqueDataEntryImageName::BINDLESS_TEXTURES, bindlessTexturesState->_bindlessTextures, bindlessTexturesState->_bindlessTexturesCount );
+		SetImages( &_inputBuffers[i], eTechniqueDataEntryImageName::TEXT, textTextures, 1 );
+		SetImages( &_inputBuffers[i], eTechniqueDataEntryImageName::SKYBOX, skyboxImages, 1 );
 	}
 }
 
@@ -191,9 +177,9 @@ void InitRendererImp( VkSurfaceKHR swapchainSurface )
 	LoadFontTexture();
 }
 
-void CompileScene( const GfxImage* skyboxImage )
+void CompileScene( BindlessTexturesState* bindlessTexturesState, const GfxImage* skyboxImage )
 {
-	CreateBuffers( skyboxImage );
+	CreateBuffers( bindlessTexturesState, skyboxImage );
 	SetInputBuffers( &_inputBuffers, descriptorPool );
 	CompileFrameGraph( InitializeScript );
 }

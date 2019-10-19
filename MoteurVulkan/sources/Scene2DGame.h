@@ -199,22 +199,23 @@ namespace Scene2DGame
 		GfxModel* planeModelAsset = AL::Load3DModel( "Plane", "assets/plane.obj", 0 );
 		GfxModel* cubeModelAsset = AL::LoadglTf3DModel( "Cube", "assets/cube2.glb" );
 
-		uint32_t albedoIndex = RegisterBindlessTexture( albedoTexture );
-		uint32_t normalIndex = RegisterBindlessTexture( normalTexture );
+		BindlessTexturesState bindlessTexturesState;
+		uint32_t albedoIndex = RegisterBindlessTexture( &bindlessTexturesState, albedoTexture );
+		uint32_t normalIndex = RegisterBindlessTexture( &bindlessTexturesState, normalTexture );
 		//TODO: How should I fill the empty spots? null descriptors? no dscriptors should work fine.
-		RegisterBindlessTexture( albedoTexture );
-		RegisterBindlessTexture( albedoTexture );
-		RegisterBindlessTexture( albedoTexture );
+		/*RegisterBindlessTexture( &bindlessTexturesState, albedoTexture );
+		RegisterBindlessTexture( &bindlessTexturesState, albedoTexture );
+		RegisterBindlessTexture( &bindlessTexturesState, albedoTexture );*/
 
 		CreateRenderable( planeModelAsset, albedoIndex, normalIndex, &planeRenderable );
 		CreateRenderable( cubeModelAsset, albedoIndex, normalIndex, &cubeRenderable );
 
-		CompileScene( skyboxTexture );
+		CompileScene( &bindlessTexturesState, skyboxTexture );
 
 		planeSceneInstance = { glm::vec3( 0.0f, -0.5f, 0.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 10.0f };
 		cubeSceneInstance = { glm::vec3( 0.0f, 1.0f, 2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 0.5f };
 		cameraSceneInstance = { glm::vec3( 0.0f, 0.0f, -2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 1.0f };
-		g_light = { glm::mat4( 1.0f ), {3.0f, 3.0f, -3.0f}, 1.0f };
+		g_light = { glm::mat4( 1.0f ), {3.0f, 3.0f, 1.0f}, 1.0f };
 	}
 
 	void cleanup() 

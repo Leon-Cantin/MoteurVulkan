@@ -82,18 +82,21 @@ struct GpuInputData
 {
 	//TODO the ptr here is kinda dangerous. Used for descriptors that contains multiple descriptors... mostly just for images
 	std::array<GpuInputDataEntry, MAX_DATA_ENTRIES> data;
+	std::array<uint32_t, MAX_DATA_ENTRIES> dataCount;
 };
 
-inline void SetBuffers( GpuInputData* buffers, uint32_t id, GpuBuffer* input )
+inline void SetBuffers( GpuInputData* buffers, uint32_t id, GpuBuffer* input, uint32_t count )
 {
 	assert( id < MAX_DATA_ENTRIES );
 	buffers->data[id].buffer = input;
+	buffers->dataCount[id] = count;
 }
 
-inline void SetImages( GpuInputData* buffers, uint32_t id, VkDescriptorImageInfo* input )
+inline void SetImages( GpuInputData* buffers, uint32_t id, VkDescriptorImageInfo* input, uint32_t count )
 {
 	assert( id < MAX_DATA_ENTRIES );
 	buffers->data[id].image = input;
+	buffers->dataCount[id] = count;
 }
 
 inline GpuBuffer* GetBuffer( const GpuInputData* buffers, uint32_t id )
@@ -106,4 +109,10 @@ inline VkDescriptorImageInfo* GetImage( const GpuInputData* buffers, uint32_t id
 {
 	assert( id < MAX_DATA_ENTRIES );
 	return buffers->data[id].image;
+}
+
+inline uint32_t GetDataCount( const GpuInputData* buffers, uint32_t id )
+{
+	assert( id < MAX_DATA_ENTRIES );
+	return buffers->dataCount[id];
 }

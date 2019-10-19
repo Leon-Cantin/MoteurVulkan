@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\allocators.cpp" />
+    <ClCompile Include="source\bindless_textures.cpp" />
     <ClCompile Include="source\frame_graph.cpp" />
     <ClCompile Include="source\frame_graph_bindings.cpp" />
     <ClCompile Include="source\gfx_image.cpp" />
@@ -34,6 +35,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="includes\allocators.h" />
+    <ClInclude Include="includes\bindless_textures.h" />
     <ClInclude Include="includes\frame_graph.h" />
     <ClInclude Include="includes\frame_graph_bindings.h" />
     <ClInclude Include="includes\gfx_image.h" />
@@ -133,7 +135,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>includes;..\VulkanLayer\includes;D:\Programme\VulkanSDK\1.1.92.1\Include;..\ThirdParties\glm-0.9.9-a2;..\ThirdParties\nlohmann_json\include;..\ThirdParties\stb;..\ThirdParties\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>includes;..\VulkanLayer\includes;D:\Programme\VulkanSDK\1.1.121.2\Include;..\ThirdParties\glm-0.9.9-a2;..\ThirdParties\nlohmann_json\include;..\ThirdParties\stb;..\ThirdParties\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
@@ -141,7 +143,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalLibraryDirectories>D:\Programme\VulkanSDK\1.1.92.1\Lib;..\VulkanLayer\bin;..\ThirdParties\assimp\bin</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>D:\Programme\VulkanSDK\1.1.121.2\Lib;..\VulkanLayer\bin;..\ThirdParties\assimp\bin</AdditionalLibraryDirectories>
       <AdditionalDependencies>..\ThirdParties\assimp\bin\assimp-vc140-mt.lib;VulkanLayer_x64_Debug.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
@@ -199,7 +201,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>includes;..\VulkanLayer\includes;D:\Programme\VulkanSDK\1.1.92.1\Include;..\ThirdParties\glm-0.9.9-a2;..\ThirdParties\nlohmann_json\include;..\ThirdParties\stb;..\ThirdParties\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>includes;..\VulkanLayer\includes;D:\Programme\VulkanSDK\1.1.121.2\Include;..\ThirdParties\glm-0.9.9-a2;..\ThirdParties\nlohmann_json\include;..\ThirdParties\stb;..\ThirdParties\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
@@ -209,7 +211,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalLibraryDirectories>D:\Programme\VulkanSDK\1.1.92.1\Lib;..\VulkanLayer\bin;..\ThirdParties\assimp\bin</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>D:\Programme\VulkanSDK\1.1.121.2\Lib;..\VulkanLayer\bin;..\ThirdParties\assimp\bin</AdditionalLibraryDirectories>
       <AdditionalDependencies>..\ThirdParties\assimp\bin\assimp-vc140-mt.lib;VulkanLayer_x64_Release.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
