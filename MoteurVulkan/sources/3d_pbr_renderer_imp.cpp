@@ -18,7 +18,7 @@ extern Swapchain g_swapchain;
 
 bool g_forceReloadShaders = false;
 
-size_t g_sceneInstancesCount = 0;
+
 std::array< GpuInputData, SIMULTANEOUS_FRAMES> _inputBuffers;
 
 /*
@@ -128,7 +128,7 @@ static void CreateBuffers( BindlessTexturesState* bindlessTexturesState, const G
 	VkSampler sampler = GetSampler( Samplers::Trilinear );
 
 	textTextures[0] = { sampler, GetTextImage()->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
-	skyboxImages[0] = { sampler, skyboxImage->imageView };
+	skyboxImages[0] = { sampler, skyboxImage->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
 	
 	for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 	{

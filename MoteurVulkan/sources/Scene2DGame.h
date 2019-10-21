@@ -36,6 +36,8 @@ namespace Scene2DGame
 
 	SceneInstance cameraSceneInstance;
 
+	BindlessTexturesState bindlessTexturesState;
+
 	LightUniform g_light;
 
 	float frameDeltaTime = 0.0f;
@@ -82,35 +84,6 @@ namespace Scene2DGame
 	{
 		cameraSceneInstance.location -= PitchVector() * (frameDeltaTime / 1000.0f);
 	}
-	
-	//TODO
-	/*static void onMouseMove( double x, double y )
-	{
-		static bool mouse_pressed = false;
-		static double cx, cy;
-		if (glfwGetMouseButton(g_window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS && !mouse_pressed) {
-			glfwSetInputMode(g_window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-			glfwGetCursorPos(g_window, &cx, &cy);
-			//glfwSetCursorPos(window, cx, cy);
-			mouse_pressed = true;
-		}
-		else if (glfwGetMouseButton(g_window, GLFW_MOUSE_BUTTON_1) == GLFW_RELEASE && mouse_pressed) {
-			glfwSetInputMode(g_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-			mouse_pressed = false;
-		}
-
-		if (mouse_pressed)
-		{
-			glfwSetCursorPos(g_window, cx, cy);
-			float dx = x - cx;
-			float dy = y - cy;
-
-			//TODO: Create offsets instead of applying transformation right away
-			glm::fquat pitchRotation = glm::angleAxis(glm::radians(dy) * frameDeltaTime, PitchVector());
-			glm::fquat yawRotation = glm::angleAxis(glm::radians(dx) * frameDeltaTime, glm::vec3{ 0.0f,1.0f,0.0f });
-			cameraSceneInstance.orientation = yawRotation * pitchRotation * cameraSceneInstance.orientation;
-		}
-	}*/
 
 	void ReloadShadersCallback(const std::string* params, uint32_t paramsCount)
 	{
@@ -176,9 +149,6 @@ namespace Scene2DGame
 		IH::RegisterAction( "right", IH::Pressed, &MoveRightCallback );
 		IH::BindInputToAction( "right", IH::D );
 
-		//TODO
-		//glfwSetCursorPosCallback(g_window, onMouseMove);
-
 		//Console commands callback (need IH)
 		ConCom::Init();
 		ConCom::RegisterCommand( "light", &LightCallback );
@@ -199,13 +169,8 @@ namespace Scene2DGame
 		GfxModel* planeModelAsset = AL::Load3DModel( "Plane", "assets/plane.obj", 0 );
 		GfxModel* cubeModelAsset = AL::LoadglTf3DModel( "Cube", "assets/cube2.glb" );
 
-		BindlessTexturesState bindlessTexturesState;
 		uint32_t albedoIndex = RegisterBindlessTexture( &bindlessTexturesState, albedoTexture );
 		uint32_t normalIndex = RegisterBindlessTexture( &bindlessTexturesState, normalTexture );
-		//TODO: How should I fill the empty spots? null descriptors? no dscriptors should work fine.
-		/*RegisterBindlessTexture( &bindlessTexturesState, albedoTexture );
-		RegisterBindlessTexture( &bindlessTexturesState, albedoTexture );
-		RegisterBindlessTexture( &bindlessTexturesState, albedoTexture );*/
 
 		CreateRenderable( planeModelAsset, albedoIndex, normalIndex, &planeRenderable );
 		CreateRenderable( cubeModelAsset, albedoIndex, normalIndex, &cubeRenderable );
