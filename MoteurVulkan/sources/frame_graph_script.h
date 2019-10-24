@@ -55,7 +55,7 @@ enum class eTechniqueDataEntryImageName
 const uint32_t maxModelsCount = 5;
 constexpr VkFormat RT_FORMAT_SHADOW_DEPTH = VK_FORMAT_D32_SFLOAT;
 constexpr VkExtent2D RT_EXTENT_SHADOW = { 1024, 1024 };
-static FG::TechniqueDataEntry techniqueDataEntries[static_cast< size_t >(eTechniqueDataEntryImageName::COUNT)] =
+static FG::DataEntry techniqueDataEntries[static_cast< size_t >(eTechniqueDataEntryImageName::COUNT)] =
 {
 	//Buffers
 	CREATE_BUFFER_DYNAMIC( eTechniqueDataEntryName::INSTANCE_DATA, sizeof( GfxInstanceData ),  maxModelsCount ),
@@ -94,7 +94,7 @@ inline GfxImageSamplerCombined* GetImage( const GpuInputData* buffers, eTechniqu
 	return GetImage( buffers, static_cast< uint32_t >(id) );
 }
 
-TechniqueDescriptorSetDesc geoPassSetDesc =
+GfxDescriptorSetDesc geoPassSetDesc =
 {
 	{
 		{ static_cast< uint32_t >(eTechniqueDataEntryName::SCENE_DATA), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
@@ -105,7 +105,7 @@ TechniqueDescriptorSetDesc geoPassSetDesc =
 	}
 };
 
-TechniqueDescriptorSetDesc geoInstanceSetDesc =
+GfxDescriptorSetDesc geoInstanceSetDesc =
 {
 	{
 		{ static_cast< uint32_t >(eTechniqueDataEntryName::INSTANCE_DATA), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
@@ -136,14 +136,14 @@ static FG::RenderPassCreationData FG_Geometry_CreateGraphNode( const Swapchain* 
 	return renderPassCreationData;
 }
 
-TechniqueDescriptorSetDesc shadowPassSet =
+GfxDescriptorSetDesc shadowPassSet =
 {
 	{
 		{ static_cast< uint32_t >(eTechniqueDataEntryName::SHADOW_DATA), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_VERTEX_BIT }
 	}
 };
 
-TechniqueDescriptorSetDesc shadowInstanceSet =
+GfxDescriptorSetDesc shadowInstanceSet =
 {
 	{
 		{ static_cast< uint32_t >(eTechniqueDataEntryName::INSTANCE_DATA), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_VERTEX_BIT }
@@ -169,7 +169,7 @@ static FG::RenderPassCreationData FG_Shadow_CreateGraphNode( const Swapchain* sw
 	return renderPassCreationData;
 }
 
-TechniqueDescriptorSetDesc skyboxPassSetDesc =
+GfxDescriptorSetDesc skyboxPassSetDesc =
 {
 	{
 		{ static_cast< uint32_t >(eTechniqueDataEntryName::SKYBOX_DATA), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_VERTEX_BIT },
@@ -199,7 +199,7 @@ static FG::RenderPassCreationData FG_Skybox_CreateGraphNode( const Swapchain* sw
 	return renderPassCreationData;
 }
 
-TechniqueDescriptorSetDesc textPassSet =
+GfxDescriptorSetDesc textPassSet =
 {
 	{
 		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::TEXT), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_FRAGMENT_BIT }
@@ -235,7 +235,7 @@ FG::FrameGraph InitializeScript( const Swapchain* swapchain )
 
 	uint32_t backBufferId = (uint32_t) eTechniqueDataEntryImageName::SCENE_COLOR;
 
-	std::vector<FG::TechniqueDataEntry> dataEntries ( techniqueDataEntries, techniqueDataEntries + sizeof( techniqueDataEntries ) / sizeof( techniqueDataEntries[0] ) );
+	std::vector<FG::DataEntry> dataEntries ( techniqueDataEntries, techniqueDataEntries + sizeof( techniqueDataEntries ) / sizeof( techniqueDataEntries[0] ) );
 	dataEntries[( uint32_t )eTechniqueDataEntryImageName::SCENE_COLOR].resourceDesc.format = swapchainFormat;
 	dataEntries[( uint32_t )eTechniqueDataEntryImageName::SCENE_COLOR].resourceDesc.extent = swapchainExtent; // maybe not needed because FG does it
 	dataEntries[( uint32_t )eTechniqueDataEntryImageName::SCENE_DEPTH].resourceDesc.extent = swapchainExtent;

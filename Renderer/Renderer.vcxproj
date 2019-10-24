@@ -35,6 +35,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="includes\allocators.h" />
+    <ClInclude Include="includes\bindings.h" />
     <ClInclude Include="includes\bindless_textures.h" />
     <ClInclude Include="includes\frame_graph.h" />
     <ClInclude Include="includes\frame_graph_bindings.h" />

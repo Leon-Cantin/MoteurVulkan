@@ -8,7 +8,7 @@ namespace FG
 {
 	struct FrameGraphCreationData
 	{
-		std::vector<TechniqueDataEntry> resources;
+		std::vector<DataEntry> resources;
 		std::vector<RenderPassCreationData> renderPasses;
 		uint32_t RT_OUTPUT_TARGET;
 	};

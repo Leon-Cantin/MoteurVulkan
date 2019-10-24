@@ -5,19 +5,26 @@
 #include "swapchain.h"
 #include "scene_frame_data.h"
 #include "material.h"
+#include "bindings.h"
 
 namespace FG
 {
+	enum eDataEntryFlags
+	{
+		NONE = 1 << 0,
+		EXTERNAL = 1 << 1,
+	};
+
 	constexpr VkExtent2D SWAPCHAIN_SIZED = { 0, 0 };
 	#define EXTERNAL_IMAGE {(VkFormat)0,{0,0},( VkImageUsageFlagBits )0, (VkImageAspectFlagBits)0,(VkImageLayout)0,false}
-	#define CREATE_IMAGE_COLOR( id, format, extent, usage, swapchainSized ) { (uint32_t)id, eDescriptorType::IMAGE, 1,  eTechniqueDataEntryFlags::NONE, { format , extent, ( VkImageUsageFlagBits )( VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | usage ), VK_IMAGE_ASPECT_COLOR_BIT,  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, swapchainSized }, Samplers::Count }
-	#define CREATE_IMAGE_DEPTH( id, format, extent, usage, swapchainSized ) { (uint32_t)id, eDescriptorType::IMAGE, 1,  eTechniqueDataEntryFlags::NONE, { format , extent, ( VkImageUsageFlagBits )( VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | usage ), VK_IMAGE_ASPECT_DEPTH_BIT,  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, swapchainSized },  Samplers::Count }
-	#define CREATE_IMAGE_DEPTH_SAMPLER( id, format, extent, usage, swapchainSized, sampler ) { static_cast< uint32_t >( id ), eDescriptorType::IMAGE_SAMPLER, 1,  eTechniqueDataEntryFlags::NONE, { format , extent, ( VkImageUsageFlagBits )( VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | usage ), VK_IMAGE_ASPECT_DEPTH_BIT,  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, swapchainSized }, sampler }
-	#define CREATE_IMAGE_SAMPLER_EXTERNAL( id, count ){ static_cast< uint32_t >(id), eDescriptorType::IMAGE_SAMPLER, count, eTechniqueDataEntryFlags::EXTERNAL,	EXTERNAL_IMAGE }
+	#define CREATE_IMAGE_COLOR( id, format, extent, usage, swapchainSized ) { (uint32_t)id, eDescriptorType::IMAGE, 1,  FG::eDataEntryFlags::NONE, { format , extent, ( VkImageUsageFlagBits )( VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | usage ), VK_IMAGE_ASPECT_COLOR_BIT,  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, swapchainSized }, Samplers::Count }
+	#define CREATE_IMAGE_DEPTH( id, format, extent, usage, swapchainSized ) { (uint32_t)id, eDescriptorType::IMAGE, 1,  FG::eDataEntryFlags::NONE, { format , extent, ( VkImageUsageFlagBits )( VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | usage ), VK_IMAGE_ASPECT_DEPTH_BIT,  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, swapchainSized },  Samplers::Count }
+	#define CREATE_IMAGE_DEPTH_SAMPLER( id, format, extent, usage, swapchainSized, sampler ) { static_cast< uint32_t >( id ), eDescriptorType::IMAGE_SAMPLER, 1,  FG::eDataEntryFlags::NONE, { format , extent, ( VkImageUsageFlagBits )( VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | usage ), VK_IMAGE_ASPECT_DEPTH_BIT,  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, swapchainSized }, sampler }
+	#define CREATE_IMAGE_SAMPLER_EXTERNAL( id, count ){ static_cast< uint32_t >(id), eDescriptorType::IMAGE_SAMPLER, count, FG::eDataEntryFlags::EXTERNAL,	EXTERNAL_IMAGE }
 
 	#define CREATE_BUFFER_IMAGE_INTERNAL( objectSize, objectCount ) { (VkFormat)0, {objectSize, objectCount}, ( VkImageUsageFlagBits )0, (VkImageAspectFlagBits)0, (VkImageLayout)0, false }
-	#define CREATE_BUFFER( id, size ) { (uint32_t)id, eDescriptorType::BUFFER, 1,  eTechniqueDataEntryFlags::NONE, CREATE_BUFFER_IMAGE_INTERNAL( size, 0 ), Samplers::Count }
-	#define CREATE_BUFFER_DYNAMIC( id, objectSize, objectCount ) { (uint32_t)id, eDescriptorType::BUFFER_DYNAMIC, 1,  eTechniqueDataEntryFlags::NONE, CREATE_BUFFER_IMAGE_INTERNAL( objectSize, objectCount ), Samplers::Count }
+	#define CREATE_BUFFER( id, size ) { (uint32_t)id, eDescriptorType::BUFFER, 1,  FG::eDataEntryFlags::NONE, CREATE_BUFFER_IMAGE_INTERNAL( size, 0 ), Samplers::Count }
+	#define CREATE_BUFFER_DYNAMIC( id, objectSize, objectCount ) { (uint32_t)id, eDescriptorType::BUFFER_DYNAMIC, 1,  FG::eDataEntryFlags::NONE, CREATE_BUFFER_IMAGE_INTERNAL( objectSize, objectCount ), Samplers::Count }
 
 	constexpr uint32_t MAX_ATTACHMENTS_COUNT = 8;
 	constexpr uint32_t MAX_READ_TARGETS = 4;
@@ -25,8 +32,8 @@ namespace FG
 	struct FrameGraphNode
 	{
 		void( *RecordDrawCommands )(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique);
-		TechniqueDescriptorSetDesc* passSet;
-		TechniqueDescriptorSetDesc* instanceSet;
+		GfxDescriptorSetDesc* passSet;
+		GfxDescriptorSetDesc* instanceSet;
 		GpuPipelineLayout gpuPipelineLayout;
 		GpuPipelineState gpuPipelineState;
 	};
@@ -55,7 +62,7 @@ namespace FG
 		bool swapChainSized = false;
 	};
 
-	struct TechniqueDataEntry
+	struct DataEntry
 	{
 		uint32_t id;
 		eDescriptorType descriptorType;
@@ -76,7 +83,7 @@ namespace FG
 	};
 
 	//Compilation
-	FrameGraph CreateGraph( const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<TechniqueDataEntry> *inRtCreationData, uint32_t backbufferId, VkDescriptorPool descriptorPool );
+	FrameGraph CreateGraph( const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<DataEntry> *inRtCreationData, uint32_t backbufferId, VkDescriptorPool descriptorPool );
 	void Cleanup( FrameGraph* frameGraph );
 
 	//Graph creation

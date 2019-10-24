@@ -104,5 +104,8 @@
     <ClInclude Include="includes\bindless_textures.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="includes\bindings.h">
+      <Filter>source\renderer</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

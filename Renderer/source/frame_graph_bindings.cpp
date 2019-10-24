@@ -8,9 +8,9 @@ namespace FG
 {
 	GfxImage dummyImage;
 	
-	static const FG::TechniqueDataEntry* GetDataEntry( const FG::FrameGraph* frameGraph, uint32_t entryId )
+	static const FG::DataEntry* GetDataEntry( const FG::FrameGraph* frameGraph, uint32_t entryId )
 	{
-		const FG::TechniqueDataEntry* dataEntry = &frameGraph->imp->creationData.resources[entryId];
+		const FG::DataEntry* dataEntry = &frameGraph->imp->creationData.resources[entryId];
 		assert( dataEntry->id == entryId );
 		return dataEntry;
 	}
@@ -35,7 +35,7 @@ namespace FG
 		}
 	}
 
-	static VkDescriptorSetLayoutBinding CreateSetLayoutBinding( const TechniqueDataBinding* dataBinding, const FG::TechniqueDataEntry* dataEntry )
+	static VkDescriptorSetLayoutBinding CreateSetLayoutBinding( const GfxDataBinding* dataBinding, const FG::DataEntry* dataEntry )
 	{
 		VkDescriptorSetLayoutBinding layoutBinding;
 		layoutBinding.binding = dataBinding->binding;
@@ -46,15 +46,15 @@ namespace FG
 		return layoutBinding;
 	}
 
-	static void CreateDescriptorSetLayout( const FG::FrameGraph* frameGraph, const TechniqueDescriptorSetDesc * desc, VkDescriptorSetLayout * o_setLayout )
+	static void CreateDescriptorSetLayout( const FG::FrameGraph* frameGraph, const GfxDescriptorSetDesc * desc, VkDescriptorSetLayout * o_setLayout )
 	{
 		std::array<VkDescriptorSetLayoutBinding, 8> tempBindings;
 		uint32_t count = 0;
 
 		for( uint32_t i = 0; i < desc->dataBindings.size(); ++i, ++count )
 		{
-			const TechniqueDataBinding* dataBinding = &desc->dataBindings[i];
-			const FG::TechniqueDataEntry* dataEntry = GetDataEntry( frameGraph, dataBinding->id );
+			const GfxDataBinding* dataBinding = &desc->dataBindings[i];
+			const FG::DataEntry* dataEntry = GetDataEntry( frameGraph, dataBinding->id );
 
 			tempBindings[count] = CreateSetLayoutBinding( dataBinding, dataEntry );
 		}
@@ -67,7 +67,7 @@ namespace FG
 		CreateDescriptorSets( descriptorPool, 1, &descriptorSetLayout, o_descriptorSet );		
 	}
 
-	static void CreatePerFrameBuffer( const FG::FrameGraph* frameGraph, const FG::TechniqueDataEntry* techniqueDataEntry, const TechniqueDataBinding* dataBinding, PerFrameBuffer* o_buffer )
+	static void CreatePerFrameBuffer( const FG::FrameGraph* frameGraph, const FG::DataEntry* techniqueDataEntry, const GfxDataBinding* dataBinding, PerFrameBuffer* o_buffer )
 	{
 		VkDeviceSize size;
 		switch( techniqueDataEntry->descriptorType )
@@ -83,14 +83,14 @@ namespace FG
 		CreatePerFrameBuffer( size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, o_buffer );
 	}
 
-	static void SetOrCreateDataIfNeeded( FG::FrameGraph* frameGraph, std::array< GpuInputData, SIMULTANEOUS_FRAMES>* inputBuffers, const TechniqueDescriptorSetDesc* descriptorSetDesc )
+	static void SetOrCreateDataIfNeeded( FG::FrameGraph* frameGraph, std::array< GpuInputData, SIMULTANEOUS_FRAMES>* inputBuffers, const GfxDescriptorSetDesc* descriptorSetDesc )
 	{
 		for( uint32_t i = 0; i < descriptorSetDesc->dataBindings.size(); ++i )
 		{
-			const TechniqueDataBinding* dataBinding = &descriptorSetDesc->dataBindings[i];
-			const FG::TechniqueDataEntry* dataEntry = GetDataEntry( frameGraph, dataBinding->id );
+			const GfxDataBinding* dataBinding = &descriptorSetDesc->dataBindings[i];
+			const FG::DataEntry* dataEntry = GetDataEntry( frameGraph, dataBinding->id );
 
-			if( dataEntry->flags & eTechniqueDataEntryFlags::EXTERNAL )
+			if( dataEntry->flags & eDataEntryFlags::EXTERNAL )
 				continue;
 
 			if( IsBufferType( dataEntry->descriptorType ) )
@@ -120,8 +120,8 @@ namespace FG
 
 	static void CreateTechnique( FG::FrameGraph* frameGraph, VkDescriptorPool descriptorPool, const RenderPass* renderpass, const FG::RenderPassCreationData* passCreationData, Technique* o_technique, std::array< GpuInputData, SIMULTANEOUS_FRAMES>& inputBuffers )
 	{
-		const TechniqueDescriptorSetDesc* passSet = passCreationData->frame_graph_node.passSet;
-		const TechniqueDescriptorSetDesc* instanceSet = passCreationData->frame_graph_node.instanceSet;
+		const GfxDescriptorSetDesc* passSet = passCreationData->frame_graph_node.passSet;
+		const GfxDescriptorSetDesc* instanceSet = passCreationData->frame_graph_node.instanceSet;
 
 		//Create buffers if required
 		if( passSet )
@@ -185,7 +185,7 @@ namespace FG
 		}
 	}
 
-	static void UpdateDescriptorSet( const FG::FrameGraph* frameGraph, const GpuInputData* inputData, const TechniqueDescriptorSetDesc* descriptorSetDesc, VkDescriptorSet* descriptorSet )
+	static void UpdateDescriptorSet( const FG::FrameGraph* frameGraph, const GpuInputData* inputData, const GfxDescriptorSetDesc* descriptorSetDesc, VkDescriptorSet* descriptorSet )
 	{
 		//Update descriptor sets
 		assert( descriptorSetDesc->dataBindings.size() <= MAX_DATA_ENTRIES );
@@ -201,8 +201,8 @@ namespace FG
 		//Fill in buffer
 		for( uint32_t dataBindingIndex = 0; dataBindingIndex < descriptorSetDesc->dataBindings.size(); ++dataBindingIndex )
 		{
-			const TechniqueDataBinding* dataBinding = &descriptorSetDesc->dataBindings[dataBindingIndex];
-			const FG::TechniqueDataEntry* techniqueDataEntry = GetDataEntry( frameGraph, dataBinding->id );
+			const GfxDataBinding* dataBinding = &descriptorSetDesc->dataBindings[dataBindingIndex];
+			const FG::DataEntry* techniqueDataEntry = GetDataEntry( frameGraph, dataBinding->id );
 			if( IsBufferType( techniqueDataEntry->descriptorType ) )//Buffers
 			{
 				uint32_t bufferStart = descriptorBuffersInfosCount;
@@ -240,7 +240,7 @@ namespace FG
 		UpdateDescriptorSets( 1, &writeDescriptorSet, descriptorSet );
 	}
 
-	static void FillWithDummyDescriptors( const FG::FrameGraph* frameGraph, const GpuInputData* inputData, const TechniqueDescriptorSetDesc* descriptorSetDesc, VkDescriptorSet* descriptorSet )
+	static void FillWithDummyDescriptors( const FG::FrameGraph* frameGraph, const GpuInputData* inputData, const GfxDescriptorSetDesc* descriptorSetDesc, VkDescriptorSet* descriptorSet )
 	{
 		//Update descriptor sets
 		assert( descriptorSetDesc->dataBindings.size() <= MAX_DATA_ENTRIES );
@@ -256,8 +256,8 @@ namespace FG
 		//Fill in buffer
 		for( uint32_t dataBindingIndex = 0; dataBindingIndex < descriptorSetDesc->dataBindings.size(); ++dataBindingIndex )
 		{
-			const TechniqueDataBinding* dataBinding = &descriptorSetDesc->dataBindings[dataBindingIndex];
-			const FG::TechniqueDataEntry* techniqueDataEntry = GetDataEntry( frameGraph, dataBinding->id );
+			const GfxDataBinding* dataBinding = &descriptorSetDesc->dataBindings[dataBindingIndex];
+			const FG::DataEntry* techniqueDataEntry = GetDataEntry( frameGraph, dataBinding->id );
 			if( IsBufferType( techniqueDataEntry->descriptorType ) )//Buffers
 			{
 			}
@@ -292,8 +292,8 @@ namespace FG
 		{
 			Technique* technique = &frameGraph->imp->_techniques[i];
 			const FG::RenderPassCreationData* passCreationData = &frameGraph->imp->creationData.renderPasses[i];
-			const TechniqueDescriptorSetDesc* passSet = passCreationData->frame_graph_node.passSet;
-			const TechniqueDescriptorSetDesc* instanceSet = passCreationData->frame_graph_node.instanceSet;
+			const GfxDescriptorSetDesc* passSet = passCreationData->frame_graph_node.passSet;
+			const GfxDescriptorSetDesc* instanceSet = passCreationData->frame_graph_node.instanceSet;
 			//Update descriptors
 			if( passSet )
 			{
