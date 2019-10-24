@@ -3,8 +3,8 @@
 
 struct BindlessTexturesState
 {
-	VkDescriptorImageInfo _bindlessTextures[5];
+	GfxImageSamplerCombined _bindlessTextures[5];
 	uint32_t _bindlessTexturesCount = 0;
 };
 
-uint32_t RegisterBindlessTexture( BindlessTexturesState* state, const GfxImage* image );
+uint32_t RegisterBindlessTexture( BindlessTexturesState* state, GfxImage* image );

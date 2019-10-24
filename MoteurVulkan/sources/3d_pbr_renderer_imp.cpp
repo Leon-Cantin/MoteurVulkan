@@ -118,8 +118,8 @@ void ReloadSceneShaders()
 }
 
 
-VkDescriptorImageInfo textTextures[1];
-VkDescriptorImageInfo skyboxImages[1];
+GfxImageSamplerCombined textTextures[1];
+GfxImageSamplerCombined skyboxImages[1];
 
 static void CreateBuffers( BindlessTexturesState* bindlessTexturesState, const GfxImage* skyboxImage )
 {
@@ -127,8 +127,8 @@ static void CreateBuffers( BindlessTexturesState* bindlessTexturesState, const G
 
 	VkSampler sampler = GetSampler( Samplers::Trilinear );
 
-	textTextures[0] = { sampler, GetTextImage()->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
-	skyboxImages[0] = { sampler, skyboxImage->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+	textTextures[0] = { const_cast< GfxImage*>(GetTextImage()), sampler };
+	skyboxImages[0] = { const_cast< GfxImage* >(skyboxImage), sampler };
 	
 	for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 	{

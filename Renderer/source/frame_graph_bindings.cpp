@@ -106,11 +106,11 @@ namespace FG
 			else
 			{
 				const GfxImage* image = frameGraph->imp->GetImage( dataEntry->id ); //TODO: GetResource( (uint32_t) id ) --------------------
-				VkDescriptorImageInfo* imageInfo = &frameGraph->imp->allImages[dataEntry->id];
-				if( imageInfo->imageView == VK_NULL_HANDLE )
+				GfxImageSamplerCombined* imageInfo = &frameGraph->imp->allImages[dataEntry->id];
+				if( imageInfo->image == nullptr )
 				{
 					//TODO: layout might be different for different shaders, probably just need write, works so far.
-					*imageInfo = { GetSampler( dataEntry->sampler ), image->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+					*imageInfo = { const_cast< GfxImage* >(image), GetSampler( dataEntry->sampler ) };
 					for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 						SetImages( &(*inputBuffers)[i], dataEntry->id, imageInfo, 1 );
 				}
@@ -218,7 +218,7 @@ namespace FG
 			}
 			else if( techniqueDataEntry->descriptorType == eDescriptorType::IMAGE_SAMPLER ) // Combined image samplers
 			{
-				VkDescriptorImageInfo* images = GetImage( inputData, dataBinding->id );
+				GfxImageSamplerCombined* images = GetImage( inputData, dataBinding->id );
 				uint32_t bufferStart = descriptorImagesInfosCount;
 				uint32_t buffersCount = GetDataCount( inputData, dataBinding->id );
 				assert( buffersCount <= techniqueDataEntry->count );
@@ -226,7 +226,7 @@ namespace FG
 				{
 					assert( descriptorImagesInfosCount < 16 );
 					//TODO: HACK shouldn't pass in this struct in the input buffer, should be some wrapper or something
-					descriptorImagesInfos[descriptorImagesInfosCount++] = images[descriptorIndex];
+					descriptorImagesInfos[descriptorImagesInfosCount++] = { images[descriptorIndex].sampler, images[descriptorIndex].image->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
 				}
 				writeDescriptors[writeDescriptorsCount++] = { dataBinding->binding, buffersCount, DescriptorTypeToVkType( techniqueDataEntry->descriptorType, dataBinding->descriptorAccess ), nullptr, &descriptorImagesInfos[bufferStart] };
 			}

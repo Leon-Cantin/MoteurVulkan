@@ -12,6 +12,12 @@ struct GfxImage {
 	uint32_t mipLevels;
 };
 
+struct GfxImageSamplerCombined
+{
+	GfxImage* image;
+	VkSampler sampler = VK_NULL_HANDLE;
+};
+
 enum class Samplers
 {
 	Trilinear = 0,

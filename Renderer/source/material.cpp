@@ -15,13 +15,6 @@ void BeginTechnique( VkCommandBuffer commandBuffer, const Technique* technique, 
 	vkCmdBindDescriptorSets( commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, RENDERPASS_SET, 1, &technique->renderPass_descriptor[currentFrame], 0, nullptr );
 }
 
-void CmdDrawTechnique( VkCommandBuffer commandBuffer, const Technique* technique, const SceneInstanceSet* instanceSet, const GfxModel* modelAsset, uint32_t currentFrame )
-{
-	/*vkCmdBindDescriptorSets( commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, INSTANCE_SET, 1,
-		&technique->instance_descriptor[currentFrame], 1, &instanceSet->geometryBufferOffsets[currentFrame] );
-	CmdDrawIndexed( commandBuffer, *modelAsset );*/
-}
-
 void Destroy( GfxMaterial* material )
 {
 	for( Technique& technique : material->techniques )

@@ -79,7 +79,7 @@ inline void SetBuffers( GpuInputData* buffers, eTechniqueDataEntryName id, GpuBu
 	SetBuffers( buffers, static_cast< uint32_t >(id), input, count );
 }
 
-inline void SetImages( GpuInputData* buffers, eTechniqueDataEntryImageName id, VkDescriptorImageInfo* input, uint32_t count )
+inline void SetImages( GpuInputData* buffers, eTechniqueDataEntryImageName id, GfxImageSamplerCombined* input, uint32_t count )
 {
 	SetImages( buffers, static_cast< uint32_t >(id), input, count );
 }
@@ -89,7 +89,7 @@ inline GpuBuffer* GetBuffer( const GpuInputData* buffers, eTechniqueDataEntryNam
 	return GetBuffer( buffers, static_cast< uint32_t >(id) );
 }
 
-inline VkDescriptorImageInfo* GetImage( const GpuInputData* buffers, eTechniqueDataEntryImageName id )
+inline GfxImageSamplerCombined* GetImage( const GpuInputData* buffers, eTechniqueDataEntryImageName id )
 {
 	return GetImage( buffers, static_cast< uint32_t >(id) );
 }

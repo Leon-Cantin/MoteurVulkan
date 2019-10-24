@@ -1,7 +1,8 @@
 #pragma once
 
 #include "descriptors.h"
-#include "scene_instance.h"
+#include "vk_buffer.h"
+#include "gfx_image.h"
 
 #include <array>
 
@@ -27,7 +28,6 @@ struct GfxMaterial
 
 //Don't recall this if the technique is the same
 void BeginTechnique( VkCommandBuffer commandBuffer, const Technique* technique, size_t currentFrame );
-void CmdDrawTechnique( VkCommandBuffer commandBuffer, const Technique* technique, const SceneInstanceSet* instanceSet, const GfxModel* modelAsset, uint32_t currentFrame );
 void Destroy( GfxMaterial* material );
 
 
@@ -75,7 +75,7 @@ constexpr size_t MAX_DATA_ENTRIES = 16;
 union GpuInputDataEntry
 {
 	GpuBuffer* buffer;
-	VkDescriptorImageInfo* image;
+	GfxImageSamplerCombined* image;
 };
 
 struct GpuInputData
@@ -92,7 +92,7 @@ inline void SetBuffers( GpuInputData* buffers, uint32_t id, GpuBuffer* input, ui
 	buffers->dataCount[id] = count;
 }
 
-inline void SetImages( GpuInputData* buffers, uint32_t id, VkDescriptorImageInfo* input, uint32_t count )
+inline void SetImages( GpuInputData* buffers, uint32_t id, GfxImageSamplerCombined* input, uint32_t count )
 {
 	assert( id < MAX_DATA_ENTRIES );
 	buffers->data[id].image = input;
@@ -105,7 +105,7 @@ inline GpuBuffer* GetBuffer( const GpuInputData* buffers, uint32_t id )
 	return buffers->data[id].buffer;
 }
 
-inline VkDescriptorImageInfo* GetImage( const GpuInputData* buffers, uint32_t id )
+inline GfxImageSamplerCombined* GetImage( const GpuInputData* buffers, uint32_t id )
 {
 	assert( id < MAX_DATA_ENTRIES );
 	return buffers->data[id].image;

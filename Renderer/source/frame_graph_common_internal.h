@@ -42,6 +42,6 @@ namespace FG
 
 		//hack
 		std::array<PerFrameBuffer, 32> allbuffers;
-		std::array<VkDescriptorImageInfo, 32> allImages;
+		std::array<GfxImageSamplerCombined, 32> allImages;
 	};
 }
