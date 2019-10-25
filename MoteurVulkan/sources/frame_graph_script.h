@@ -248,7 +248,9 @@ FG::FrameGraph InitializeScript( const Swapchain* swapchain )
 	rpCreationData.push_back( FG_TextOverlay_CreateGraphNode( swapchain ) );
 
 	FG::FrameGraph fg = FG::CreateGraph( swapchain, &rpCreationData, &dataEntries, backBufferId, _descriptorPool );
-	FG::CreateTechniques( &fg, _descriptorPool, *_pInputBuffers );
+
+	FG::SetupInputBuffers( &fg, *_pInputBuffers );
+	FG::CreateTechniques( &fg, _descriptorPool );
 	FG::UpdateTechniqueDescriptorSets( &fg, *_pInputBuffers );
 
 	return fg;

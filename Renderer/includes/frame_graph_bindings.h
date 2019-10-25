@@ -4,6 +4,7 @@
 
 namespace FG
 {
-	void CreateTechniques( FrameGraph* frameGraph, VkDescriptorPool descriptorPool, std::array< GpuInputData, SIMULTANEOUS_FRAMES>& inputBuffers );
-	void UpdateTechniqueDescriptorSets( const FG::FrameGraph* frameGraph, const std::array< GpuInputData, SIMULTANEOUS_FRAMES>& inputBuffers );
+	void SetupInputBuffers( FrameGraph* frameGraph, std::array< GpuInputData, SIMULTANEOUS_FRAMES>& inputBuffers );
+	void CreateTechniques( FrameGraph* frameGraph, VkDescriptorPool descriptorPool );
+	void UpdateTechniqueDescriptorSets( const FrameGraph* frameGraph, const std::array< GpuInputData, SIMULTANEOUS_FRAMES>& inputBuffers );
 }

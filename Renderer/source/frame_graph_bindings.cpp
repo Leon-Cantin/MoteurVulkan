@@ -109,7 +109,6 @@ namespace FG
 				GfxImageSamplerCombined* imageInfo = &frameGraph->imp->allImages[dataEntry->id];
 				if( imageInfo->image == nullptr )
 				{
-					//TODO: layout might be different for different shaders, probably just need write, works so far.
 					*imageInfo = { const_cast< GfxImage* >(image), GetSampler( dataEntry->sampler ) };
 					for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 						SetImages( &(*inputBuffers)[i], dataEntry->id, imageInfo, 1 );
@@ -118,16 +117,10 @@ namespace FG
 		}
 	}
 
-	static void CreateTechnique( FG::FrameGraph* frameGraph, VkDescriptorPool descriptorPool, const RenderPass* renderpass, const FG::RenderPassCreationData* passCreationData, Technique* o_technique, std::array< GpuInputData, SIMULTANEOUS_FRAMES>& inputBuffers )
+	static void CreateTechnique( FG::FrameGraph* frameGraph, VkDescriptorPool descriptorPool, const RenderPass* renderpass, const FG::RenderPassCreationData* passCreationData, Technique* o_technique )
 	{
 		const GfxDescriptorSetDesc* passSet = passCreationData->frame_graph_node.passSet;
 		const GfxDescriptorSetDesc* instanceSet = passCreationData->frame_graph_node.instanceSet;
-
-		//Create buffers if required
-		if( passSet )
-			SetOrCreateDataIfNeeded( frameGraph, &inputBuffers, passSet );
-		if( instanceSet )
-			SetOrCreateDataIfNeeded( frameGraph, &inputBuffers, instanceSet );
 
 		//Create descriptors
 		if( passSet )
@@ -176,12 +169,29 @@ namespace FG
 			&o_technique->pipeline );
 	}
 
-	void CreateTechniques( FG::FrameGraph* frameGraph, VkDescriptorPool descriptorPool, std::array< GpuInputData, SIMULTANEOUS_FRAMES>& inputBuffers )
+	void CreateTechniques( FG::FrameGraph* frameGraph, VkDescriptorPool descriptorPool )
 	{
 		for( uint32_t i = 0; i < frameGraph->imp->_render_passes_count; ++i )
 		{
-			CreateTechnique( frameGraph, descriptorPool, &frameGraph->imp->_render_passes[i], &frameGraph->imp->creationData.renderPasses[i], &frameGraph->imp->_techniques[i], inputBuffers );
+			CreateTechnique( frameGraph, descriptorPool, &frameGraph->imp->_render_passes[i], &frameGraph->imp->creationData.renderPasses[i], &frameGraph->imp->_techniques[i] );
 			++frameGraph->imp->_techniques_count;
+		}
+	}
+
+	void SetupInputBuffers( FG::FrameGraph* frameGraph, std::array< GpuInputData, SIMULTANEOUS_FRAMES>& inputBuffers )
+	{
+		for( uint32_t i = 0; i < frameGraph->imp->_render_passes_count; ++i )
+		{
+			const FG::RenderPassCreationData* passCreationData = &frameGraph->imp->creationData.renderPasses[i];
+
+			const GfxDescriptorSetDesc* passSet = passCreationData->frame_graph_node.passSet;
+			const GfxDescriptorSetDesc* instanceSet = passCreationData->frame_graph_node.instanceSet;
+
+			//Create buffers if required
+			if( passSet )
+				SetOrCreateDataIfNeeded( frameGraph, &inputBuffers, passSet );
+			if( instanceSet )
+				SetOrCreateDataIfNeeded( frameGraph, &inputBuffers, instanceSet );
 		}
 	}
 
