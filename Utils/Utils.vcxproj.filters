@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="source">
+      <UniqueIdentifier>{71a3783c-9fe1-40c2-abc5-b4848570ac8b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\asset_library">
+      <UniqueIdentifier>{a9f90578-6882-4662-8d84-61007a80f925}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\console_commands_handler">
+      <UniqueIdentifier>{ec7fcda6-bb13-4276-bd72-dc9769db2445}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\containers">
+      <UniqueIdentifier>{6a984836-fdf0-48b6-9ebe-ed38592fd056}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\memory">
+      <UniqueIdentifier>{f980f0ee-68bf-4e1a-b3ed-7490a0cb5b18}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\window_handler_vk">
+      <UniqueIdentifier>{42cc160d-c354-4595-8f41-94cc94bb12c0}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\defines_global.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="include\file_system.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="include\tick_system.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="include\console_command.h">
+      <Filter>source\console_commands_handler</Filter>
+    </ClInclude>
+    <ClInclude Include="include\bitfield.h">
+      <Filter>source\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\asset_library.h">
+      <Filter>source\asset_library</Filter>
+    </ClInclude>
+    <ClInclude Include="include\memory.h">
+      <Filter>source\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="include\window_handler_vk.h">
+      <Filter>source\window_handler_vk</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="source\asset_library.cpp">
+      <Filter>source\asset_library</Filter>
+    </ClCompile>
+    <ClCompile Include="source\bitfield.cpp">
+      <Filter>source\containers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\console_command.cpp">
+      <Filter>source\console_commands_handler</Filter>
+    </ClCompile>
+    <ClCompile Include="source\tick_system.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\window_handler_vk.cpp">
+      <Filter>source\window_handler_vk</Filter>
+    </ClCompile>
+    <ClCompile Include="source\file_system.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

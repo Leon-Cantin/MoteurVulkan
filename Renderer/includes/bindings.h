@@ -48,6 +48,7 @@ struct GpuInputData
 	//TODO the ptr here is kinda dangerous. Used to point to an array for arrays of descriptors that contains multiple descriptors... mostly just for images
 	std::array<GpuInputDataEntry, MAX_DATA_ENTRIES> data;
 	std::array<uint32_t, MAX_DATA_ENTRIES> dataCount;
+	//TOOD: add a dirty cache, so when a buffer changes, we update the descriptor sets
 };
 
 inline void SetBuffers( GpuInputData* buffers, uint32_t id, GpuBuffer* input, uint32_t count )

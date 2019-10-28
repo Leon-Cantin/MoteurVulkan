@@ -7,21 +7,6 @@
     <Filter Include="shaders">
       <UniqueIdentifier>{5be189bb-3fe3-48ba-a088-73674fc68012}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sources\asset_library">
-      <UniqueIdentifier>{02a230d6-fdfe-48d5-901d-10a0d3fd1996}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="sources\console_commands_handler">
-      <UniqueIdentifier>{b346f247-a4d9-448d-8359-73ac3cb63b0e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="sources\containers">
-      <UniqueIdentifier>{578f5277-2293-48e1-a30c-813b6fb3ab32}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="sources\memory">
-      <UniqueIdentifier>{5141f1e7-ea7c-470d-8d0c-8d5d18d6b788}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="sources\window_handler">
-      <UniqueIdentifier>{64ffa86d-2af5-4857-aaab-03bb88f2ef9b}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sources\main.cpp">
@@ -42,26 +27,8 @@
     <ClCompile Include="sources\shadow_renderpass.cpp">
       <Filter>sources</Filter>
     </ClCompile>
-    <ClCompile Include="sources\tick_system.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\asset_library.cpp">
-      <Filter>sources\asset_library</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\console_command.cpp">
-      <Filter>sources\console_commands_handler</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\file_system.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
     <ClCompile Include="sources\text_overlay.cpp">
       <Filter>sources</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\bitfield.cpp">
-      <Filter>sources\containers</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\window_handler_vk.cpp">
-      <Filter>sources\window_handler</Filter>
     </ClCompile>
     <ClCompile Include="sources\3d_pbr_renderer_imp.cpp">
       <Filter>sources</Filter>
@@ -115,41 +82,14 @@
     <ClInclude Include="sources\shadow_renderpass.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="sources\tick_system.h">
-      <Filter>sources</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\defines_global.h">
-      <Filter>sources</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\asset_library.h">
-      <Filter>sources\asset_library</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\console_command.h">
-      <Filter>sources\console_commands_handler</Filter>
-    </ClInclude>
     <ClInclude Include="sources\frame_graph_script.h">
       <Filter>sources</Filter>
     </ClInclude>
     <ClInclude Include="sources\Scene2DGame.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="sources\SceneFPS.h">
-      <Filter>sources</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\file_system.h">
-      <Filter>sources</Filter>
-    </ClInclude>
     <ClInclude Include="sources\text_overlay.h">
       <Filter>sources</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\bitfield.h">
-      <Filter>sources\containers</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\memory.h">
-      <Filter>sources\memory</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\window_handler_vk.h">
-      <Filter>sources\window_handler</Filter>
     </ClInclude>
     <ClInclude Include="sources\3d_pbr_renderer_imp.h">
       <Filter>sources</Filter>

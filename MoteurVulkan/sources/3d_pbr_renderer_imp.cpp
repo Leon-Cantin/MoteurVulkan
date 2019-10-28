@@ -16,8 +16,6 @@ VkDescriptorPool descriptorPool;
 
 extern Swapchain g_swapchain;
 
-bool g_forceReloadShaders = false;
-
 
 std::array< GpuInputData, SIMULTANEOUS_FRAMES> _inputBuffers;
 
@@ -75,7 +73,6 @@ static void updateTextOverlayBuffer( uint32_t currentFrame )
 
 //TODO seperate the buffer update and computation of frame data
 //TODO Make light Uniform const
-//TODO Instead of preassigning descriptors to instances, just give them one before drawing
 static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<std::pair<const SceneInstance*, const RenderableAsset*>>& drawList, std::vector<DrawModel>& drawListReal )
 {
 	glm::mat4 world_view_matrix = ComputeCameraSceneInstanceViewMatrix( *cameraSceneInstance );
@@ -108,15 +105,6 @@ static void PrepareSceneFrameData( SceneFrameData* frameData, uint32_t currentFr
 	frameData->drawList.resize( drawList.size() );
 	updateUniformBuffer( currentFrame, cameraSceneInstance, light, drawList, frameData->drawList );
 }
-
-void ReloadSceneShaders()
-{
-	vkDeviceWaitIdle(g_vk.device);
-	VkExtent2D extent = g_swapchain.extent;
-	/*ReloadSkyboxShaders(extent);
-	ReloadGeometryShaders(extent);*/
-}
-
 
 GfxImageSamplerCombined textTextures[1];
 GfxImageSamplerCombined skyboxImages[1];
@@ -193,20 +181,10 @@ void CleanupRendererImp()
 
 void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<std::pair<const SceneInstance*, const RenderableAsset*>>& drawList )
 {
-	if (g_forceReloadShaders)
-	{
-		g_forceReloadShaders = false;
-		ReloadSceneShaders();
-	}
 	WaitForFrame(currentFrame);
 
 	SceneFrameData frameData;
 	PrepareSceneFrameData(&frameData, currentFrame, cameraSceneInstance, light, drawList);
 
 	draw_frame(currentFrame, &frameData);
-}
-
-void ForceReloadShaders()
-{
-	g_forceReloadShaders = true;
 }

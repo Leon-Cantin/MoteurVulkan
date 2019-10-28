@@ -87,7 +87,7 @@ namespace Scene2DGame
 
 	void ReloadShadersCallback(const std::string* params, uint32_t paramsCount)
 	{
-		ForceReloadShaders();
+		//ForceReloadShaders();
 	}
 
 	void TickObjectCallback(float dt, void* unused)

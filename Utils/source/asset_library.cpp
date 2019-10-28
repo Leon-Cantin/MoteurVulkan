@@ -39,6 +39,7 @@ namespace AL
 	GfxImage* LoadTexture(const char* assetName, const char* assetPath)
 	{
 		//TODO when i'll need it
+		assert( true );
 		return nullptr;
 	}
 
