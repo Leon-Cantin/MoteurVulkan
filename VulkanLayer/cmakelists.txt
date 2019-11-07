@@ -1,0 +1,19 @@
+cmake_minimum_required(VERSION 3.15)
+
+set( TARGET_NAME Vulkan_Layer )
+				  
+file( GLOB SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} source/* )
+file( GLOB INCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} includes/* )
+
+add_library( ${TARGET_NAME} STATIC ${SRCS} ${INCS} )
+
+target_compile_definitions( ${TARGET_NAME} PRIVATE -DUNICODE )
+target_compile_definitions( ${TARGET_NAME} PRIVATE -D_UNICODE )
+
+target_compile_features( ${TARGET_NAME} PUBLIC cxx_std_20)
+
+target_include_directories( ${TARGET_NAME} PUBLIC includes )
+target_include_directories( ${TARGET_NAME} PUBLIC ../ThirdParties/glm-0.9.9-a2 )
+target_include_directories( ${TARGET_NAME} PUBLIC D:/Programme/VulkanSDK/1.1.121.2/Include )
+
+target_link_libraries( ${TARGET_NAME} PUBLIC D:/Programme/VulkanSDK/1.1.121.2/Lib/vulkan-1.lib )
