@@ -1,13 +1,5 @@
 /.vs/
-/MoteurVulkan/Intermediate
-/VulkanLayer/bin
-/VulkanLayer/Intermediate
-/Renderer/bin
-/Renderer/Intermediate
-/WindowHandler/bin
-/WindowHandler/Intermediate
-/Utils/bin
-/Utils/Intermediate
+/build
 /output
 !/output/assets
 /*.txt
