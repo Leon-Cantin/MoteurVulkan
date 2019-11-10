@@ -1,0 +1,17 @@
+set( TARGET_NAME PBR_3D_Renderer )
+				  
+file( GLOB SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} sources/* )
+file( GLOB SHADERS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} shaders/* )
+
+add_executable( ${TARGET_NAME} ${SRCS} ${SHADERS} )
+
+source_group( " " REGULAR_EXPRESSION .* )
+source_group( shaders FILES ${SHADERS} )
+
+target_include_directories( ${TARGET_NAME} PRIVATE sources )
+
+target_link_libraries( ${TARGET_NAME} PRIVATE Renderer )
+target_link_libraries( ${TARGET_NAME} PRIVATE WindowHandler )
+target_link_libraries( ${TARGET_NAME} PRIVATE Utils )
+
+#set_target_properties( ${TARGET_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../output )
