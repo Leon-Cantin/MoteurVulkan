@@ -28,45 +28,12 @@ void DestroyGfxModel(GfxModel& o_modelAsset)
 	vkFreeMemory(g_vk.device, o_modelAsset.indicesMemory, nullptr);
 }
 
-static uint32_t GetBindingSize( const VIDesc* binding )
-{
-	return COMPONENT_TYPE_SIZES[( uint8_t )binding->elementType] * binding->elementsCount;
-}
-
-static VkFormat GetBindingFormat( const VIDesc* binding )
-{
-	if( binding->elementType == eVIDataElementType::FLOAT )
-	{
-		//A bit dangerous, there's 3 elements to reach the next float definition
-		return static_cast< VkFormat >(static_cast< uint32_t >(VK_FORMAT_R32_SFLOAT) + (binding->elementsCount - 1) * 3);
-	}
-	else
-	{
-		throw std::runtime_error( "Unimplemented" );
-	}
-}
-
-void get_binding_description( const VIBinding * bindingsDescs, uint32_t count, VkVertexInputBindingDescription* VIBDescs, VkVertexInputAttributeDescription* VIADescs )
-{
-	for( uint32_t i = 0; i < count; ++i )
-	{
-		VIBDescs[i].binding = i;
-		VIBDescs[i].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-		VIBDescs[i].stride = GetBindingSize( &bindingsDescs[i].desc );
-
-		VIADescs[i].binding = i;
-		VIADescs[i].format = GetBindingFormat( &bindingsDescs[i].desc );
-		VIADescs[i].location = bindingsDescs[i].location;
-		VIADescs[i].offset = 0;
-	}
-}
-
 uint32_t GetBindingDescription( VIState* o_viCreation )
 {
 	uint32_t count = 5;
 	assert( count <= VI_STATE_MAX_DESCRIPTIONS );
 
-	get_binding_description( VIBindings, 5, o_viCreation->vibDescription, o_viCreation->visDescriptions );
+	GetAPIVIBindingDescription( VIBindings, 5, o_viCreation->vibDescription, o_viCreation->visDescriptions );
 
 	o_viCreation->vibDescriptionsCount = count;
 	o_viCreation->visDescriptionsCount = count;

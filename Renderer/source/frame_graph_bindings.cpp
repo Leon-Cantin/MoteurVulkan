@@ -32,6 +32,8 @@ namespace FG
 		case eDescriptorType::IMAGE_SAMPLER:
 			assert( !write );
 			return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		default:
+			throw std::runtime_error( "Unknown descriptor type" );
 		}
 	}
 

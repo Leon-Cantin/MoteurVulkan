@@ -13,4 +13,6 @@ target_include_directories( ${TARGET_NAME} PUBLIC includes )
 target_include_directories( ${TARGET_NAME} PUBLIC ../ThirdParties/glm-0.9.9-a2 )
 target_include_directories( ${TARGET_NAME} PUBLIC ${VULKAN_SDK_PATH}/Include )
 
+target_compile_definitions( ${TARGET_NAME} PUBLIC GLM_FORCE_RADIANS GLM_FORCE_DEPTH_ZERO_TO_ONE GLM_ENABLE_EXPERIMENTAL GLM_FORCE_LEFT_HANDED )
+
 target_link_libraries( ${TARGET_NAME} PUBLIC ${VULKAN_SDK_PATH}/Lib/vulkan-1.lib )
