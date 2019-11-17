@@ -2,6 +2,7 @@
 #include "vk_globals.h"
 
 #include "framebuffer.h"
+#include "vk_gpu_pipeline.h"
 
 #include <vector>
 

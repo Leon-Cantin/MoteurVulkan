@@ -1,6 +1,5 @@
 #pragma once
 #include "vk_globals.h"
-#include "vk_gpu_pipeline.h"
 #include "vk_vertex_input.h"
 
 #include <glm/vec3.hpp>
@@ -9,15 +8,22 @@
 #include <array>
 #include <vector>
 
-static const VIBinding VIBindings[] = {
+static const std::vector<VIBinding> VIBindingsFullModel = {
 	{ eVIDataType::POSITION, eVIDataElementType::FLOAT, 3, 0 },
 	{ eVIDataType::COLOR, eVIDataElementType::FLOAT, 3, 1 },
 	{ eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2, 2 },
 	{ eVIDataType::NORMAL, eVIDataElementType::FLOAT, 3, 3 },
 	{ eVIDataType::TANGENT, eVIDataElementType::FLOAT, 3, 4 }
 };
-static const uint32_t viBindingCount = 5;
-uint32_t GetBindingDescription( VIState* viState );
+
+static const std::vector<VIBinding> VIBindingsSimpleModel = {
+	{ eVIDataType::POSITION, eVIDataElementType::FLOAT, 3, 0 },
+	{ eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2, 2 },
+};
+
+static const std::vector<VIBinding> VIBindingsMeshOnly = {
+	{ eVIDataType::POSITION, eVIDataElementType::FLOAT, 3, 0 },
+};
 
 struct GfxModelVertexInput
 {

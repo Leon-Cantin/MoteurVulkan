@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vk_globals.h"
+#include "vk_vertex_input.h"
 #include <vector>
 
 constexpr uint32_t VI_STATE_MAX_DESCRIPTIONS = 5;
@@ -48,4 +49,5 @@ struct GpuPipelineState
 	VkPrimitiveTopology primitiveTopology;
 };
 
+uint32_t GetBindingDescription( const std::vector<VIBinding>& VIBindings, VIState* o_viState );
 void CreatePipeline( const GpuPipelineState& gpuPipeline, VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline* o_pipeline );

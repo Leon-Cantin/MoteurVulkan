@@ -37,7 +37,7 @@ GpuPipelineLayout GetShadowPipelineLayout()
 GpuPipelineState GetShadowPipelineState()
 {
 	GpuPipelineState gpuPipelineState = {};
-	uint32_t bindingCount = GetBindingDescription( &gpuPipelineState.viState );
+	uint32_t bindingCount = GetBindingDescription( VIBindingsMeshOnly, &gpuPipelineState.viState );
 
 	gpuPipelineState.shaders = {
 		{ FS::readFile( "shaders/shadows.vert.spv" ), "main", VK_SHADER_STAGE_VERTEX_BIT } };
@@ -72,7 +72,7 @@ static void CmdDrawModel( VkCommandBuffer commandBuffer, const SceneInstanceSet*
 {
 	vkCmdBindDescriptorSets( commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, INSTANCE_SET, 1,
 		&technique->instance_descriptor[currentFrame], 1, &instanceSet->geometryBufferOffsets );
-	CmdDrawIndexed( commandBuffer, *modelAsset );
+	CmdDrawIndexed( commandBuffer, VIBindingsMeshOnly, *modelAsset );
 }
 
 static void CmdEndShadowPass( VkCommandBuffer commandBuffer )

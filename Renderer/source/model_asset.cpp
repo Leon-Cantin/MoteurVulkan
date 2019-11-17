@@ -3,11 +3,7 @@
 #include "vk_buffer.h"
 
 #include <unordered_map>
-#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
-
-//#define TINYOBJLOADER_IMPLEMENTATION
-//#include <tiny_obj_loader.h>
 
 #include <assimp/Importer.hpp>      // C++ importer interface
 #include <assimp/scene.h>           // Output data structure
@@ -26,19 +22,6 @@ void DestroyGfxModel(GfxModel& o_modelAsset)
 
 	vkDestroyBuffer(g_vk.device, o_modelAsset.indexBuffer, nullptr);
 	vkFreeMemory(g_vk.device, o_modelAsset.indicesMemory, nullptr);
-}
-
-uint32_t GetBindingDescription( VIState* o_viCreation )
-{
-	uint32_t count = 5;
-	assert( count <= VI_STATE_MAX_DESCRIPTIONS );
-
-	GetAPIVIBindingDescription( VIBindings, 5, o_viCreation->vibDescription, o_viCreation->visDescriptions );
-
-	o_viCreation->vibDescriptionsCount = count;
-	o_viCreation->visDescriptionsCount = count;
-
-	return count;
 }
 
 void CreateGfxModel( const std::vector<GfxModelCreationData>& creationData, const std::vector<uint32_t>& indices, GfxModel& o_modelAsset )

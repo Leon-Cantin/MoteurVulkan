@@ -1,5 +1,19 @@
 #include "vk_gpu_pipeline.h"
 #include "vk_shader.h"
+#include <assert.h>
+
+uint32_t GetBindingDescription( const std::vector<VIBinding>& VIBindings, VIState* o_viCreation )
+{
+	uint32_t count = VIBindings.size();
+	assert( count <= VI_STATE_MAX_DESCRIPTIONS );
+
+	GetAPIVIBindingDescription( VIBindings.data(), count, o_viCreation->vibDescription, o_viCreation->visDescriptions );
+
+	o_viCreation->vibDescriptionsCount = count;
+	o_viCreation->visDescriptionsCount = count;
+
+	return count;
+}
 
 void CreatePipeline( const GpuPipelineState& gpuPipeline, VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline* o_pipeline )
 {

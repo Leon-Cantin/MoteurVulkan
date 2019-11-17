@@ -6,6 +6,7 @@
 #include "scene_frame_data.h"
 #include "material.h"
 #include "bindings.h"
+#include "vk_gpu_pipeline.h"
 
 namespace FG
 {
