@@ -265,7 +265,7 @@ void CleanupRenderer() {
 	DestroyTimeStampsPool();
 }
 
-static void CmdBindVertexInputs( VkCommandBuffer commandBuffer, const std::vector<VIBinding>& gpuPipelineVIBindings, const GfxModel& gfxModel )
+void CmdBindVertexInputs( VkCommandBuffer commandBuffer, const std::vector<VIBinding>& gpuPipelineVIBindings, const GfxModel& gfxModel )
 {
 	const uint32_t maxVertexInputBinding = 16;
 	const uint32_t gpuPipelineVIBingindCount = gpuPipelineVIBindings.size();
@@ -277,17 +277,17 @@ static void CmdBindVertexInputs( VkCommandBuffer commandBuffer, const std::vecto
 	{
 		const GfxModelVertexInput& modelVI = gfxModel.vertAttribBuffers[( uint32_t )VIBindingsFullModel[i].desc.dataType];
 		assert( VIBindingsFullModel[i].desc == modelVI.desc );
-		assert( modelVI.vertAttribBuffers != VK_NULL_HANDLE );
-		vertexBuffers[i] = modelVI.vertAttribBuffers;
-
+		//assert( modelVI.vertAttribBuffers != VK_NULL_HANDLE );
+		vertexBuffers[i] = modelVI.vertexAttribBuffer.buffer;
 		offsets[i] = 0;
 	}
+
 	vkCmdBindVertexBuffers( commandBuffer, 0, gpuPipelineVIBingindCount, vertexBuffers, offsets );
 }
 
 void CmdDrawIndexed( VkCommandBuffer commandBuffer, const std::vector<VIBinding>& gpuPipelineVIBindings, const GfxModel& gfxModel )
 {
 	CmdBindVertexInputs( commandBuffer, gpuPipelineVIBindings, gfxModel );
-	vkCmdBindIndexBuffer( commandBuffer, gfxModel.indexBuffer, 0, VK_INDEX_TYPE_UINT32 );
+	vkCmdBindIndexBuffer( commandBuffer, gfxModel.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32 );
 	vkCmdDrawIndexed( commandBuffer, gfxModel.indexCount, 1, 0, 0, 0 );
 }

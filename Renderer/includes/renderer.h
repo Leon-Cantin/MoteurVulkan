@@ -15,4 +15,5 @@ void CompileFrameGraph( FG::FrameGraph( *FGScriptInitialize )(const Swapchain* s
 void CleanupRenderer();
 void WaitForFrame(uint32_t currentFrame);
 void draw_frame(uint32_t currentFrame, const SceneFrameData* frameData);
+void CmdBindVertexInputs( VkCommandBuffer commandBuffer, const std::vector<VIBinding>& gpuPipelineVIBindings, const GfxModel& gfxModel );
 void CmdDrawIndexed( VkCommandBuffer commandBuffer, const std::vector<VIBinding>& gpuPipelineVIBindings, const GfxModel& gfxModel );

@@ -4,10 +4,10 @@
 #include "renderer.h"
 #include "vk_commands.h"
 #include "vk_debug.h"
+#include "vk_vertex_input.h"
 #include "stb_font_consolas_24_latin1.inl"
 
-GpuBuffer textVertexBuffer;
-GpuBuffer textIndexBuffer;
+GfxModel textModel;
 uint32_t maxTextCharCount = 0;
 uint32_t currentTextCharCount = 0;
 
@@ -32,14 +32,7 @@ GpuPipelineLayout GetTextPipelineLayout()
 GpuPipelineState GetTextPipelineState()
 {
 	GpuPipelineState gpuPipelineState = {};
-	gpuPipelineState.viState.vibDescription[0] = TextVertex::get_binding_description();
-	gpuPipelineState.viState.vibDescriptionsCount = 1;
-
-	auto attributeDescriptions = TextVertex::get_attribute_descriptions();
-	assert( attributeDescriptions.size() <= VI_STATE_MAX_DESCRIPTIONS );
-	gpuPipelineState.viState.visDescriptionsCount = attributeDescriptions.size();
-	for( size_t i = 0; i < attributeDescriptions.size(); ++i )
-		gpuPipelineState.viState.visDescriptions[i] = attributeDescriptions[i];
+	GetBindingDescription( VIBindings_PosColUV, &gpuPipelineState.viState );
 
 	gpuPipelineState.shaders = {
 		{ FS::readFile( "shaders/text.vert.spv" ), "main", VK_SHADER_STAGE_VERTEX_BIT },
@@ -66,10 +59,8 @@ static void CmdDrawText( VkCommandBuffer commandBuffer, VkExtent2D extent, size_
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipeline );
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, 0, 1, &technique->renderPass_descriptor[0], 0, nullptr);
 
-	VkBuffer vertexBuffers[] = { textVertexBuffer.buffer };
-	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, textIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+	CmdBindVertexInputs( commandBuffer, VIBindings_PosColUV, textModel );
+	vkCmdBindIndexBuffer( commandBuffer, textModel.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
 	vkCmdDrawIndexed(commandBuffer, currentTextCharCount * indexesPerChar, 1, 0, 0, 0);
 
@@ -82,14 +73,18 @@ void UpdateText( const TextZone * textZones, size_t textZonesCount, VkExtent2D s
 	const float charW = 1.5f / surfaceExtent.width;
 	const float charH = 1.5f / surfaceExtent.height;
 
-	std::vector<TextVertex> text_vertices;
+	std::vector<glm::vec3> text_vertex_positions;
+	std::vector<glm::vec3> text_vertex_color;
+	std::vector<glm::vec2> text_vertex_uv;
 	std::vector<Index_t>	text_indices;
 	size_t totalCharCount = 0;
 	for (size_t i = 0; i < textZonesCount; ++i)
 		totalCharCount += textZones[i].text.size();
 
 	assert(totalCharCount < maxTextCharCount);
-	text_vertices.resize(verticesPerChar * totalCharCount);
+	text_vertex_positions.resize(verticesPerChar * totalCharCount);
+	text_vertex_color.resize( verticesPerChar * totalCharCount );
+	text_vertex_uv.resize( verticesPerChar * totalCharCount );
 	text_indices.resize(indexesPerChar * totalCharCount);
 	currentTextCharCount = totalCharCount;	
 
@@ -105,10 +100,22 @@ void UpdateText( const TextZone * textZones, size_t textZonesCount, VkExtent2D s
 			const uint32_t vertexOffet = verticesPerChar * currentCharCount;
 			const uint32_t indexOffset = indexesPerChar * currentCharCount;
 			stb_fontchar *charData = &stbFontData[textZone->text[j] - firstChar];
-			text_vertices[vertexOffet] = { { x + charData->x0 * charW, y + charData->y1 * charH, 0.0 }, { 0.5f, 0.0f, 0.0f }, { charData->s0, charData->t1 } };
-			text_vertices[vertexOffet + 1] = { { x + charData->x1 * charW, y + charData->y1 * charH, 0.0 }, { 0.5f, 0.5f, 0.5f }, { charData->s1, charData->t1 } };
-			text_vertices[vertexOffet + 2] = { { x + charData->x0 * charW, y + charData->y0 * charH, 0.0 }, { 0.0f, 0.0f, 0.5f }, { charData->s0, charData->t0 } };
-			text_vertices[vertexOffet + 3] = { { x + charData->x1 * charW, y + charData->y0 * charH, 0.0 }, { 0.0f, 0.5f, 0.0f }, { charData->s1, charData->t0 } };
+
+			text_vertex_positions[vertexOffet] = { x + charData->x0 * charW, y + charData->y1 * charH, 0.0 };
+			text_vertex_color[vertexOffet] = { 0.5f, 0.0f, 0.0f };
+			text_vertex_uv[vertexOffet] = { charData->s0, charData->t1 };
+
+			text_vertex_positions[vertexOffet + 1] = { x + charData->x1 * charW, y + charData->y1 * charH, 0.0 };
+			text_vertex_color[vertexOffet + 1] = { 0.5f, 0.5f, 0.5f };
+			text_vertex_uv[vertexOffet + 1] = { charData->s1, charData->t1 };
+
+			text_vertex_positions[vertexOffet + 2] = { x + charData->x0 * charW, y + charData->y0 * charH, 0.0 };
+			text_vertex_color[vertexOffet + 2] = { 0.0f, 0.0f, 0.5f };
+			text_vertex_uv[vertexOffet + 2] = { charData->s0, charData->t0 };
+
+			text_vertex_positions[vertexOffet + 3] = { x + charData->x1 * charW, y + charData->y0 * charH, 0.0 };
+			text_vertex_color[vertexOffet + 3] = { 0.0f, 0.5f, 0.0f };
+			text_vertex_uv[vertexOffet + 3] = { charData->s1, charData->t0 };
 
 			text_indices[indexOffset] = vertexOffet;
 			text_indices[indexOffset + 1] = vertexOffet + 1;
@@ -121,24 +128,40 @@ void UpdateText( const TextZone * textZones, size_t textZonesCount, VkExtent2D s
 		}
 	}
 
-	VkDeviceSize bufferSize = sizeof(text_vertices[0]) * text_vertices.size();
-	UpdateGpuBuffer( &textVertexBuffer, text_vertices.data(), bufferSize, 0 );
+	VkDeviceSize bufferSize = sizeof( text_vertex_positions[0] ) * text_vertex_positions.size();
+	UpdateGpuBuffer( &textModel.vertAttribBuffers[static_cast<uint32_t>(eVIDataType::POSITION)].vertexAttribBuffer, text_vertex_positions.data(), bufferSize, 0 );
+
+	bufferSize = sizeof( text_vertex_color[0] ) * text_vertex_color.size();
+	UpdateGpuBuffer( &textModel.vertAttribBuffers[static_cast< uint32_t >(eVIDataType::COLOR)].vertexAttribBuffer, text_vertex_color.data(), bufferSize, 0 );
+
+	bufferSize = sizeof( text_vertex_uv[0] ) * text_vertex_uv.size();
+	UpdateGpuBuffer( &textModel.vertAttribBuffers[static_cast< uint32_t >(eVIDataType::TEX_COORD)].vertexAttribBuffer, text_vertex_uv.data(), bufferSize, 0 );
 
 	bufferSize = sizeof(text_indices[0]) * text_indices.size();
-	UpdateGpuBuffer( &textIndexBuffer, text_indices.data(), bufferSize, 0 );
+	UpdateGpuBuffer( &textModel.indexBuffer, text_indices.data(), bufferSize, 0 );
 }
 
 //TODO: Use the system for vertex buffers
 void CreateTextVertexBuffer(size_t maxCharCount)
 {
-	maxTextCharCount = static_cast<uint32_t>(maxCharCount);
+	maxTextCharCount = static_cast< uint32_t >(maxCharCount);
 
+	uint32_t maxVertices = maxCharCount * verticesPerChar;
+	uint32_t maxIndices = maxCharCount * indexesPerChar;
+
+	std::vector<GfxModelCreationData> modelCreationData;
+	modelCreationData.resize( 3 );
+
+	modelCreationData[0].vertexCount = maxVertices;
+	modelCreationData[0].desc = { eVIDataType::POSITION, eVIDataElementType::FLOAT, 3 };
+
+	modelCreationData[1].vertexCount = maxVertices;
+	modelCreationData[1].desc = { eVIDataType::COLOR, eVIDataElementType::FLOAT, 3 };
+
+	modelCreationData[2].vertexCount = maxVertices;
+	modelCreationData[2].desc = { eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2 };
 	
-	VkDeviceSize bufferSize = sizeof(TextVertex) * maxCharCount * verticesPerChar;
-	CreateCommitedGpuBuffer( bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &textVertexBuffer );
-
-	bufferSize = sizeof(Index_t) * maxCharCount * indexesPerChar;
-	CreateCommitedGpuBuffer( bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &textIndexBuffer );
+	CreateGfxModelNoData( modelCreationData, maxIndices, textModel );
 }
 
 void LoadFontTexture()
@@ -154,9 +177,8 @@ void LoadFontTexture()
 
 void CleanupTextRenderPass()
 {
-	DestroyImage(g_fontImage);
-	DestroyCommitedGpuBuffer( &textVertexBuffer );
-	DestroyCommitedGpuBuffer( &textIndexBuffer );
+	DestroyImage( g_fontImage );
+	DestroyGfxModel( textModel );
 }
 
 void TextRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique )
