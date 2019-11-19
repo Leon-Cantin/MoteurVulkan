@@ -56,5 +56,4 @@ struct GfxModelCreationData
 
 void CreateGfxModel( const std::vector<GfxModelCreationData>& creationData, const std::vector<uint32_t>& indices, GfxModel& o_modelAsset);
 void CreateGfxModelNoData( const std::vector<GfxModelCreationData>& creationData, uint32_t indiceCount, GfxModel& o_modelAsset );
-void LoadGenericModel(const char * filename, GfxModel& o_modelAsset, size_t hackModelIndex);
 void DestroyGfxModel(GfxModel& o_modelAsset);

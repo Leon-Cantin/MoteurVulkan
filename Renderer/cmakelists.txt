@@ -10,6 +10,7 @@ source_group( " " REGULAR_EXPRESSION .* )
 source_group( shaders FILES ${SHADERS} )
 source_group( frame_graph REGULAR_EXPRESSION .*/frame_graph.* )
 source_group( glTF REGULAR_EXPRESSION .*/glTF.* )
+source_group( assimp REGULAR_EXPRESSION .*/assimp.* )
 
 target_include_directories( ${TARGET_NAME} PUBLIC includes )
 target_include_directories( ${TARGET_NAME} PUBLIC ../ThirdParties/glm-0.9.9-a2 )

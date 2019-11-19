@@ -1,6 +1,7 @@
 #include "asset_library.h"
 
 #include "glTF_loader.h"
+#include "assimp_loader.h"
 
 #include <vector>
 #include <array>
@@ -62,7 +63,7 @@ namespace AL
 	GfxModel* Load3DModel(const char* assetName, const char* assetPath, uint32_t hackIndex)
 	{
 		GfxModel* modelAsset = AL_GetModelSlot(assetName);
-		LoadGenericModel(assetPath, *modelAsset, hackIndex);
+		LoadModel_AssImp(assetPath, *modelAsset, hackIndex);
 
 		return modelAsset;
 	}
