@@ -45,15 +45,11 @@ struct GfxModel
 
 	GpuBuffer indexBuffer;
 	uint32_t indexCount;
+	VkIndexType indexType;
 };
 
-struct GfxModelCreationData
-{
-	VIDesc desc;
-	uint8_t* data;
-	uint64_t vertexCount;
-};
-
-void CreateGfxModel( const std::vector<GfxModelCreationData>& creationData, const std::vector<uint32_t>& indices, GfxModel& o_modelAsset);
-void CreateGfxModelNoData( const std::vector<GfxModelCreationData>& creationData, uint32_t indiceCount, GfxModel& o_modelAsset );
+GfxModelVertexInput* GetVertexInput( GfxModel& gfxModel, eVIDataType dataType );
+const GfxModelVertexInput* GetVertexInput( const GfxModel& gfxModel, eVIDataType dataType );
+GfxModel CreateGfxModel( const std::vector<VIDesc>& viDescs, size_t vertexCount, size_t indiceCount, uint8_t indexTypeSize );
+GfxModel CreateGfxModel( const std::vector<VIDesc>& viDescs, const std::vector<void*>& data, size_t vertexCount, const void* indicesData, size_t indiceCount, uint8_t indexTypeSize );
 void DestroyGfxModel(GfxModel& o_modelAsset);

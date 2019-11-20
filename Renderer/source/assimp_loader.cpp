@@ -37,7 +37,8 @@ void LoadModel_AssImp( const char * filename, GfxModel& o_modelAsset, size_t hac
 	}
 
 	std::vector<uint32_t> indices;
-	indices.resize( mesh->mNumFaces * 3 );
+	uint32_t indexCount = mesh->mNumFaces * 3;
+	indices.resize( indexCount );
 	for( size_t i = 0; i < mesh->mNumFaces; ++i )
 	{
 		indices[i * 3] = mesh->mFaces[i].mIndices[0];
@@ -45,27 +46,20 @@ void LoadModel_AssImp( const char * filename, GfxModel& o_modelAsset, size_t hac
 		indices[i * 3 + 2] = mesh->mFaces[i].mIndices[2];
 	}
 
-	std::vector<GfxModelCreationData> modelCreationData;
-	modelCreationData.resize( 5 );
-	modelCreationData[0].data = reinterpret_cast< uint8_t* >(vertPos.data());
-	modelCreationData[0].vertexCount = vertPos.size();
-	modelCreationData[0].desc = { eVIDataType::POSITION, eVIDataElementType::FLOAT, 3 };
+	std::vector<VIDesc> modelVIDescs = {
+	{ eVIDataType::POSITION, eVIDataElementType::FLOAT, 3 },
+	{ eVIDataType::NORMAL, eVIDataElementType::FLOAT, 3 },
+	{ eVIDataType::TANGENT, eVIDataElementType::FLOAT, 3 },
+	{ eVIDataType::COLOR, eVIDataElementType::FLOAT, 3 },
+	{ eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2 },
+	};
+	std::vector<void*> modelData = {
+		vertPos.data(),
+		vertNormals.data(),
+		vertTangents.data(),
+		vertColor.data(),
+		vertTexCoord.data(),
+	};
 
-	modelCreationData[1].data = reinterpret_cast< uint8_t* >(vertNormals.data());
-	modelCreationData[1].vertexCount = vertNormals.size();
-	modelCreationData[1].desc = { eVIDataType::NORMAL, eVIDataElementType::FLOAT, 3 };
-
-	modelCreationData[2].data = reinterpret_cast< uint8_t* >(vertTangents.data());
-	modelCreationData[2].vertexCount = vertTangents.size();
-	modelCreationData[2].desc = { eVIDataType::TANGENT, eVIDataElementType::FLOAT, 3 };
-
-	modelCreationData[3].data = reinterpret_cast< uint8_t* >(vertColor.data());
-	modelCreationData[3].vertexCount = vertColor.size();
-	modelCreationData[3].desc = { eVIDataType::COLOR, eVIDataElementType::FLOAT, 3 };
-
-	modelCreationData[4].data = reinterpret_cast< uint8_t* >(vertTexCoord.data());
-	modelCreationData[4].vertexCount = vertTexCoord.size();
-	modelCreationData[4].desc = { eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2 };
-
-	CreateGfxModel( modelCreationData, indices, o_modelAsset );
+	o_modelAsset = CreateGfxModel( modelVIDescs, modelData, mesh->mNumVertices, indices.data(), indexCount, sizeof(uint32_t) );
 }

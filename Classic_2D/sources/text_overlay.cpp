@@ -149,19 +149,13 @@ void CreateTextVertexBuffer(size_t maxCharCount)
 	uint32_t maxVertices = maxCharCount * verticesPerChar;
 	uint32_t maxIndices = maxCharCount * indexesPerChar;
 
-	std::vector<GfxModelCreationData> modelCreationData;
-	modelCreationData.resize( 3 );
-
-	modelCreationData[0].vertexCount = maxVertices;
-	modelCreationData[0].desc = { eVIDataType::POSITION, eVIDataElementType::FLOAT, 3 };
-
-	modelCreationData[1].vertexCount = maxVertices;
-	modelCreationData[1].desc = { eVIDataType::COLOR, eVIDataElementType::FLOAT, 3 };
-
-	modelCreationData[2].vertexCount = maxVertices;
-	modelCreationData[2].desc = { eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2 };
+	std::vector<VIDesc> modelVIDescs = {
+		{ eVIDataType::POSITION, eVIDataElementType::FLOAT, 3 },
+		{ eVIDataType::COLOR, eVIDataElementType::FLOAT, 3 },
+		{ eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2 },
+	};
 	
-	CreateGfxModelNoData( modelCreationData, maxIndices, textModel );
+	textModel = CreateGfxModel( modelVIDescs, maxVertices, maxIndices, sizeof( uint32_t ) );
 }
 
 void LoadFontTexture()

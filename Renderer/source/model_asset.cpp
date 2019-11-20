@@ -14,40 +14,71 @@ void DestroyGfxModel(GfxModel& o_modelAsset)
 	DestroyCommitedGpuBuffer( &o_modelAsset.indexBuffer );
 }
 
-void CreateGfxModel( const std::vector<GfxModelCreationData>& creationData, const std::vector<uint32_t>& indices, GfxModel& o_modelAsset )
+static VkIndexType GetIndexType( uint8_t sizeofIndexType )
 {
-	o_modelAsset.vertexCount = static_cast< uint32_t >(creationData[0].vertexCount);
-	o_modelAsset.indexCount = static_cast< uint32_t >(indices.size());
-
-	for( const GfxModelCreationData& creationDatax : creationData )
+	switch( sizeofIndexType )
 	{
-		GfxModelVertexInput* currentInput = &o_modelAsset.vertAttribBuffers[( uint8_t )creationDatax.desc.dataType];
-		currentInput->desc = creationDatax.desc;
-		VkDeviceSize bufferSize = GetBindingSize(&creationDatax.desc) * creationDatax.vertexCount;
-		//TODO assert that bufferSize is the same size as the one reported from loading the buffer;
-		CreateCommitedGpuBuffer( bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &currentInput->vertexAttribBuffer );
-		copyDataToDeviceLocalMemoryImmediate( currentInput->vertexAttribBuffer.buffer, creationDatax.data, bufferSize );
+	case 4:
+		return VK_INDEX_TYPE_UINT32;
+	case 2:
+		return VK_INDEX_TYPE_UINT16;
+	default:
+		std::runtime_error( "Unknown index type" );
 	}
-
-	VkDeviceSize bufferSize = sizeof( uint32_t ) * indices.size();
-	CreateCommitedGpuBuffer( bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &o_modelAsset.indexBuffer );
-	copyDataToDeviceLocalMemoryImmediate( o_modelAsset.indexBuffer.buffer, indices.data(), bufferSize );
 }
 
-void CreateGfxModelNoData( const std::vector<GfxModelCreationData>& creationData, uint32_t indiceCount, GfxModel& o_modelAsset )
+GfxModelVertexInput* GetVertexInput( GfxModel& gfxModel, eVIDataType dataType )
 {
-	o_modelAsset.vertexCount = static_cast< uint32_t >(creationData[0].vertexCount);
-	o_modelAsset.indexCount = indiceCount;
+	return &gfxModel.vertAttribBuffers[( uint8_t )dataType];
+}
 
-	for( const GfxModelCreationData& creationDatax : creationData )
+const GfxModelVertexInput* GetVertexInput( const GfxModel& gfxModel, eVIDataType dataType )
+{
+	return GetVertexInput( const_cast<GfxModel&>(gfxModel), dataType );
+}
+
+
+GfxModel CreateGfxModel( const std::vector<VIDesc>& viDescs, size_t vertexCount, size_t indiceCount, uint8_t indexTypeSize )
+{
+	GfxModel gfxModel = {};
+	gfxModel.vertexCount = vertexCount;
+	gfxModel.indexCount = indiceCount;
+
+	for( const VIDesc& viDesc : viDescs )
 	{
-		GfxModelVertexInput* currentInput = &o_modelAsset.vertAttribBuffers[( uint8_t )creationDatax.desc.dataType];
-		currentInput->desc = creationDatax.desc;
-		VkDeviceSize bufferSize = GetBindingSize( &creationDatax.desc ) * creationDatax.vertexCount;
-		//TODO assert that bufferSize is the same size as the one reported from loading the buffer;
-		CreateCommitedGpuBuffer( bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &currentInput->vertexAttribBuffer );
+		GfxModelVertexInput* currentVI = GetVertexInput( gfxModel, viDesc.dataType );
+		currentVI->desc = viDesc;
+		VkDeviceSize bufferSize = GetBindingSize( &viDesc ) * vertexCount;
+		CreateCommitedGpuBuffer( bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &currentVI->vertexAttribBuffer );
 	}
 
-	VkDeviceSize bufferSize = sizeof( uint32_t ) * indiceCount;
-	CreateCommitedGpuBuffer( bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &o_modelAsset.indexBuffer );
+	VkDeviceSize bufferSize = indexTypeSize * indiceCount;
+	CreateCommitedGpuBuffer( bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &gfxModel.indexBuffer );
+	gfxModel.indexType = GetIndexType( indexTypeSize );
+
+	return gfxModel;
+}
+
+GfxModel CreateGfxModel( const std::vector<VIDesc>& viDescs, const std::vector<void*>& data, size_t vertexCount, const void* indicesData, size_t indiceCount, uint8_t indexTypeSize )
+{
+	GfxModel gfxModel = {};
+	gfxModel.vertexCount = vertexCount;
+	gfxModel.indexCount = indiceCount;
+
+	for( uint8_t i = 0; i < viDescs.size(); ++i )
+	{
+		const VIDesc& viDesc = viDescs[i];
+		GfxModelVertexInput* currentVI = GetVertexInput( gfxModel, viDesc.dataType );
+		currentVI->desc = viDesc;
+		VkDeviceSize bufferSize = GetBindingSize( &viDesc ) * vertexCount;
+		CreateCommitedGpuBuffer( bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &currentVI->vertexAttribBuffer );
+		copyDataToDeviceLocalMemoryImmediate( currentVI->vertexAttribBuffer.buffer, data[i], bufferSize );
+	}
+
+	VkDeviceSize bufferSize = indexTypeSize * indiceCount;
+	CreateCommitedGpuBuffer( bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &gfxModel.indexBuffer );
+	copyDataToDeviceLocalMemoryImmediate( gfxModel.indexBuffer.buffer, indicesData, bufferSize );
+	gfxModel.indexType = GetIndexType( indexTypeSize );
+
+	return gfxModel;
 }
