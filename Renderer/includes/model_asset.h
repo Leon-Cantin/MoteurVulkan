@@ -35,7 +35,7 @@ static const std::vector<VIBinding> VIBindings_PosColUV = {
 struct GfxModelVertexInput
 {
 	VIDesc desc;
-	GpuBuffer vertexAttribBuffer;
+	GpuBuffer buffer;
 };
 
 struct GfxModel

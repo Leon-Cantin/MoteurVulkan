@@ -129,13 +129,13 @@ void UpdateText( const TextZone * textZones, size_t textZonesCount, VkExtent2D s
 	}
 
 	VkDeviceSize bufferSize = sizeof( text_vertex_positions[0] ) * text_vertex_positions.size();
-	UpdateGpuBuffer( &textModel.vertAttribBuffers[static_cast< uint32_t >(eVIDataType::POSITION)].vertexAttribBuffer, text_vertex_positions.data(), bufferSize, 0 );
+	UpdateGpuBuffer( &GetVertexInput( textModel, eVIDataType::POSITION )->buffer, text_vertex_positions.data(), bufferSize, 0 );
 
 	bufferSize = sizeof( text_vertex_color[0] ) * text_vertex_color.size();
-	UpdateGpuBuffer( &textModel.vertAttribBuffers[static_cast< uint32_t >(eVIDataType::COLOR)].vertexAttribBuffer, text_vertex_color.data(), bufferSize, 0 );
+	UpdateGpuBuffer( &GetVertexInput( textModel, eVIDataType::COLOR )->buffer, text_vertex_color.data(), bufferSize, 0 );
 
 	bufferSize = sizeof( text_vertex_uv[0] ) * text_vertex_uv.size();
-	UpdateGpuBuffer( &textModel.vertAttribBuffers[static_cast< uint32_t >(eVIDataType::TEX_COORD)].vertexAttribBuffer, text_vertex_uv.data(), bufferSize, 0 );
+	UpdateGpuBuffer( &GetVertexInput( textModel, eVIDataType::TEX_COORD )->buffer, text_vertex_uv.data(), bufferSize, 0 );
 
 	bufferSize = sizeof( text_indices[0] ) * text_indices.size();
 	UpdateGpuBuffer( &textModel.indexBuffer, text_indices.data(), bufferSize, 0 );

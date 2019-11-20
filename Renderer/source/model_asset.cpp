@@ -8,8 +8,8 @@ void DestroyGfxModel(GfxModel& o_modelAsset)
 {
 	for( uint8_t i = 0; i < ( uint8_t )eVIDataType::VI_DATA_TYPE_COUNT; ++i )
 	{
-		if( o_modelAsset.vertAttribBuffers[i].vertexAttribBuffer.gpuMemory.memory != VK_NULL_HANDLE )
-			DestroyCommitedGpuBuffer( &o_modelAsset.vertAttribBuffers[i].vertexAttribBuffer );
+		if( o_modelAsset.vertAttribBuffers[i].buffer.gpuMemory.memory != VK_NULL_HANDLE )
+			DestroyCommitedGpuBuffer( &o_modelAsset.vertAttribBuffers[i].buffer );
 	}
 	DestroyCommitedGpuBuffer( &o_modelAsset.indexBuffer );
 }
@@ -49,7 +49,7 @@ GfxModel CreateGfxModel( const std::vector<VIDesc>& viDescs, size_t vertexCount,
 		GfxModelVertexInput* currentVI = GetVertexInput( gfxModel, viDesc.dataType );
 		currentVI->desc = viDesc;
 		VkDeviceSize bufferSize = GetBindingSize( &viDesc ) * vertexCount;
-		CreateCommitedGpuBuffer( bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &currentVI->vertexAttribBuffer );
+		CreateCommitedGpuBuffer( bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &currentVI->buffer );
 	}
 
 	VkDeviceSize bufferSize = indexTypeSize * indiceCount;
@@ -71,8 +71,8 @@ GfxModel CreateGfxModel( const std::vector<VIDesc>& viDescs, const std::vector<v
 		GfxModelVertexInput* currentVI = GetVertexInput( gfxModel, viDesc.dataType );
 		currentVI->desc = viDesc;
 		VkDeviceSize bufferSize = GetBindingSize( &viDesc ) * vertexCount;
-		CreateCommitedGpuBuffer( bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &currentVI->vertexAttribBuffer );
-		copyDataToDeviceLocalMemoryImmediate( currentVI->vertexAttribBuffer.buffer, data[i], bufferSize );
+		CreateCommitedGpuBuffer( bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &currentVI->buffer );
+		copyDataToDeviceLocalMemoryImmediate( currentVI->buffer.buffer, data[i], bufferSize );
 	}
 
 	VkDeviceSize bufferSize = indexTypeSize * indiceCount;
