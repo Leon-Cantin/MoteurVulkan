@@ -2,6 +2,7 @@
 
 #include "glTF_loader.h"
 #include "assimp_loader.h"
+#include "generate_geometry.h"
 
 #include <vector>
 #include <array>
@@ -72,6 +73,14 @@ namespace AL
 	{
 		GfxModel* modelAsset = AL_GetModelSlot( assetName );
 		glTF_L::LoadMesh( assetPath, modelAsset);
+
+		return modelAsset;
+	}
+
+	GfxModel* CreateQuad( const char* assetName )
+	{
+		GfxModel* modelAsset = AL_GetModelSlot( assetName );
+		*modelAsset = GenerateQuad();
 
 		return modelAsset;
 	}

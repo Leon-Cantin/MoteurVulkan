@@ -31,7 +31,7 @@ namespace Scene2DGame
 	SceneInstance planeSceneInstance;
 	RenderableAsset planeRenderable;
 
-	SceneInstance cubeSceneInstance;
+	SceneInstance quadSceneInstance;
 	RenderableAsset cubeRenderable;
 
 	SceneInstance cameraSceneInstance;
@@ -93,8 +93,8 @@ namespace Scene2DGame
 	void TickObjectCallback(float dt, void* unused)
 	{
 		static bool goRight = true;
-		cubeSceneInstance.location.x += (dt/1000.0f) * (goRight ? 0.5f : -0.5f);
-		if (abs(cubeSceneInstance.location.x) >= 2.0f)
+		quadSceneInstance.location.x += (dt/1000.0f) * (goRight ? 0.5f : -0.5f);
+		if (abs(quadSceneInstance.location.x) >= 2.0f)
 			goRight ^= true;
 	}
 
@@ -115,7 +115,7 @@ namespace Scene2DGame
 			//Update objects
 			TickUpdate(frameDeltaTime);
 
-			std::vector<std::pair<const SceneInstance*, const RenderableAsset*>> drawList = { {&planeSceneInstance, &planeRenderable}, { &cubeSceneInstance, &cubeRenderable} };
+			std::vector<std::pair<const SceneInstance*, const RenderableAsset*>> drawList = { {&planeSceneInstance, &planeRenderable}, { &quadSceneInstance, &cubeRenderable} };
 			DrawFrame( current_frame, &cameraSceneInstance, &g_light, drawList);
 
 			current_frame = (++current_frame) % SIMULTANEOUS_FRAMES;
@@ -178,7 +178,7 @@ namespace Scene2DGame
 		CompileScene( &bindlessTexturesState, skyboxTexture );
 
 		planeSceneInstance = { glm::vec3( 0.0f, -0.5f, 0.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 10.0f };
-		cubeSceneInstance = { glm::vec3( 0.0f, 1.0f, 2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 0.5f };
+		quadSceneInstance = { glm::vec3( 0.0f, 1.0f, 2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 0.5f };
 		cameraSceneInstance = { glm::vec3( 0.0f, 0.0f, -2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 1.0f };
 		g_light = { glm::mat4( 1.0f ), {3.0f, 3.0f, 1.0f}, 1.0f };
 	}

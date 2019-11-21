@@ -13,19 +13,17 @@ layout(set = INSTANCE_SET, binding = 0) uniform InstanceMatrices {
 } instanceMat;
 
 layout(location = 0) in vec3 inPosition;
-layout(location = 1) in vec2 inTexCoord;
+layout(location = 1) in vec3 inColor;
+layout(location = 2) in vec2 inTexCoord;
 
 layout(location = 0) out VS_OUT
 {
 	vec3 fragColor;
 	vec2 fragTexCoord;
-	vec3 normal_vs;
-	vec3 tangent_vs;
-	vec3 bitangent_vs;
-	vec3 viewVector;
 }vs_out;
 
 void main() {
     gl_Position = sceneMat.proj * instanceMat.model * vec4(inPosition, 1.0);
 	vs_out.fragTexCoord = inTexCoord;
+	vs_out.fragColor = inColor;
 }

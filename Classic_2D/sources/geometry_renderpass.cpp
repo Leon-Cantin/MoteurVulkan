@@ -22,7 +22,7 @@ GpuPipelineLayout GetGeoPipelineLayout()
 GpuPipelineState GetGeoPipelineState()
 {
 	GpuPipelineState gpuPipelineState = {};
-	GetBindingDescription( VIBindingsSimpleModel, &gpuPipelineState.viState );
+	GetBindingDescription( VIBindings_PosColUV, &gpuPipelineState.viState );
 
 	gpuPipelineState.shaders = {
 		{ FS::readFile( "shaders/triangle.vert.spv" ), "main", VK_SHADER_STAGE_VERTEX_BIT },
@@ -66,7 +66,7 @@ static void CmdDrawModelAsset( VkCommandBuffer commandBuffer, const DrawModel* d
 	const GfxModel* modelAsset = drawModel->asset->modelAsset;
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, INSTANCE_SET, 1,
 		&technique->instance_descriptor[currentFrame], 1, &instanceSet->geometryBufferOffsets);
-	CmdDrawIndexed(commandBuffer, VIBindingsSimpleModel, *modelAsset);
+	CmdDrawIndexed(commandBuffer, VIBindings_PosColUV, *modelAsset);
 }
 
 void GeometryRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique )

@@ -28,14 +28,14 @@ namespace Scene2DGame
 	const int WIDTH = 800;
 	const int HEIGHT = 600;
 
-	SceneInstance cubeSceneInstance;
-	RenderableAsset cubeRenderable;
+	SceneInstance quadSceneInstance;
+	RenderableAsset quadRenderable;
 
 	SceneInstance cameraSceneInstance;
 
 	BindlessTexturesState bindlessTexturesState;
 
-	float frameDeltaTime = 0.0f;
+	float frameDeltaTime = 0.0f;	
 
 	glm::vec3 ForwardVector()
 	{
@@ -80,8 +80,8 @@ namespace Scene2DGame
 	void TickObjectCallback(float dt, void* unused)
 	{
 		static bool goRight = true;
-		cubeSceneInstance.location.x += (dt/1000.0f) * (goRight ? 0.5f : -0.5f);
-		if (abs(cubeSceneInstance.location.x) >= 2.0f)
+		quadSceneInstance.location.x += (dt/1000.0f) * (goRight ? 0.5f : -0.5f);
+		if (abs(quadSceneInstance.location.x) >= 2.0f)
 			goRight ^= true;
 	}
 
@@ -102,7 +102,7 @@ namespace Scene2DGame
 			//Update objects
 			TickUpdate(frameDeltaTime);
 
-			std::vector<std::pair<const SceneInstance*, const RenderableAsset*>> drawList = { { &cubeSceneInstance, &cubeRenderable} };
+			std::vector<std::pair<const SceneInstance*, const RenderableAsset*>> drawList = { { &quadSceneInstance, &quadRenderable} };
 			DrawFrame( current_frame, &cameraSceneInstance, drawList);
 
 			current_frame = (++current_frame) % SIMULTANEOUS_FRAMES;
@@ -150,16 +150,16 @@ namespace Scene2DGame
 		GfxImage* albedoTexture = AL::CreateSolidColorTexture( "ModelAlbedoTexture", glm::vec4( 0.8f, 0.8f, 0.8f, 1.0f ) );
 		GfxImage* normalTexture = AL::CreateSolidColorTexture( "ModelNormalTexture", glm::vec4( 0.0f, 0.0f, 1.0f, 0.0f ) );
 
-		GfxModel* cubeModelAsset = AL::LoadglTf3DModel( "Cube", "assets/cube2.glb" );
+		GfxModel* quadModel = AL::CreateQuad( "Quad" );
 
 		uint32_t albedoIndex = RegisterBindlessTexture( &bindlessTexturesState, albedoTexture );
 		uint32_t normalIndex = RegisterBindlessTexture( &bindlessTexturesState, normalTexture );
 
-		CreateRenderable( cubeModelAsset, albedoIndex, normalIndex, &cubeRenderable );
+		CreateRenderable( quadModel, albedoIndex, normalIndex, &quadRenderable );
 
 		CompileScene( &bindlessTexturesState );
 
-		cubeSceneInstance = { glm::vec3( 0.1f, 0.0f, 2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 0.5f };
+		quadSceneInstance = { glm::vec3( 0.0f, 0.0f, 2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 1.0f };
 		cameraSceneInstance = { glm::vec3( 0.0f, 0.0f, -2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 1.0f };
 	}
 

@@ -17,10 +17,6 @@ layout(location = 0) in VS_OUT
 {
 	vec3 fragColor;
 	vec2 fragTexCoord;
-	vec3 normal_vs;
-	vec3 tangent_vs;
-	vec3 bitangent_vs;
-	vec3 viewVector;
 }fs_in;
 
 layout(location = 0) out vec4 outColor;
@@ -30,7 +26,8 @@ layout(push_constant) uniform PushConsts {
 } pushConsts;
 
 void main() {
-	vec3 albedo = texture(bindlessTextures[instanceMat.textureIndices[0]] , fs_in.fragTexCoord).rgb;
+	//vec3 albedo = texture(bindlessTextures[instanceMat.textureIndices[0]] , fs_in.fragTexCoord).rgb;
+	vec3 albedo = fs_in.fragColor;
 	
 	outColor = vec4(albedo, 1.0);
 }

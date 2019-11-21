@@ -275,8 +275,8 @@ void CmdBindVertexInputs( VkCommandBuffer commandBuffer, const std::vector<VIBin
 
 	for( uint32_t i = 0; i < gpuPipelineVIBingindCount; ++i )
 	{
-		const GfxModelVertexInput* modelVI = GetVertexInput( gfxModel, VIBindingsFullModel[i].desc.dataType );
-		assert( VIBindingsFullModel[i].desc == modelVI->desc );
+		const GfxModelVertexInput* modelVI = GetVertexInput( gfxModel, gpuPipelineVIBindings[i].desc.dataType );
+		assert( gpuPipelineVIBindings[i].desc == modelVI->desc );
 		//assert( modelVI.vertAttribBuffers != VK_NULL_HANDLE );
 		vertexBuffers[i] = modelVI->buffer.buffer;
 		offsets[i] = 0;

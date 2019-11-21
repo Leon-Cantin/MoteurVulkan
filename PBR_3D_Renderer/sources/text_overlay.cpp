@@ -141,7 +141,6 @@ void UpdateText( const TextZone * textZones, size_t textZonesCount, VkExtent2D s
 	UpdateGpuBuffer( &textModel.indexBuffer, text_indices.data(), bufferSize, 0 );
 }
 
-//TODO: Use the system for vertex buffers
 void CreateTextVertexBuffer( size_t maxCharCount )
 {
 	maxTextCharCount = static_cast< uint32_t >(maxCharCount);
