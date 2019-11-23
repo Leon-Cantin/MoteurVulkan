@@ -169,8 +169,8 @@ namespace Scene2DGame
 		GfxModel* planeModelAsset = AL::Load3DModel( "Plane", "assets/plane.obj", 0 );
 		GfxModel* cubeModelAsset = AL::LoadglTf3DModel( "Cube", "assets/cube2.glb" );
 
-		uint32_t albedoIndex = RegisterBindlessTexture( &bindlessTexturesState, albedoTexture );
-		uint32_t normalIndex = RegisterBindlessTexture( &bindlessTexturesState, normalTexture );
+		uint32_t albedoIndex = RegisterBindlessTexture( &bindlessTexturesState, albedoTexture, eSamplers::Trilinear );
+		uint32_t normalIndex = RegisterBindlessTexture( &bindlessTexturesState, normalTexture, eSamplers::Trilinear );
 
 		CreateRenderable( planeModelAsset, albedoIndex, normalIndex, &planeRenderable );
 		CreateRenderable( cubeModelAsset, albedoIndex, normalIndex, &cubeRenderable );

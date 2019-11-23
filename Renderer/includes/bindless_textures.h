@@ -7,4 +7,4 @@ struct BindlessTexturesState
 	uint32_t _bindlessTexturesCount = 0;
 };
 
-uint32_t RegisterBindlessTexture( BindlessTexturesState* state, GfxImage* image );
+uint32_t RegisterBindlessTexture( BindlessTexturesState* state, GfxImage* image, eSamplers eSampler );

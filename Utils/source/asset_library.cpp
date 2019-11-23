@@ -2,6 +2,7 @@
 
 #include "glTF_loader.h"
 #include "assimp_loader.h"
+#include "stb_image.h"
 #include "generate_geometry.h"
 
 #include <vector>
@@ -40,9 +41,9 @@ namespace AL
 
 	GfxImage* LoadTexture(const char* assetName, const char* assetPath)
 	{
-		//TODO when i'll need it
-		assert( true );
-		return nullptr;
+		GfxImage* image = AL_GetImageSlot( assetName );
+		Load2DTextureFromFile( assetPath, *image );
+		return image;
 	}
 
 	GfxImage* LoadCubeTexture(const char* assetName, const char* assetPath)
@@ -77,10 +78,10 @@ namespace AL
 		return modelAsset;
 	}
 
-	GfxModel* CreateQuad( const char* assetName )
+	GfxModel* CreateQuad( const char* assetName, float size )
 	{
 		GfxModel* modelAsset = AL_GetModelSlot( assetName );
-		*modelAsset = GenerateQuad();
+		*modelAsset = GenerateQuad( size );
 
 		return modelAsset;
 	}

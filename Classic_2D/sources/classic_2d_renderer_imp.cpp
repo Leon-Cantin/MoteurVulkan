@@ -26,7 +26,7 @@ std::array< GpuInputData, SIMULTANEOUS_FRAMES> _inputBuffers;
 static void UpdateSceneUniformBuffer(const glm::mat4& world_view_matrix, VkExtent2D extent, GpuBuffer* sceneUniformBuffer)
 {
 	SceneMatricesUniform sceneMatrices = {};
-	sceneMatrices.view = world_view_matrix;
+	//sceneMatrices.view = world_view_matrix;
 	//Layout is columns are horizontal in memory
 	sceneMatrices.proj = glm::mat4( 1.0f, 0.0f, 0.0f, 0.0f,
 									0.0f, 1.0f, 0.0f, 0.0f,
@@ -99,7 +99,7 @@ static void CreateBuffers( BindlessTexturesState* bindlessTexturesState )
 {
 	CreateTextVertexBuffer( 256 );
 
-	VkSampler sampler = GetSampler( Samplers::Trilinear );
+	VkSampler sampler = GetSampler( eSamplers::Trilinear );
 
 	textTextures[0] = { const_cast< GfxImage*>(GetTextImage()), sampler };
 	

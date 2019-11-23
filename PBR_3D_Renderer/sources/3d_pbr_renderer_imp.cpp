@@ -113,7 +113,7 @@ static void CreateBuffers( BindlessTexturesState* bindlessTexturesState, const G
 {
 	CreateTextVertexBuffer( 256 );
 
-	VkSampler sampler = GetSampler( Samplers::Trilinear );
+	VkSampler sampler = GetSampler( eSamplers::Trilinear );
 
 	textTextures[0] = { const_cast< GfxImage*>(GetTextImage()), sampler };
 	skyboxImages[0] = { const_cast< GfxImage* >(skyboxImage), sampler };

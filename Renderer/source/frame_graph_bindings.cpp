@@ -237,7 +237,6 @@ namespace FG
 				for( uint32_t descriptorIndex = 0; descriptorIndex < buffersCount; ++descriptorIndex )
 				{
 					assert( descriptorImagesInfosCount < 16 );
-					//TODO: HACK shouldn't pass in this struct in the input buffer, should be some wrapper or something
 					descriptorImagesInfos[descriptorImagesInfosCount++] = { images[descriptorIndex].sampler, images[descriptorIndex].image->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
 				}
 				writeDescriptors[writeDescriptorsCount++] = { dataBinding->binding, buffersCount, DescriptorTypeToVkType( techniqueDataEntry->descriptorType, dataBinding->descriptorAccess ), nullptr, &descriptorImagesInfos[bufferStart] };
@@ -280,7 +279,7 @@ namespace FG
 				{
 					assert( descriptorImagesInfosCount < 16 );
 					//TODO: HACK shouldn't pass in this struct in the input buffer, should be some wrapper or something
-					descriptorImagesInfos[descriptorImagesInfosCount++] = { GetSampler(Samplers::Trilinear), dummyImage.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+					descriptorImagesInfos[descriptorImagesInfosCount++] = { GetSampler(eSamplers::Trilinear), dummyImage.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
 				}
 				writeDescriptors[writeDescriptorsCount++] = { dataBinding->binding, techniqueDataEntry->count, DescriptorTypeToVkType( techniqueDataEntry->descriptorType, dataBinding->descriptorAccess ), nullptr, &descriptorImagesInfos[bufferStart] };
 			}

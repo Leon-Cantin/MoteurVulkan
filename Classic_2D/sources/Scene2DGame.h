@@ -147,15 +147,16 @@ namespace Scene2DGame
 		InitRendererImp( WH::VK::_windowSurface );
 
 		//LoadAssets
-		GfxImage* albedoTexture = AL::CreateSolidColorTexture( "ModelAlbedoTexture", glm::vec4( 0.8f, 0.8f, 0.8f, 1.0f ) );
+		//TODO: remove normal from renderable
 		GfxImage* normalTexture = AL::CreateSolidColorTexture( "ModelNormalTexture", glm::vec4( 0.0f, 0.0f, 1.0f, 0.0f ) );
+		GfxImage* shipTexture = AL::LoadTexture( "shipTexture", "assets/ship.png" );
 
-		GfxModel* quadModel = AL::CreateQuad( "Quad" );
+		GfxModel* quadModel = AL::CreateQuad( "Quad", 1.0f );
 
-		uint32_t albedoIndex = RegisterBindlessTexture( &bindlessTexturesState, albedoTexture );
-		uint32_t normalIndex = RegisterBindlessTexture( &bindlessTexturesState, normalTexture );
+		uint32_t normalIndex = RegisterBindlessTexture( &bindlessTexturesState, normalTexture, eSamplers::Point );
+		uint32_t shipTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, shipTexture, eSamplers::Point );
 
-		CreateRenderable( quadModel, albedoIndex, normalIndex, &quadRenderable );
+		CreateRenderable( quadModel, shipTextureIndex, normalIndex, &quadRenderable );
 
 		CompileScene( &bindlessTexturesState );
 

@@ -9,7 +9,7 @@
 #include <array>
 
 
-std::array<VkSampler, ( size_t )(Samplers::Count)> samplers;
+std::array<VkSampler, ( size_t )(eSamplers::Count)> samplers;
 
 void Load3DTexture( const char* filename, GfxImage& o_image )
 {
@@ -55,23 +55,24 @@ void Load2DTexture( void * data, uint32_t width, uint32_t height, uint32_t miple
 
 void Load2DTextureFromFile( const char* filename, GfxImage& o_image )
 {
-	int texWidth, texHeight, texChannels;
-	stbi_uc* pixels = stbi_load( filename, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha );
+	int texWidth, texHeight, channelCount;
+	stbi_uc* pixels = stbi_load( filename, &texWidth, &texHeight, &channelCount, STBI_rgb_alpha );
 	VkDeviceSize imageSize = texWidth * texHeight * 4;
-	VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
+	o_image.extent = { (uint32_t)texWidth, (uint32_t)texHeight };
+	o_image.format = VK_FORMAT_R8G8B8A8_UNORM;
 	o_image.mipLevels = static_cast< uint32_t >(std::floor( std::log2( std::max( texWidth, texHeight ) ) )) + 1;
 
 	if( !pixels )
 		throw std::runtime_error( "failed to load texture image!" );
 
 	//TODO: now it's also a src image because of the generating mip map. Perhaps we could change it back to only dst somehow?
-	create_image( texWidth, texHeight, o_image.mipLevels, format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+	create_image( texWidth, texHeight, o_image.mipLevels, o_image.format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, o_image.image, o_image.memory );
 
-	copyImageToDeviceLocalMemory( pixels, imageSize, texWidth, texHeight, 1, o_image.mipLevels, format, o_image.image );
+	copyImageToDeviceLocalMemory( pixels, imageSize, texWidth, texHeight, 1, o_image.mipLevels, o_image.format, o_image.image );
 
 	stbi_image_free( pixels );
-	o_image.imageView = createImageView( o_image.image, format, VK_IMAGE_ASPECT_COLOR_BIT, o_image.mipLevels );
+	o_image.imageView = createImageView( o_image.image, o_image.format, VK_IMAGE_ASPECT_COLOR_BIT, o_image.mipLevels );
 
 	MarkVkObject( ( uint64_t )o_image.image, VK_OBJECT_TYPE_IMAGE, filename );
 	MarkVkObject( ( uint64_t )o_image.imageView, VK_OBJECT_TYPE_IMAGE_VIEW, filename );
@@ -106,6 +107,38 @@ void CreateSolidColorImage( glm::vec4 color, GfxImage* o_image )
 	create_image( width, height, 1, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, o_image->image, o_image->memory );
 	copyImageToDeviceLocalMemory( pixels, memorySize, o_image->extent.width, o_image->extent.height, 1, o_image->mipLevels, o_image->format, o_image->image );
 	o_image->imageView = createImageView( o_image->image, o_image->format, VK_IMAGE_ASPECT_COLOR_BIT, o_image->mipLevels );
+}
+
+static void createPointSampler( VkSampler* o_sampler )
+{
+	VkSamplerCreateInfo samplerInfo = {};
+	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+
+	samplerInfo.magFilter = VK_FILTER_NEAREST;
+	samplerInfo.minFilter = VK_FILTER_NEAREST;
+
+	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+	samplerInfo.anisotropyEnable = VK_TRUE;
+	samplerInfo.maxAnisotropy = 16;
+
+	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	samplerInfo.unnormalizedCoordinates = VK_FALSE;
+
+	samplerInfo.compareEnable = VK_FALSE;
+	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+
+	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+	samplerInfo.mipLodBias = 0.0f;
+	samplerInfo.minLod = 0.0f;
+	samplerInfo.maxLod = std::numeric_limits<float>::max();
+
+	if( vkCreateSampler( g_vk.device, &samplerInfo, nullptr, o_sampler ) != VK_SUCCESS )
+		throw std::runtime_error( "failed to create texture sampler!" );
+
+	MarkVkObject( ( uint64_t )*o_sampler, VK_OBJECT_TYPE_SAMPLER, "trilinear sampler" );
 }
 
 static void createTriLinearSampler( VkSampler* o_sampler )
@@ -174,8 +207,9 @@ static void createShadowSampler( VkSampler* o_sampler )
 
 void InitSamplers()
 {
-	createTriLinearSampler( &samplers[( size_t )Samplers::Trilinear] );
-	createShadowSampler( &samplers[( size_t )Samplers::Shadow] );
+	createPointSampler( &samplers[( size_t )eSamplers::Point] );
+	createTriLinearSampler( &samplers[( size_t )eSamplers::Trilinear] );
+	createShadowSampler( &samplers[( size_t )eSamplers::Shadow] );
 }
 
 void DestroySamplers()
@@ -184,7 +218,7 @@ void DestroySamplers()
 		vkDestroySampler( g_vk.device, samplers[i], nullptr );
 }
 
-VkSampler GetSampler( Samplers samplerId )
+VkSampler GetSampler( eSamplers samplerId )
 {
 	return samplers[( size_t )samplerId];
 }

@@ -35,7 +35,7 @@ GpuPipelineState GetGeoPipelineState()
 	gpuPipelineState.depthStencilState.depthWrite = true;
 	gpuPipelineState.depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS;
 
-	gpuPipelineState.blendEnabled = false;
+	gpuPipelineState.blendEnabled = true;
 	gpuPipelineState.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	gpuPipelineState.framebufferExtent = { 0,0 }; //swapchain sized
 

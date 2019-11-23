@@ -71,7 +71,7 @@ static FG::DataEntry techniqueDataEntries[static_cast< size_t >(eTechniqueDataEn
 
 	CREATE_IMAGE_COLOR( eTechniqueDataEntryImageName::SCENE_COLOR, VkFormat( 0 ), FG::SWAPCHAIN_SIZED, 0, true ),
 	CREATE_IMAGE_DEPTH( eTechniqueDataEntryImageName::SCENE_DEPTH, VK_FORMAT_D32_SFLOAT, FG::SWAPCHAIN_SIZED, 0, true ),
-	CREATE_IMAGE_DEPTH_SAMPLER( eTechniqueDataEntryImageName::SHADOW_MAP, RT_FORMAT_SHADOW_DEPTH, RT_EXTENT_SHADOW, VK_IMAGE_USAGE_SAMPLED_BIT, false, Samplers::Shadow ),
+	CREATE_IMAGE_DEPTH_SAMPLER( eTechniqueDataEntryImageName::SHADOW_MAP, RT_FORMAT_SHADOW_DEPTH, RT_EXTENT_SHADOW, VK_IMAGE_USAGE_SAMPLED_BIT, false, eSamplers::Shadow ),
 };
 
 inline void SetBuffers( GpuInputData* buffers, eTechniqueDataEntryName id, GpuBuffer* input, uint32_t count )

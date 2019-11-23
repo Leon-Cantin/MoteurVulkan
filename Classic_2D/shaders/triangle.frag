@@ -26,8 +26,8 @@ layout(push_constant) uniform PushConsts {
 } pushConsts;
 
 void main() {
-	//vec3 albedo = texture(bindlessTextures[instanceMat.textureIndices[0]] , fs_in.fragTexCoord).rgb;
-	vec3 albedo = fs_in.fragColor;
+	vec3 albedo = texture(bindlessTextures[instanceMat.textureIndices[0]] , fs_in.fragTexCoord).rgb;
+	//vec3 albedo = fs_in.fragColor;
 	
 	outColor = vec4(albedo, 1.0);
 }

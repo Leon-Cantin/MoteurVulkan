@@ -18,9 +18,10 @@ struct GfxImageSamplerCombined
 	VkSampler sampler = VK_NULL_HANDLE;
 };
 
-enum class Samplers
+enum class eSamplers
 {
-	Trilinear = 0,
+	Point = 0,
+	Trilinear,
 	Shadow,
 	Count
 };
@@ -34,4 +35,4 @@ void DestroyImage( GfxImage& image );
 
 void InitSamplers();
 void DestroySamplers();
-VkSampler GetSampler( Samplers samplerId );
+VkSampler GetSampler( eSamplers samplerId );
