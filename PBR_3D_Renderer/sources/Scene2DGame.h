@@ -126,7 +126,7 @@ namespace Scene2DGame
 
 	void CreateRenderable(const GfxModel* modelAsset, uint32_t albedoIndex, uint32_t normalIndex, RenderableAsset* o_renderable)
 	{
-		*o_renderable = { modelAsset, albedoIndex, normalIndex };
+		*o_renderable = { modelAsset, { albedoIndex, normalIndex } };
 	}
 
 	void Init()

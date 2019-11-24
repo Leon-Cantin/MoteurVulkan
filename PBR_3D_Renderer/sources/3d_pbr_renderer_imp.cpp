@@ -47,8 +47,8 @@ static void UpdateGfxInstanceData( const SceneInstance* sceneInstance, const Ren
 {
 	GfxInstanceData instanceMatrices = {};
 	instanceMatrices.model = ComputeSceneInstanceModelMatrix( *sceneInstance );
-	instanceMatrices.texturesIndexes[0] = asset->albedoIndex;
-	instanceMatrices.texturesIndexes[1] = asset->normalIndex;
+	for( uint32_t i = 0; i < asset->textureIndices.size(); ++i )
+		instanceMatrices.texturesIndexes[i] = asset->textureIndices[i];
 
 	size_t allocationSize = sizeof( GfxInstanceData );
 	size_t memoryOffset = AllocateGpuBufferSlot( allocator, allocationSize );

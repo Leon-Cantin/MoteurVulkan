@@ -26,7 +26,7 @@ namespace Scene2DGame
 	uint32_t current_frame = 0;
 
 	const int WIDTH = 800;
-	const int HEIGHT = 600;
+	const int HEIGHT = 1000;
 
 	SceneInstance quadSceneInstance;
 	RenderableAsset quadRenderable;
@@ -52,24 +52,30 @@ namespace Scene2DGame
 		return glm::axis(cameraSceneInstance.orientation * glm::fquat{ 0.0f, 1.0f, 0.0f, 0.0f } *glm::conjugate(cameraSceneInstance.orientation));
 	}
 
+	const float movementSpeed = 5.0f;
+	float GetMovement( float frameDeltaTime )
+	{
+		return movementSpeed * ( frameDeltaTime / 1000.0f );
+	}
+
 	void ForwardCallback()
 	{
-		cameraSceneInstance.location += ForwardVector() * (frameDeltaTime/1000.0f);
+		quadSceneInstance.location.y += GetMovement( frameDeltaTime );
 	}
 
 	void BackwardCallback()
 	{
-		cameraSceneInstance.location -= ForwardVector() * (frameDeltaTime / 1000.0f);
+		quadSceneInstance.location.y -= GetMovement( frameDeltaTime );
 	}
 
 	void MoveRightCallback()
 	{
-		cameraSceneInstance.location += PitchVector() * (frameDeltaTime / 1000.0f);
+		quadSceneInstance.location.x += GetMovement( frameDeltaTime );
 	}
 
 	void MoveLeftCallback()
 	{
-		cameraSceneInstance.location -= PitchVector() * (frameDeltaTime / 1000.0f);
+		quadSceneInstance.location.x -= GetMovement( frameDeltaTime );
 	}
 
 	void ReloadShadersCallback(const std::string* params, uint32_t paramsCount)
@@ -111,9 +117,9 @@ namespace Scene2DGame
 		vkDeviceWaitIdle(g_vk.device);
 	}
 
-	void CreateRenderable(const GfxModel* modelAsset, uint32_t albedoIndex, uint32_t normalIndex, RenderableAsset* o_renderable)
+	void CreateRenderable(const GfxModel* modelAsset, uint32_t albedoIndex, RenderableAsset* o_renderable)
 	{
-		*o_renderable = { modelAsset, albedoIndex, normalIndex };
+		*o_renderable = { modelAsset, { albedoIndex } };
 	}
 
 	void Init()
@@ -147,16 +153,13 @@ namespace Scene2DGame
 		InitRendererImp( WH::VK::_windowSurface );
 
 		//LoadAssets
-		//TODO: remove normal from renderable
-		GfxImage* normalTexture = AL::CreateSolidColorTexture( "ModelNormalTexture", glm::vec4( 0.0f, 0.0f, 1.0f, 0.0f ) );
 		GfxImage* shipTexture = AL::LoadTexture( "shipTexture", "assets/ship.png" );
 
 		GfxModel* quadModel = AL::CreateQuad( "Quad", 1.0f );
 
-		uint32_t normalIndex = RegisterBindlessTexture( &bindlessTexturesState, normalTexture, eSamplers::Point );
 		uint32_t shipTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, shipTexture, eSamplers::Point );
 
-		CreateRenderable( quadModel, shipTextureIndex, normalIndex, &quadRenderable );
+		CreateRenderable( quadModel, shipTextureIndex, &quadRenderable );
 
 		CompileScene( &bindlessTexturesState );
 

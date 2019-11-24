@@ -28,11 +28,18 @@ static void UpdateSceneUniformBuffer(const glm::mat4& world_view_matrix, VkExten
 	SceneMatricesUniform sceneMatrices = {};
 	//sceneMatrices.view = world_view_matrix;
 	//Layout is columns are horizontal in memory
-	sceneMatrices.proj = glm::mat4( 1.0f, 0.0f, 0.0f, 0.0f,
+	/*sceneMatrices.proj = glm::mat4( 1.0f, 0.0f, 0.0f, 0.0f,
 									0.0f, 1.0f, 0.0f, 0.0f,
 									0.0f, 0.0f, 0.1f, 0.0f,
-									0.0f, 0.0f, 0.0f, 1.0f );
-	//sceneMatrices.proj = glm::ortho( 0.0f, ( float )extent.width, 0.0f, ( float )extent.height, 0.1f, 10.0f );
+									0.0f, 0.0f, 0.0f, 1.0f );*/
+	float ratio = (float)extent.width / extent.height;
+	float height = 100.0f;
+	float width = height * ratio;
+
+	float halfHeight = height / 2.0f;
+	float halfWidth = width / 2.0f;
+
+	sceneMatrices.proj = glm::ortho( -halfWidth, halfWidth, -halfHeight, halfHeight, 0.0f, 10.0f );
 	sceneMatrices.proj[1][1] *= -1;//Compensate for OpenGL Y coordinate being inverted
 	UpdateGpuBuffer( sceneUniformBuffer, &sceneMatrices, sizeof( sceneMatrices ), 0 );
 }
@@ -41,8 +48,8 @@ static void UpdateGfxInstanceData( const SceneInstance* sceneInstance, const Ren
 {
 	GfxInstanceData instanceMatrices = {};
 	instanceMatrices.model = ComputeSceneInstanceModelMatrix( *sceneInstance );
-	instanceMatrices.texturesIndexes[0] = asset->albedoIndex;
-	instanceMatrices.texturesIndexes[1] = asset->normalIndex;
+	for( uint32_t i = 0; i < asset->textureIndices.size(); ++i )
+		instanceMatrices.texturesIndexes[i] = asset->textureIndices[i];
 
 	size_t allocationSize = sizeof( GfxInstanceData );
 	size_t memoryOffset = AllocateGpuBufferSlot( allocator, allocationSize );

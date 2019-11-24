@@ -30,8 +30,7 @@ struct SceneMatricesUniform {
 
 struct RenderableAsset {
 	const GfxModel* modelAsset;
-	uint32_t albedoIndex;
-	uint32_t normalIndex;
+	std::vector<uint32_t> textureIndices;
 };
 
 struct DrawModel
