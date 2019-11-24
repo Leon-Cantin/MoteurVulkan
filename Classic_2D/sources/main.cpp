@@ -1,4 +1,4 @@
-#include "Scene2DGame.h"
+#include "game_classic_2d.h"
 
 int main() {
 

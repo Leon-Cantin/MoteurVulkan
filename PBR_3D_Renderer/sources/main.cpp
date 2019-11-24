@@ -1,4 +1,4 @@
-#include "Scene2DGame.h"
+#include "game_pbr_3d.h"
 
 int main() {
 
