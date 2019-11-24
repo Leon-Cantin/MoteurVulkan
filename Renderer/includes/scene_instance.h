@@ -28,14 +28,20 @@ struct SceneMatricesUniform {
 	glm::mat4 proj;
 };
 
-struct RenderableAsset {
+struct GfxAsset {
 	const GfxModel* modelAsset;
 	std::vector<uint32_t> textureIndices;
 };
 
-struct DrawModel
+struct GfxAssetInstance
 {
-	const RenderableAsset* asset;
+	const GfxAsset* asset;
+	SceneInstance instanceData;
+};
+
+struct DrawListEntry
+{
+	const GfxAsset* asset;
 	SceneInstanceSet descriptorSet;
 };
 

@@ -28,10 +28,6 @@ static void UpdateSceneUniformBuffer(const glm::mat4& world_view_matrix, VkExten
 	SceneMatricesUniform sceneMatrices = {};
 	//sceneMatrices.view = world_view_matrix;
 	//Layout is columns are horizontal in memory
-	/*sceneMatrices.proj = glm::mat4( 1.0f, 0.0f, 0.0f, 0.0f,
-									0.0f, 1.0f, 0.0f, 0.0f,
-									0.0f, 0.0f, 0.1f, 0.0f,
-									0.0f, 0.0f, 0.0f, 1.0f );*/
 	float ratio = (float)extent.width / extent.height;
 	float height = 100.0f;
 	float width = height * ratio;
@@ -44,12 +40,12 @@ static void UpdateSceneUniformBuffer(const glm::mat4& world_view_matrix, VkExten
 	UpdateGpuBuffer( sceneUniformBuffer, &sceneMatrices, sizeof( sceneMatrices ), 0 );
 }
 
-static void UpdateGfxInstanceData( const SceneInstance* sceneInstance, const RenderableAsset* asset, SceneInstanceSet* sceneInstanceDescriptorSet, BufferAllocator* allocator )
+static void UpdateGfxInstanceData( const GfxAssetInstance* assetInstance, SceneInstanceSet* sceneInstanceDescriptorSet, BufferAllocator* allocator )
 {
 	GfxInstanceData instanceMatrices = {};
-	instanceMatrices.model = ComputeSceneInstanceModelMatrix( *sceneInstance );
-	for( uint32_t i = 0; i < asset->textureIndices.size(); ++i )
-		instanceMatrices.texturesIndexes[i] = asset->textureIndices[i];
+	instanceMatrices.model = ComputeSceneInstanceModelMatrix( assetInstance->instanceData );
+	for( uint32_t i = 0; i < assetInstance->asset->textureIndices.size(); ++i )
+		instanceMatrices.texturesIndexes[i] = assetInstance->asset->textureIndices[i];
 
 	size_t allocationSize = sizeof( GfxInstanceData );
 	size_t memoryOffset = AllocateGpuBufferSlot( allocator, allocationSize );
@@ -74,7 +70,7 @@ static void updateTextOverlayBuffer( uint32_t currentFrame )
 
 //TODO seperate the buffer update and computation of frame data
 //TODO Make light Uniform const
-static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, const std::vector<std::pair<const SceneInstance*, const RenderableAsset*>>& drawList, std::vector<DrawModel>& drawListReal )
+static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, const std::vector<GfxAssetInstance>& drawList, std::vector<DrawListEntry>& o_drawlist )
 {
 	glm::mat4 world_view_matrix = ComputeCameraSceneInstanceViewMatrix( *cameraSceneInstance );
 
@@ -85,8 +81,10 @@ static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cam
 	BufferAllocator allocator { GetBuffer( &currentGpuInputData, eTechniqueDataEntryName::INSTANCE_DATA ) };
 	for( uint32_t i = 0; i < drawList.size(); ++i )
 	{
-		UpdateGfxInstanceData( drawList[i].first, drawList[i].second, &drawListReal[i].descriptorSet, &allocator );
-		drawListReal[i].asset = drawList[i].second;
+		SceneInstanceSet instanceDescSet;
+		UpdateGfxInstanceData( &drawList[i], &instanceDescSet, &allocator );
+
+		o_drawlist[i] = { drawList[i].asset, instanceDescSet };
 	}
 
 	UpdateSceneUniformBuffer( world_view_matrix, swapChainExtent, GetBuffer( &currentGpuInputData, eTechniqueDataEntryName::SCENE_DATA ) );
@@ -94,7 +92,7 @@ static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cam
 	updateTextOverlayBuffer( currentFrame );
 }
 
-static void PrepareSceneFrameData( SceneFrameData* frameData, uint32_t currentFrame, const SceneInstance* cameraSceneInstance, const std::vector<std::pair<const SceneInstance*, const RenderableAsset*>>& drawList )
+static void PrepareSceneFrameData( SceneFrameData* frameData, uint32_t currentFrame, const SceneInstance* cameraSceneInstance, const std::vector<GfxAssetInstance>& drawList )
 {
 	frameData->drawList.resize( drawList.size() );
 	updateUniformBuffer( currentFrame, cameraSceneInstance, drawList, frameData->drawList );
@@ -170,7 +168,7 @@ void CleanupRendererImp()
 	vkDestroyDescriptorPool(g_vk.device, descriptorPool, nullptr);
 }
 
-void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, const std::vector<std::pair<const SceneInstance*, const RenderableAsset*>>& drawList )
+void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, const std::vector<GfxAssetInstance>& drawList )
 {
 	WaitForFrame(currentFrame);
 

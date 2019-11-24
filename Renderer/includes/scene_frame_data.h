@@ -4,5 +4,5 @@
 #include <vector>
 
 struct SceneFrameData {
-	std::vector<DrawModel> drawList;
+	std::vector<DrawListEntry> drawList;
 };

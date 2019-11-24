@@ -29,7 +29,7 @@ namespace Scene2DGame
 	const int HEIGHT = 1000;
 
 	SceneInstance quadSceneInstance;
-	RenderableAsset quadRenderable;
+	GfxAsset quadRenderable;
 
 	SceneInstance cameraSceneInstance;
 
@@ -108,7 +108,7 @@ namespace Scene2DGame
 			//Update objects
 			TickUpdate(frameDeltaTime);
 
-			std::vector<std::pair<const SceneInstance*, const RenderableAsset*>> drawList = { { &quadSceneInstance, &quadRenderable} };
+			std::vector<GfxAssetInstance> drawList = { { &quadRenderable, quadSceneInstance } };
 			DrawFrame( current_frame, &cameraSceneInstance, drawList);
 
 			current_frame = (++current_frame) % SIMULTANEOUS_FRAMES;
@@ -117,9 +117,10 @@ namespace Scene2DGame
 		vkDeviceWaitIdle(g_vk.device);
 	}
 
-	void CreateRenderable(const GfxModel* modelAsset, uint32_t albedoIndex, RenderableAsset* o_renderable)
+	GfxAsset CreateRenderable( const GfxModel* modelAsset, uint32_t albedoIndex )
 	{
-		*o_renderable = { modelAsset, { albedoIndex } };
+		GfxAsset asset = { modelAsset, { albedoIndex } };
+		return asset;
 	}
 
 	void Init()
@@ -159,7 +160,7 @@ namespace Scene2DGame
 
 		uint32_t shipTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, shipTexture, eSamplers::Point );
 
-		CreateRenderable( quadModel, shipTextureIndex, &quadRenderable );
+		quadRenderable = CreateRenderable( quadModel, shipTextureIndex );
 
 		CompileScene( &bindlessTexturesState );
 

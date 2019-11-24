@@ -56,7 +56,7 @@ void CmdEndGeometryRenderPass(VkCommandBuffer vkCommandBuffer)
 	CmdEndVkLabel(vkCommandBuffer);
 }
 
-static void CmdDrawModelAsset( VkCommandBuffer commandBuffer, const DrawModel* drawModel, uint32_t currentFrame, const Technique* technique )
+static void CmdDrawModelAsset( VkCommandBuffer commandBuffer, const DrawListEntry* drawModel, uint32_t currentFrame, const Technique* technique )
 {	
 	//TODO: could do like the VIB, query a texture of X from an array using an enum index
 	//Have a list of all required paremeters for this pass.
@@ -74,7 +74,7 @@ void GeometryRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameDat
 	CmdBeginGeometryRenderPass(graphicsCommandBuffer, extent, currentFrame, renderpass, technique);
 	for (size_t i = 0; i < frameData->drawList.size(); ++i)
 	{
-		const DrawModel* drawModel = &frameData->drawList[i];
+		const DrawListEntry* drawModel = &frameData->drawList[i];
 		CmdDrawModelAsset(graphicsCommandBuffer, drawModel, currentFrame, technique);
 	}
 	CmdEndGeometryRenderPass(graphicsCommandBuffer);

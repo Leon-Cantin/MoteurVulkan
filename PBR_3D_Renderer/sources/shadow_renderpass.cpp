@@ -86,7 +86,7 @@ void ShadowRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData*
 	CmdBeginShadowPass(graphicsCommandBuffer, currentFrame, renderpass, technique);
 	for (size_t i = 0; i < frameData->drawList.size(); ++i)
 	{
-		const DrawModel* renderable = &frameData->drawList[i];
+		const DrawListEntry* renderable = &frameData->drawList[i];
 		CmdDrawModel(graphicsCommandBuffer, &renderable->descriptorSet, renderable->asset->modelAsset, currentFrame, technique);
 	}
 	CmdEndShadowPass(graphicsCommandBuffer);

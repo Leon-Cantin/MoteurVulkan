@@ -6,7 +6,7 @@
 #include "bindless_textures.h"
 
 void CompileScene( BindlessTexturesState* bindlessTexturesState );
-void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, const std::vector<std::pair<const SceneInstance*, const RenderableAsset*>>& drawList );
+void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, const std::vector<GfxAssetInstance>& drawList );
 
 void InitRendererImp( VkSurfaceKHR swapchainSurface );
 void CleanupRendererImp();

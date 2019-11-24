@@ -12,7 +12,7 @@ struct LightUniform {
 };
 
 void CompileScene( BindlessTexturesState* bindlessTexturesState, const GfxImage* skyboxImage );
-void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<std::pair<const SceneInstance*, const RenderableAsset*>>& drawList );
+void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<GfxAssetInstance>& drawList );
 
 void InitRendererImp( VkSurfaceKHR swapchainSurface );
 void CleanupRendererImp();
