@@ -45,7 +45,7 @@ enum class eTechniqueDataEntryImageName
 // Render pass and techniques are as one here, use that idea to define them.
 // Have a list of descriptor sets instead of instance and pass to keep things generic. Check the binding point to know to which (instance or pass) it belongs.
 
-const uint32_t maxModelsCount = 5;
+const uint32_t maxModelsCount = 64;
 static FG::DataEntry techniqueDataEntries[static_cast< size_t >(eTechniqueDataEntryImageName::COUNT)] =
 {
 	//Buffers

@@ -31,7 +31,7 @@ namespace Scene2DGame
 	SceneInstance planeSceneInstance;
 	GfxAsset planeRenderable;
 
-	SceneInstance quadSceneInstance;
+	SceneInstance shipSceneInstance;
 	GfxAsset cubeRenderable;
 
 	SceneInstance cameraSceneInstance;
@@ -93,8 +93,8 @@ namespace Scene2DGame
 	void TickObjectCallback(float dt, void* unused)
 	{
 		static bool goRight = true;
-		quadSceneInstance.location.x += (dt/1000.0f) * (goRight ? 0.5f : -0.5f);
-		if (abs(quadSceneInstance.location.x) >= 2.0f)
+		shipSceneInstance.location.x += (dt/1000.0f) * (goRight ? 0.5f : -0.5f);
+		if (abs(shipSceneInstance.location.x) >= 2.0f)
 			goRight ^= true;
 	}
 
@@ -115,7 +115,7 @@ namespace Scene2DGame
 			//Update objects
 			TickUpdate(frameDeltaTime);
 
-			std::vector<GfxAssetInstance> drawList = { {&planeRenderable, planeSceneInstance}, { &cubeRenderable, quadSceneInstance} };
+			std::vector<GfxAssetInstance> drawList = { {&planeRenderable, planeSceneInstance}, { &cubeRenderable, shipSceneInstance} };
 			DrawFrame( current_frame, &cameraSceneInstance, &g_light, drawList);
 
 			current_frame = (++current_frame) % SIMULTANEOUS_FRAMES;
@@ -124,7 +124,7 @@ namespace Scene2DGame
 		vkDeviceWaitIdle(g_vk.device);
 	}
 
-	void CreateRenderable(const GfxModel* modelAsset, uint32_t albedoIndex, uint32_t normalIndex, GfxAsset* o_renderable)
+	void CreateGfxAsset(const GfxModel* modelAsset, uint32_t albedoIndex, uint32_t normalIndex, GfxAsset* o_renderable)
 	{
 		*o_renderable = { modelAsset, { albedoIndex, normalIndex } };
 	}
@@ -172,13 +172,13 @@ namespace Scene2DGame
 		uint32_t albedoIndex = RegisterBindlessTexture( &bindlessTexturesState, albedoTexture, eSamplers::Trilinear );
 		uint32_t normalIndex = RegisterBindlessTexture( &bindlessTexturesState, normalTexture, eSamplers::Trilinear );
 
-		CreateRenderable( planeModelAsset, albedoIndex, normalIndex, &planeRenderable );
-		CreateRenderable( cubeModelAsset, albedoIndex, normalIndex, &cubeRenderable );
+		CreateGfxAsset( planeModelAsset, albedoIndex, normalIndex, &planeRenderable );
+		CreateGfxAsset( cubeModelAsset, albedoIndex, normalIndex, &cubeRenderable );
 
 		CompileScene( &bindlessTexturesState, skyboxTexture );
 
 		planeSceneInstance = { glm::vec3( 0.0f, -0.5f, 0.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 10.0f };
-		quadSceneInstance = { glm::vec3( 0.0f, 1.0f, 2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 0.5f };
+		shipSceneInstance = { glm::vec3( 0.0f, 1.0f, 2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 0.5f };
 		cameraSceneInstance = { glm::vec3( 0.0f, 0.0f, -2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 1.0f };
 		g_light = { glm::mat4( 1.0f ), {3.0f, 3.0f, 1.0f}, 1.0f };
 	}

@@ -74,7 +74,7 @@ void CreatePipeline( const GpuPipelineState& gpuPipeline, VkRenderPass renderPas
 	depthStencil.depthTestEnable = gpuPipeline.depthStencilState.depthRead;
 	depthStencil.depthWriteEnable = gpuPipeline.depthStencilState.depthWrite;
 	depthStencil.depthCompareOp = gpuPipeline.depthStencilState.depthCompareOp,
-		depthStencil.depthBoundsTestEnable = VK_FALSE;
+	depthStencil.depthBoundsTestEnable = VK_FALSE;
 	depthStencil.minDepthBounds = 0.0f; // Optional
 	depthStencil.maxDepthBounds = 1.0f; // Optional
 	depthStencil.stencilTestEnable = VK_FALSE;
@@ -90,8 +90,8 @@ void CreatePipeline( const GpuPipelineState& gpuPipeline, VkRenderPass renderPas
 		color_blend_attachement.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
 		color_blend_attachement.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 		color_blend_attachement.colorBlendOp = VK_BLEND_OP_ADD;
-		color_blend_attachement.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-		color_blend_attachement.dstAlphaBlendFactor = VK_BLEND_FACTOR_DST_ALPHA;
+		color_blend_attachement.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		color_blend_attachement.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
 		color_blend_attachement.alphaBlendOp = VK_BLEND_OP_ADD;
 	}
 	else
@@ -116,7 +116,7 @@ void CreatePipeline( const GpuPipelineState& gpuPipeline, VkRenderPass renderPas
 	color_blending_info.blendConstants[2] = 0.0f; // Optional
 	color_blending_info.blendConstants[3] = 0.0f; // Optional
 
-												  //Viewport and scissors
+	//Viewport and scissors
 	VkViewport viewport = {};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;

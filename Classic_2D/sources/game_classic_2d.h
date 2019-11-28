@@ -28,67 +28,104 @@ namespace Scene2DGame
 	const int WIDTH = 800;
 	const int HEIGHT = 1000;
 
-	SceneInstance quadSceneInstance;
-	GfxAsset quadRenderable;
+	SceneInstance enemyShipSceneInstance;
+	SceneInstance shipSceneInstance;
+	GfxAsset shipRenderable;
+	SceneInstance bakcgroundSceneInstance;
+	GfxAsset backgroundAsset;
 
 	SceneInstance cameraSceneInstance;
 
 	BindlessTexturesState bindlessTexturesState;
 
-	float frameDeltaTime = 0.0f;	
+	size_t frameDeltaTime = 0;
 
-	glm::vec3 ForwardVector()
+	struct BulletInstance
 	{
-		return glm::axis(cameraSceneInstance.orientation * glm::fquat{ 0.0f, 0.0f, 0.0f, 1.0f } *glm::conjugate(cameraSceneInstance.orientation));
+		float lifeTime;
+		float maxLifetime;
+		SceneInstance sceneInstance;
+	};
+
+	GfxAsset bulletRenderable;
+	std::vector<BulletInstance> bulletInstances;
+
+	bool UpdateBullet( size_t deltaTime, BulletInstance* instance )
+	{
+		instance->lifeTime += deltaTime;
+		if( instance->lifeTime > instance->maxLifetime )
+			return false;
+		instance->sceneInstance.location.y += 50.0f * (frameDeltaTime / 1000.0f);
+		//TODO: check collision
+		float dx = abs( enemyShipSceneInstance.location.x - instance->sceneInstance.location.x );
+		float dy = abs( enemyShipSceneInstance.location.y - instance->sceneInstance.location.y );
+		if( sqrt( dx*dx + dy * dy ) < 1.0f )
+			return false;
+		return true;
 	}
 
-	glm::vec3 YawVector()
+	void UpdateBullets( size_t deltaTime )
 	{
-		return glm::axis(cameraSceneInstance.orientation * glm::fquat{ 0.0f, 0.0f, 1.0f, 0.0f } *glm::conjugate(cameraSceneInstance.orientation));
+		auto itEraseFirst = bulletInstances.end();
+		auto itEraseLast = bulletInstances.end();
+		for( auto i = bulletInstances.begin(); i != bulletInstances.end(); ++i )
+		{
+			bool isAlive = UpdateBullet( deltaTime, i._Ptr );
+			if( !isAlive )
+			{
+				if( itEraseFirst == bulletInstances.end() )
+					itEraseFirst = i;
+				itEraseLast = i+1;
+			}
+		}
+		if( itEraseFirst != bulletInstances.end() )
+		{
+			bulletInstances.erase( itEraseFirst, itEraseLast );
+		}
 	}
 
-	glm::vec3 PitchVector()
+	void createBullet()
 	{
-		return glm::axis(cameraSceneInstance.orientation * glm::fquat{ 0.0f, 1.0f, 0.0f, 0.0f } *glm::conjugate(cameraSceneInstance.orientation));
+		BulletInstance bulletInstance = { 0.0f, 2000.0f, { shipSceneInstance.location, shipSceneInstance.orientation, 1.0f } };
+		bulletInstances.push_back( bulletInstance );
 	}
 
-	const float movementSpeed = 5.0f;
-	float GetMovement( float frameDeltaTime )
+	const float movementSpeed = 10.0f;
+	float GetMovement( size_t frameDeltaTime )
 	{
 		return movementSpeed * ( frameDeltaTime / 1000.0f );
 	}
 
 	void ForwardCallback()
 	{
-		quadSceneInstance.location.y += GetMovement( frameDeltaTime );
+		shipSceneInstance.location.y += GetMovement( frameDeltaTime );
 	}
 
 	void BackwardCallback()
 	{
-		quadSceneInstance.location.y -= GetMovement( frameDeltaTime );
+		shipSceneInstance.location.y -= GetMovement( frameDeltaTime );
 	}
 
 	void MoveRightCallback()
 	{
-		quadSceneInstance.location.x += GetMovement( frameDeltaTime );
+		shipSceneInstance.location.x += GetMovement( frameDeltaTime );
 	}
 
 	void MoveLeftCallback()
 	{
-		quadSceneInstance.location.x -= GetMovement( frameDeltaTime );
+		shipSceneInstance.location.x -= GetMovement( frameDeltaTime );
 	}
 
-	void ReloadShadersCallback(const std::string* params, uint32_t paramsCount)
+	void FireCallback()
 	{
-		//ForceReloadShaders();
-	}
+		size_t currentTime = WH::GetTime();
+		static size_t lastTime = 0;
 
-	void TickObjectCallback(float dt, void* unused)
-	{
-		static bool goRight = true;
-		quadSceneInstance.location.x += (dt/1000.0f) * (goRight ? 0.5f : -0.5f);
-		if (abs(quadSceneInstance.location.x) >= 2.0f)
-			goRight ^= true;
+		if( currentTime - lastTime > 50 || lastTime == 0 )
+		{
+			createBullet();
+			lastTime = currentTime;
+		}
 	}
 
 	void mainLoop() {
@@ -99,7 +136,7 @@ namespace Scene2DGame
 			size_t currentTime = WH::GetTime();
 			static size_t lastTime = currentTime;
 			
-			frameDeltaTime = static_cast<float>(currentTime - lastTime);
+			frameDeltaTime = static_cast<size_t>(currentTime - lastTime);
 			lastTime = currentTime;
 
 			//Input
@@ -108,7 +145,12 @@ namespace Scene2DGame
 			//Update objects
 			TickUpdate(frameDeltaTime);
 
-			std::vector<GfxAssetInstance> drawList = { { &quadRenderable, quadSceneInstance } };
+			UpdateBullets( frameDeltaTime );
+
+			std::vector<GfxAssetInstance> drawList = { { &backgroundAsset, bakcgroundSceneInstance }, { &shipRenderable, shipSceneInstance }, { &shipRenderable, enemyShipSceneInstance } };
+			for( BulletInstance& bi : bulletInstances )
+				drawList.push_back( { &bulletRenderable, bi.sceneInstance } );
+
 			DrawFrame( current_frame, &cameraSceneInstance, drawList);
 
 			current_frame = (++current_frame) % SIMULTANEOUS_FRAMES;
@@ -117,7 +159,7 @@ namespace Scene2DGame
 		vkDeviceWaitIdle(g_vk.device);
 	}
 
-	GfxAsset CreateRenderable( const GfxModel* modelAsset, uint32_t albedoIndex )
+	GfxAsset CreateGfxAsset( const GfxModel* modelAsset, uint32_t albedoIndex )
 	{
 		GfxAsset asset = { modelAsset, { albedoIndex } };
 		return asset;
@@ -142,10 +184,11 @@ namespace Scene2DGame
 		IH::BindInputToAction( "left", IH::A );
 		IH::RegisterAction( "right", IH::Pressed, &MoveRightCallback );
 		IH::BindInputToAction( "right", IH::D );
+		IH::RegisterAction( "fire", IH::Pressed, &FireCallback );
+		IH::BindInputToAction( "fire", IH::E );
 
 		//Console commands callback (need IH)
 		ConCom::Init();
-		ConCom::RegisterCommand( "reloadshaders", &ReloadShadersCallback );
 
 		//Objects update callbacks
 		//RegisterTickFunction( &TickObjectCallback );
@@ -155,17 +198,25 @@ namespace Scene2DGame
 
 		//LoadAssets
 		GfxImage* shipTexture = AL::LoadTexture( "shipTexture", "assets/ship.png" );
+		GfxImage* bulletTexture = AL::LoadTexture( "bullet_texture", "assets/bullet.png" );
+		GfxImage* backgroundTexture = AL::CreateSolidColorTexture( "background_texture", { 0.0f, 0.1f, 0.8f, 1.0f } );
 
 		GfxModel* quadModel = AL::CreateQuad( "Quad", 1.0f );
 
 		uint32_t shipTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, shipTexture, eSamplers::Point );
+		uint32_t bulletTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, bulletTexture, eSamplers::Point );
+		uint32_t backgroundTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, backgroundTexture, eSamplers::Point );
 
-		quadRenderable = CreateRenderable( quadModel, shipTextureIndex );
+		shipRenderable = CreateGfxAsset( quadModel, shipTextureIndex );
+		bulletRenderable = CreateGfxAsset( quadModel, bulletTextureIndex );
+		backgroundAsset = CreateGfxAsset( quadModel, backgroundTextureIndex );
 
 		CompileScene( &bindlessTexturesState );
 
-		quadSceneInstance = { glm::vec3( 0.0f, 0.0f, 2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 1.0f };
+		enemyShipSceneInstance = { glm::vec3( 0.0f, 5.0f, 2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), -2.0f };
+		shipSceneInstance = { glm::vec3( 0.0f, 0.0f, 2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 2.0f };
 		cameraSceneInstance = { glm::vec3( 0.0f, 0.0f, -2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 1.0f };
+		bakcgroundSceneInstance = { glm::vec3( 0.0f, 0.0f, 8.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 500.0f };
 	}
 
 	void cleanup() 

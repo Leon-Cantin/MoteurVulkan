@@ -12,6 +12,8 @@ namespace WH
 	CharCallback_T charCallback;
 	bool shouldQuit = false;
 
+	static std::chrono::system_clock::time_point startTime;
+
 	LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
 		switch (message) {
 		case WM_SIZE:
@@ -61,6 +63,8 @@ namespace WH
 
 		ShowWindow( g_window, SW_SHOWNORMAL);
 		UpdateWindow( g_window );
+
+		startTime = std::chrono::system_clock::now();
 	}
 
 	void ProcessMessages()
@@ -104,8 +108,7 @@ namespace WH
 	size_t GetTime()
 	{
 		std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-		static std::chrono::system_clock::time_point start = now;
-		return std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
+		return std::chrono::duration_cast< std::chrono::milliseconds >(now - startTime).count();
 	}
 
 	bool framebuffer_resized = false;

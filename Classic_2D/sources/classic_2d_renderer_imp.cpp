@@ -29,7 +29,7 @@ static void UpdateSceneUniformBuffer(const glm::mat4& world_view_matrix, VkExten
 	//sceneMatrices.view = world_view_matrix;
 	//Layout is columns are horizontal in memory
 	float ratio = (float)extent.width / extent.height;
-	float height = 100.0f;
+	float height = 50.0f;
 	float width = height * ratio;
 
 	float halfHeight = height / 2.0f;
@@ -131,23 +131,15 @@ void InitRendererImp( VkSurfaceKHR swapchainSurface )
 	const uint32_t geometryImageCount = 20 * SIMULTANEOUS_FRAMES;
 	const uint32_t geomtryDynamicBuffersCount = 1 * SIMULTANEOUS_FRAMES;
 
-	const uint32_t shadowDescriptorSets = 2 * SIMULTANEOUS_FRAMES;
-	const uint32_t shadowBuffersCount = 2 * SIMULTANEOUS_FRAMES;
-	const uint32_t shadowDynamicBuffersCount = 1 * SIMULTANEOUS_FRAMES;
-
-	const uint32_t skyboxDescriptorSetsCount = 2 * SIMULTANEOUS_FRAMES;
-	const uint32_t skyboxBuffersCount = 2 * SIMULTANEOUS_FRAMES;
-	const uint32_t skyboxImageCount = 2 * SIMULTANEOUS_FRAMES;
-
 	const uint32_t textDescriptorSetsCount = 2;
 	const uint32_t textImageCount = 2;
 
-	const uint32_t uniformBuffersCount = geometryBuffersCount + shadowBuffersCount + skyboxBuffersCount;
-	const uint32_t imageSamplersCount = geometryImageCount + skyboxImageCount + textImageCount;
+	const uint32_t uniformBuffersCount = geometryBuffersCount;
+	const uint32_t imageSamplersCount = geometryImageCount + textImageCount;
 	const uint32_t storageImageCount = 1;
-	const uint32_t uniformBuffersDynamicCount = geomtryDynamicBuffersCount + shadowDynamicBuffersCount;
+	const uint32_t uniformBuffersDynamicCount = geomtryDynamicBuffersCount;
 
-	const uint32_t maxSets = geometryDescriptorSets + shadowDescriptorSets + skyboxDescriptorSetsCount + textDescriptorSetsCount;
+	const uint32_t maxSets = geometryDescriptorSets + textDescriptorSetsCount;
 
 	createDescriptorPool(uniformBuffersCount, uniformBuffersDynamicCount, imageSamplersCount, storageImageCount, maxSets, &descriptorPool);
 

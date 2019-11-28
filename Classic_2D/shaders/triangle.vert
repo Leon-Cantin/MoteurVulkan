@@ -13,12 +13,12 @@ layout(set = INSTANCE_SET, binding = 0) uniform InstanceMatrices {
 } instanceMat;
 
 layout(location = 0) in vec3 inPosition;
-layout(location = 1) in vec3 inColor;
+layout(location = 1) in vec4 inColor;
 layout(location = 2) in vec2 inTexCoord;
 
 layout(location = 0) out VS_OUT
 {
-	vec3 fragColor;
+	vec4 fragColor;
 	vec2 fragTexCoord;
 }vs_out;
 

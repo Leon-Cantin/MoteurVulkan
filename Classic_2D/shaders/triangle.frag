@@ -15,7 +15,7 @@ layout(set = INSTANCE_SET, binding = 0) uniform InstanceMatrices {
 
 layout(location = 0) in VS_OUT
 {
-	vec3 fragColor;
+	vec4 fragColor;
 	vec2 fragTexCoord;
 }fs_in;
 
@@ -26,8 +26,10 @@ layout(push_constant) uniform PushConsts {
 } pushConsts;
 
 void main() {
-	vec3 albedo = texture(bindlessTextures[instanceMat.textureIndices[0]] , fs_in.fragTexCoord).rgb;
+	vec4 albedo = texture(bindlessTextures[instanceMat.textureIndices[0]] , fs_in.fragTexCoord);
 	//vec3 albedo = fs_in.fragColor;
-	
-	outColor = vec4(albedo, 1.0);
+	if( albedo.a != 1 )
+		discard;
+
+	outColor = albedo;
 }
