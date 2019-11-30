@@ -13,6 +13,7 @@ namespace IH
 	enum eKeys : uint32_t
 	{
 		UNKNOWN = 0,
+		SPACE = 0x20,
 		BACKSPACE = 0x08,
 		ENTER = 0x0D,
 		A = 0x41,

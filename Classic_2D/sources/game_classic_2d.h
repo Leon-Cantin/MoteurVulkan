@@ -61,13 +61,13 @@ namespace Scene2DGame
 		if( enemyShipInstance->currentHealth <= 0 )
 			return false;
 		enemyShipInstance->sceneInstance.location.y -= 10.0f * (deltaTime / 1000.0f);
+		return true;
 	}
 
 	void CreateEnemyShip()
 	{
 		float xRand = ((float)std::rand()/ RAND_MAX) * 20.0f;
-		float yRand = (( float )std::rand() / RAND_MAX) * 20.0f;
-		EnemyShipInstance enemyShip = { 5.0f, 5.0f, { glm::vec3( -10.0f + xRand, 5.0f + yRand, 2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), -2.0f } };
+		EnemyShipInstance enemyShip = { 5.0f, 5.0f, { glm::vec3( -10.0f + xRand, 25.0f, 2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), -2.0f } };
 		enemyShipSceneInstances.push_back( enemyShip );
 	}
 
@@ -96,25 +96,56 @@ namespace Scene2DGame
 		return true;
 	}
 
+	//Keeps the order when deleting
 	template< typename T >
 	void UpdateInstanceList( std::vector<T>& instances, size_t deltaTime )
 	{
-		auto itEraseFirst = instances.end();
-		auto itEraseLast = instances.end();
+		uint32_t deadRangesCounts = 0;
+		uint32_t aliveCount = 0;
+		std::pair< std::vector<T>::iterator, std::vector<T>::iterator > deadRanges [16];
+		bool isDeleting = false;
+
 		for( auto i = instances.begin(); i != instances.end(); ++i )
 		{
-			bool isAlive = UpdateInstance( deltaTime, i._Ptr );
+			const bool isAlive = UpdateInstance( deltaTime, i._Ptr );
 			if( !isAlive )
 			{
-				if( itEraseFirst == instances.end() )
-					itEraseFirst = i;
-				itEraseLast = i + 1;
+				if( !isDeleting )
+				{
+					isDeleting = true;
+					deadRanges[deadRangesCounts].first = i;
+				}
+			}
+			else
+			{
+				aliveCount++;
+				if( isDeleting )
+				{
+					isDeleting = false;
+					deadRanges[deadRangesCounts].second = i;
+					deadRangesCounts++;
+				}
 			}
 		}
-		if( itEraseFirst != instances.end() )
+		if( isDeleting )
 		{
-			instances.erase( itEraseFirst, itEraseLast );
+			isDeleting = false;
+			deadRanges[deadRangesCounts].second = instances.end();
+			deadRangesCounts++;
 		}
+
+		for( uint32_t i = 0; i < deadRangesCounts; ++i )
+		{
+			T* freeRangeStart = deadRanges[i].first._Ptr;
+			T* copyRangeStart = deadRanges[i].second._Ptr;
+			T* copyRangeEnd = i+1< deadRangesCounts ? deadRanges[i + 1].first._Ptr : instances.end()._Ptr;
+
+			size_t sizeToCopy = (copyRangeEnd - copyRangeStart) * sizeof(T);
+
+			memcpy( freeRangeStart, copyRangeStart, sizeToCopy );
+		}
+
+		instances.resize( aliveCount );
 	}
 
 	const float movementSpeed = 10.0f;
@@ -222,7 +253,7 @@ namespace Scene2DGame
 		IH::RegisterAction( "right", IH::Pressed, &MoveRightCallback );
 		IH::BindInputToAction( "right", IH::D );
 		IH::RegisterAction( "fire", IH::Pressed, &FireCallback );
-		IH::BindInputToAction( "fire", IH::E );
+		IH::BindInputToAction( "fire", IH::SPACE );
 
 		//Console commands callback (need IH)
 		ConCom::Init();
