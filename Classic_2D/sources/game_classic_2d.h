@@ -28,17 +28,12 @@ namespace Scene2DGame
 	const int WIDTH = 800;
 	const int HEIGHT = 1000;
 
-	SceneInstance enemyShipSceneInstance;
-	SceneInstance shipSceneInstance;
-	GfxAsset shipRenderable;
-	SceneInstance bakcgroundSceneInstance;
-	GfxAsset backgroundAsset;
-
-	SceneInstance cameraSceneInstance;
-
-	BindlessTexturesState bindlessTexturesState;
-
-	size_t frameDeltaTime = 0;
+	struct EnemyShipInstance
+	{
+		float currentHealth;
+		float maxHealth;
+		SceneInstance sceneInstance;
+	};
 
 	struct BulletInstance
 	{
@@ -47,47 +42,79 @@ namespace Scene2DGame
 		SceneInstance sceneInstance;
 	};
 
-	GfxAsset bulletRenderable;
 	std::vector<BulletInstance> bulletInstances;
+	std::vector<EnemyShipInstance> enemyShipSceneInstances;
+	SceneInstance shipSceneInstance;
+	SceneInstance bakcgroundSceneInstance;
+	SceneInstance cameraSceneInstance;
 
-	bool UpdateBullet( size_t deltaTime, BulletInstance* instance )
+	GfxAsset shipRenderable;
+	GfxAsset backgroundAsset;
+	GfxAsset bulletRenderable;
+
+	BindlessTexturesState bindlessTexturesState;
+
+	size_t frameDeltaTime = 0;
+
+	bool UpdateInstance( size_t deltaTime, EnemyShipInstance* enemyShipInstance )
 	{
-		instance->lifeTime += deltaTime;
-		if( instance->lifeTime > instance->maxLifetime )
+		if( enemyShipInstance->currentHealth <= 0 )
 			return false;
-		instance->sceneInstance.location.y += 50.0f * (frameDeltaTime / 1000.0f);
-		//TODO: check collision
-		float dx = abs( enemyShipSceneInstance.location.x - instance->sceneInstance.location.x );
-		float dy = abs( enemyShipSceneInstance.location.y - instance->sceneInstance.location.y );
-		if( sqrt( dx*dx + dy * dy ) < 1.0f )
-			return false;
-		return true;
+		enemyShipInstance->sceneInstance.location.y -= 10.0f * (deltaTime / 1000.0f);
 	}
 
-	void UpdateBullets( size_t deltaTime )
+	void CreateEnemyShip()
 	{
-		auto itEraseFirst = bulletInstances.end();
-		auto itEraseLast = bulletInstances.end();
-		for( auto i = bulletInstances.begin(); i != bulletInstances.end(); ++i )
-		{
-			bool isAlive = UpdateBullet( deltaTime, i._Ptr );
-			if( !isAlive )
-			{
-				if( itEraseFirst == bulletInstances.end() )
-					itEraseFirst = i;
-				itEraseLast = i+1;
-			}
-		}
-		if( itEraseFirst != bulletInstances.end() )
-		{
-			bulletInstances.erase( itEraseFirst, itEraseLast );
-		}
+		float xRand = ((float)std::rand()/ RAND_MAX) * 20.0f;
+		float yRand = (( float )std::rand() / RAND_MAX) * 20.0f;
+		EnemyShipInstance enemyShip = { 5.0f, 5.0f, { glm::vec3( -10.0f + xRand, 5.0f + yRand, 2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), -2.0f } };
+		enemyShipSceneInstances.push_back( enemyShip );
 	}
 
 	void createBullet()
 	{
 		BulletInstance bulletInstance = { 0.0f, 2000.0f, { shipSceneInstance.location, shipSceneInstance.orientation, 1.0f } };
 		bulletInstances.push_back( bulletInstance );
+	}
+
+	bool UpdateInstance( size_t deltaTime, BulletInstance* instance )
+	{
+		instance->lifeTime += deltaTime;
+		if( instance->lifeTime > instance->maxLifetime )
+			return false;
+		instance->sceneInstance.location.y += 50.0f * (deltaTime / 1000.0f);
+		for( auto& enemyShipSceneInstance : enemyShipSceneInstances )
+		{
+			float dx = abs( enemyShipSceneInstance.sceneInstance.location.x - instance->sceneInstance.location.x );
+			float dy = abs( enemyShipSceneInstance.sceneInstance.location.y - instance->sceneInstance.location.y );
+			if( sqrt( dx*dx + dy * dy ) < 1.0f )
+			{
+				enemyShipSceneInstance.currentHealth -= 1.0f;
+				return false;
+			}
+		}
+		return true;
+	}
+
+	template< typename T >
+	void UpdateInstanceList( std::vector<T>& instances, size_t deltaTime )
+	{
+		auto itEraseFirst = instances.end();
+		auto itEraseLast = instances.end();
+		for( auto i = instances.begin(); i != instances.end(); ++i )
+		{
+			bool isAlive = UpdateInstance( deltaTime, i._Ptr );
+			if( !isAlive )
+			{
+				if( itEraseFirst == instances.end() )
+					itEraseFirst = i;
+				itEraseLast = i + 1;
+			}
+		}
+		if( itEraseFirst != instances.end() )
+		{
+			instances.erase( itEraseFirst, itEraseLast );
+		}
 	}
 
 	const float movementSpeed = 10.0f;
@@ -142,14 +169,24 @@ namespace Scene2DGame
 			//Input
 			IH::DoCommands();
 
+			static size_t lastSpawn = 0;
+			if( lastSpawn == 0 || currentTime - lastSpawn > 1000 )
+			{
+				CreateEnemyShip();
+				lastSpawn = currentTime;
+			}
+
 			//Update objects
 			TickUpdate(frameDeltaTime);
 
-			UpdateBullets( frameDeltaTime );
+			UpdateInstanceList( bulletInstances, frameDeltaTime );
+			UpdateInstanceList( enemyShipSceneInstances, frameDeltaTime );
 
-			std::vector<GfxAssetInstance> drawList = { { &backgroundAsset, bakcgroundSceneInstance }, { &shipRenderable, shipSceneInstance }, { &shipRenderable, enemyShipSceneInstance } };
+			std::vector<GfxAssetInstance> drawList = { { &backgroundAsset, bakcgroundSceneInstance }, { &shipRenderable, shipSceneInstance } };
 			for( BulletInstance& bi : bulletInstances )
 				drawList.push_back( { &bulletRenderable, bi.sceneInstance } );
+			for( EnemyShipInstance& enemyShipInstance : enemyShipSceneInstances )
+				drawList.push_back( { &shipRenderable, enemyShipInstance.sceneInstance } );
 
 			DrawFrame( current_frame, &cameraSceneInstance, drawList);
 
@@ -213,7 +250,6 @@ namespace Scene2DGame
 
 		CompileScene( &bindlessTexturesState );
 
-		enemyShipSceneInstance = { glm::vec3( 0.0f, 5.0f, 2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), -2.0f };
 		shipSceneInstance = { glm::vec3( 0.0f, 0.0f, 2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 2.0f };
 		cameraSceneInstance = { glm::vec3( 0.0f, 0.0f, -2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 1.0f };
 		bakcgroundSceneInstance = { glm::vec3( 0.0f, 0.0f, 8.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 500.0f };
