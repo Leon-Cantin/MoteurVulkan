@@ -54,23 +54,8 @@ static void UpdateGfxInstanceData( const GfxAssetInstance* assetInstance, SceneI
 	UpdateGpuBuffer( allocator->buffer, &instanceMatrices, allocationSize, memoryOffset );
 }
 
-static void updateTextOverlayBuffer( uint32_t currentFrame )
-{
-	float miliseconds = GetTimestampsDelta( Timestamp::COMMAND_BUFFER_START, Timestamp::COMMAND_BUFFER_END, abs( static_cast< int64_t >(currentFrame) - 1ll ) );
-	char textBuffer[256];
-	int charCount = sprintf_s( textBuffer, 256, "GPU: %4.4fms", miliseconds );
-	size_t textZonesCount = 1;
-	TextZone textZones[2] = { -1.0f, -1.0f, std::string( textBuffer ) };
-	if( ConCom::isOpen() ) {
-		textZones[1] = { -1.0f, 0.0f, ConCom::GetViewableString() };
-		++textZonesCount;
-	}
-	UpdateText( textZones, textZonesCount, g_swapchain.extent );
-}
-
 //TODO seperate the buffer update and computation of frame data
-//TODO Make light Uniform const
-static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, const std::vector<GfxAssetInstance>& drawList, std::vector<DrawListEntry>& o_drawlist )
+static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, const std::vector<GfxAssetInstance>& drawList, std::vector<DrawListEntry>& o_drawlist, const std::vector<TextZone>& textZones )
 {
 	glm::mat4 world_view_matrix = ComputeCameraSceneInstanceViewMatrix( *cameraSceneInstance );
 
@@ -89,13 +74,13 @@ static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cam
 
 	UpdateSceneUniformBuffer( world_view_matrix, swapChainExtent, GetBuffer( &currentGpuInputData, eTechniqueDataEntryName::SCENE_DATA ) );
 
-	updateTextOverlayBuffer( currentFrame );
+	UpdateText( textZones.data(), textZones.size(), g_swapchain.extent );
 }
 
-static void PrepareSceneFrameData( SceneFrameData* frameData, uint32_t currentFrame, const SceneInstance* cameraSceneInstance, const std::vector<GfxAssetInstance>& drawList )
+static void PrepareSceneFrameData( SceneFrameData* frameData, uint32_t currentFrame, const SceneInstance* cameraSceneInstance, const std::vector<GfxAssetInstance>& drawList, const std::vector<TextZone>& textZones )
 {
 	frameData->drawList.resize( drawList.size() );
-	updateUniformBuffer( currentFrame, cameraSceneInstance, drawList, frameData->drawList );
+	updateUniformBuffer( currentFrame, cameraSceneInstance, drawList, frameData->drawList, textZones );
 }
 
 GfxImageSamplerCombined textTextures[1];
@@ -160,12 +145,12 @@ void CleanupRendererImp()
 	vkDestroyDescriptorPool(g_vk.device, descriptorPool, nullptr);
 }
 
-void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, const std::vector<GfxAssetInstance>& drawList )
+void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, const std::vector<GfxAssetInstance>& drawList, const std::vector<TextZone>& textZones )
 {
 	WaitForFrame(currentFrame);
 
 	SceneFrameData frameData;
-	PrepareSceneFrameData(&frameData, currentFrame, cameraSceneInstance, drawList);
+	PrepareSceneFrameData(&frameData, currentFrame, cameraSceneInstance, drawList, textZones );
 
 	draw_frame(currentFrame, &frameData);
 }

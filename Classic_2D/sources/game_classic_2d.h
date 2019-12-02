@@ -55,12 +55,18 @@ namespace Scene2DGame
 	BindlessTexturesState bindlessTexturesState;
 
 	size_t frameDeltaTime = 0;
+	uint32_t _score = 0;
 
 	bool UpdateInstance( size_t deltaTime, EnemyShipInstance* enemyShipInstance )
 	{
 		if( enemyShipInstance->currentHealth <= 0 )
+		{
+			++_score;
 			return false;
+		}
 		enemyShipInstance->sceneInstance.location.y -= 10.0f * (deltaTime / 1000.0f);
+		if( enemyShipInstance->sceneInstance.location.y < -30.0f )
+			return false;
 		return true;
 	}
 
@@ -96,7 +102,7 @@ namespace Scene2DGame
 		return true;
 	}
 
-	//Keeps the order when deleting
+	//Keeps the order when deletinga
 	template< typename T >
 	void UpdateInstanceList( std::vector<T>& instances, size_t deltaTime )
 	{
@@ -186,6 +192,19 @@ namespace Scene2DGame
 		}
 	}
 
+	std::vector<TextZone> UpdateText()
+	{
+		std::vector<TextZone> textZones;
+		char textBuffer[16];
+		int charCount = sprintf_s( textBuffer, 16, "Score: %i", _score );
+		textZones.push_back( { -1.0f, -1.0f, std::string( textBuffer ) } );
+
+		if( ConCom::isOpen() )
+			textZones.push_back( { -1.0f, 0.0f, ConCom::GetViewableString() } );
+		
+		return textZones;
+	}
+
 	void mainLoop() {
 		while (!WH::shouldClose())
 		{
@@ -208,7 +227,7 @@ namespace Scene2DGame
 			}
 
 			//Update objects
-			TickUpdate(frameDeltaTime);
+			TickUpdate( frameDeltaTime );
 
 			UpdateInstanceList( bulletInstances, frameDeltaTime );
 			UpdateInstanceList( enemyShipSceneInstances, frameDeltaTime );
@@ -219,7 +238,9 @@ namespace Scene2DGame
 			for( EnemyShipInstance& enemyShipInstance : enemyShipSceneInstances )
 				drawList.push_back( { &shipRenderable, enemyShipInstance.sceneInstance } );
 
-			DrawFrame( current_frame, &cameraSceneInstance, drawList);
+			std::vector<TextZone> textZones = UpdateText();
+
+			DrawFrame( current_frame, &cameraSceneInstance, drawList, textZones );
 
 			current_frame = (++current_frame) % SIMULTANEOUS_FRAMES;
 		}
