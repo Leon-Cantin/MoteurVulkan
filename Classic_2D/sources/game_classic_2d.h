@@ -42,15 +42,26 @@ namespace Scene2DGame
 		SceneInstance sceneInstance;
 	};
 
+	struct BackgroundInstance
+	{
+		SceneInstance instance;
+		GfxAsset* asset;
+	};
+
 	std::vector<BulletInstance> bulletInstances;
 	std::vector<EnemyShipInstance> enemyShipSceneInstances;
+	std::vector<BackgroundInstance> backgroundInstances;
+	std::vector<SceneInstance> cloudInstances;
 	SceneInstance shipSceneInstance;
-	SceneInstance bakcgroundSceneInstance;
 	SceneInstance cameraSceneInstance;
 
 	GfxAsset shipRenderable;
 	GfxAsset backgroundAsset;
 	GfxAsset bulletRenderable;
+	GfxAsset treeAsset;
+	GfxAsset riverBankAsset;
+	GfxAsset riverAsset;
+	GfxAsset cloudAsset;
 
 	BindlessTexturesState bindlessTexturesState;
 
@@ -79,7 +90,11 @@ namespace Scene2DGame
 
 	void createBullet()
 	{
-		BulletInstance bulletInstance = { 0.0f, 2000.0f, { shipSceneInstance.location, shipSceneInstance.orientation, 1.0f } };
+		static bool left = false;
+		left ^= true;
+		const float xoffset = left ? -0.15f : 0.15f;
+		const glm::vec3 offset( xoffset, 0.0f, 0.0f );
+		BulletInstance bulletInstance = { 0.0f, 2000.0f, { shipSceneInstance.location + offset, shipSceneInstance.orientation, 0.5f } };
 		bulletInstances.push_back( bulletInstance );
 	}
 
@@ -232,7 +247,11 @@ namespace Scene2DGame
 			UpdateInstanceList( bulletInstances, frameDeltaTime );
 			UpdateInstanceList( enemyShipSceneInstances, frameDeltaTime );
 
-			std::vector<GfxAssetInstance> drawList = { { &backgroundAsset, bakcgroundSceneInstance }, { &shipRenderable, shipSceneInstance } };
+			std::vector<GfxAssetInstance> drawList = { { &shipRenderable, shipSceneInstance } };
+			for( BackgroundInstance& i : backgroundInstances )
+				drawList.push_back( { i.asset, i.instance } );
+			for( SceneInstance& i : cloudInstances )
+				drawList.push_back( { &cloudAsset, i } );
 			for( BulletInstance& bi : bulletInstances )
 				drawList.push_back( { &bulletRenderable, bi.sceneInstance } );
 			for( EnemyShipInstance& enemyShipInstance : enemyShipSceneInstances )
@@ -254,9 +273,46 @@ namespace Scene2DGame
 		return asset;
 	}
 
+	std::vector<BackgroundInstance> CreateBackground()
+	{
+		std::vector<BackgroundInstance> backgroundTiles;
+		const float scale = 2.0f;
+		const float depth = 8.0f;
+		const float quadSize = 1.0f;
+		const float offset = scale*quadSize;
+		const int xTiles = 6;
+		const int yTiles = 8;
+
+		for( int xIndex = -xTiles; xIndex < xTiles; ++xIndex )
+			for( int yIndex = -yTiles; yIndex < yTiles; ++yIndex )
+			{
+				GfxAsset* asset = &treeAsset;
+				if( xIndex > 2 )
+					asset = &riverBankAsset;
+				if( xIndex > 3 )
+					asset = &riverAsset;
+				backgroundTiles.push_back( { { glm::vec3( 0.0f + offset * xIndex, 0.0f + offset * yIndex, depth ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{ 0.0f, 1.0f, 0.0f } ), scale }, asset } );
+			}
+
+		return backgroundTiles;
+	}
+
+	std::vector<SceneInstance> CreateClouds()
+	{
+		std::vector<SceneInstance> clouds;
+		const float depth = 7.0f;
+
+		clouds.push_back( { glm::vec3( 1.0f, 2.0f, depth ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{ 0.0f, 1.0f, 0.0f } ), 4.0f } );
+		clouds.push_back( { glm::vec3( 10.0f, 4.0f, depth ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{ 0.0f, 1.0f, 0.0f } ), 6.0f } );
+		clouds.push_back( { glm::vec3( 5.0f, 5.0f, depth ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{ 0.0f, 1.0f, 0.0f } ), 5.0f } );
+		clouds.push_back( { glm::vec3( -5.0f, -10.0f, depth ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{ 0.0f, 1.0f, 0.0f } ), 8.0f } );
+
+		return clouds;
+	}
+
 	void Init()
 	{
-		WH::InitializeWindow( WIDTH, HEIGHT, "2D game" );
+		WH::InitializeWindow( WIDTH, HEIGHT, "Wild Weasel: Vietnam" );
 		VK::Initialize();
 		WH::VK::InitializeWindow();
 		VK::PickSuitablePhysicalDevice( WH::VK::_windowSurface );
@@ -286,25 +342,38 @@ namespace Scene2DGame
 		InitRendererImp( WH::VK::_windowSurface );
 
 		//LoadAssets
-		GfxImage* shipTexture = AL::LoadTexture( "shipTexture", "assets/ship.png" );
-		GfxImage* bulletTexture = AL::LoadTexture( "bullet_texture", "assets/bullet.png" );
+		GfxImage* shipTexture = AL::LoadTexture( "shipTexture", "assets/F14.png" );
+		GfxImage* bulletTexture = AL::LoadTexture( "bullet_texture", "assets/bullet_small.png" );
 		GfxImage* backgroundTexture = AL::CreateSolidColorTexture( "background_texture", { 0.0f, 0.1f, 0.8f, 1.0f } );
+		GfxImage* treeTexture = AL::LoadTexture( "tree_texture", "assets/tree.png" );
+		GfxImage* riverBankTexture = AL::LoadTexture( "river_bank_texture", "assets/river_bank.png");
+		GfxImage* riverTexture = AL::LoadTexture( "river_texture", "assets/river.png" );
+		GfxImage* cloudTexture = AL::LoadTexture( "cloud_texture", "assets/cloud.png" );
 
 		GfxModel* quadModel = AL::CreateQuad( "Quad", 1.0f );
 
 		uint32_t shipTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, shipTexture, eSamplers::Point );
 		uint32_t bulletTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, bulletTexture, eSamplers::Point );
 		uint32_t backgroundTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, backgroundTexture, eSamplers::Point );
+		uint32_t treeTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, treeTexture, eSamplers::Point );
+		uint32_t riverBankTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, riverBankTexture, eSamplers::Point );
+		uint32_t riverTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, riverTexture, eSamplers::Point );
+		uint32_t cloudTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, cloudTexture, eSamplers::Point );
 
 		shipRenderable = CreateGfxAsset( quadModel, shipTextureIndex );
 		bulletRenderable = CreateGfxAsset( quadModel, bulletTextureIndex );
 		backgroundAsset = CreateGfxAsset( quadModel, backgroundTextureIndex );
+		treeAsset = CreateGfxAsset( quadModel, treeTextureIndex );
+		riverBankAsset = CreateGfxAsset( quadModel, riverBankTextureIndex );
+		riverAsset = CreateGfxAsset( quadModel, riverTextureIndex );
+		cloudAsset = CreateGfxAsset( quadModel, cloudTextureIndex );
 
 		CompileScene( &bindlessTexturesState );
 
 		shipSceneInstance = { glm::vec3( 0.0f, 0.0f, 2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 2.0f };
 		cameraSceneInstance = { glm::vec3( 0.0f, 0.0f, -2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 1.0f };
-		bakcgroundSceneInstance = { glm::vec3( 0.0f, 0.0f, 8.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 500.0f };
+		backgroundInstances = CreateBackground();
+		cloudInstances = CreateClouds();
 	}
 
 	void cleanup() 

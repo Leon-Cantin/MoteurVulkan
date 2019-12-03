@@ -45,7 +45,7 @@ enum class eTechniqueDataEntryImageName
 // Render pass and techniques are as one here, use that idea to define them.
 // Have a list of descriptor sets instead of instance and pass to keep things generic. Check the binding point to know to which (instance or pass) it belongs.
 
-const uint32_t maxModelsCount = 64;
+const uint32_t maxModelsCount = 256;
 static FG::DataEntry techniqueDataEntries[static_cast< size_t >(eTechniqueDataEntryImageName::COUNT)] =
 {
 	//Buffers
@@ -53,7 +53,7 @@ static FG::DataEntry techniqueDataEntries[static_cast< size_t >(eTechniqueDataEn
 	CREATE_BUFFER( eTechniqueDataEntryName::SCENE_DATA, sizeof( SceneMatricesUniform ) ),
 
 	//images
-	CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::BINDLESS_TEXTURES, 5 ),
+	CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::BINDLESS_TEXTURES, BINDLESS_TEXTURES_MAX ),
 	CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::TEXT, 1 ),
 
 	CREATE_IMAGE_COLOR( eTechniqueDataEntryImageName::SCENE_COLOR, VkFormat( 0 ), FG::SWAPCHAIN_SIZED, 0, true ),

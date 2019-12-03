@@ -35,6 +35,9 @@ namespace WH
 
 	void init_window(int windowWidth, int windowHeight, const char * windowName)
 	{
+		wchar_t windowNameW[256];
+		mbstowcs( windowNameW, windowName, 256 );
+
 		g_instance = GetModuleHandle(nullptr);
 		// Register window class
 		WNDCLASSEX wcex;
@@ -50,14 +53,14 @@ namespace WH
 		wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
 		wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 		wcex.lpszMenuName = NULL;
-		wcex.lpszClassName = L"Truc";
+		wcex.lpszClassName = windowNameW;
 		wcex.hIconSm = NULL;
 
 		if (!RegisterClassEx(&wcex)) {
 			throw std::runtime_error("Failed to create window");
 		}
 
-		g_window = CreateWindow(L"Truc", L"Truc2", WS_OVERLAPPEDWINDOW, 20, 20, windowWidth, windowHeight, nullptr, nullptr, g_instance, nullptr);
+		g_window = CreateWindow( windowNameW, windowNameW, WS_OVERLAPPEDWINDOW, 20, 20, windowWidth, windowHeight, nullptr, nullptr, g_instance, nullptr);
 		if (!g_window)
 			throw std::runtime_error("Failed to create window");
 

@@ -1,9 +1,11 @@
 #pragma once
 #include "gfx_image.h"
 
+#define BINDLESS_TEXTURES_MAX 16
+
 struct BindlessTexturesState
 {
-	GfxImageSamplerCombined _bindlessTextures[5];
+	GfxImageSamplerCombined _bindlessTextures[BINDLESS_TEXTURES_MAX];
 	uint32_t _bindlessTexturesCount = 0;
 };
 
