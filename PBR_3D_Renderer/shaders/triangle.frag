@@ -17,7 +17,7 @@ layout(set = RENDERPASS_SET, binding = 4) uniform sampler2DShadow shadowSampler;
 
 layout(set = INSTANCE_SET, binding = 0) uniform InstanceMatrices {
     mat4 model;
-	uint textureIndices[4];
+	uvec4 textureIndices;
 } instanceMat;
 
 layout(location = 0) in VS_OUT

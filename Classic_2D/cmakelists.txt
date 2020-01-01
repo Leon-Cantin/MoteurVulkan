@@ -7,7 +7,7 @@ add_executable( ${TARGET_NAME} ${SRCS} ${SHADERS} )
 
 source_group( " " REGULAR_EXPRESSION .* )
 source_group( shaders FILES ${SHADERS} )
-source_group( gfx FILES sources/classic_2d_renderer_imp.cpp sources/classic_2d_renderer_imp.h sources/frame_graph_script.h sources/geometry_renderpass.cpp sources/geometry_renderpass.h sources/text_overlay.cpp sources/text_overlay.h )
+source_group( gfx FILES sources/classic_2d_renderer_imp.cpp sources/classic_2d_renderer_imp.h sources/frame_graph_script.h sources/geometry_renderpass.cpp sources/geometry_renderpass.h sources/text_overlay.cpp sources/text_overlay.h sources/gfx_instance.h)
 
 target_include_directories( ${TARGET_NAME} PRIVATE sources )
 

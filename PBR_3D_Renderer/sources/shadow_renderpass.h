@@ -4,6 +4,7 @@
 
 #include "renderpass.h"
 #include "scene_frame_data.h"
+#include "scene_instance.h"
 #include "material.h"
 
 GpuPipelineLayout GetShadowPipelineLayout();

@@ -8,8 +8,6 @@
 #include "asset_library.h"
 #include "window_handler_vk.h"
 
-#include "model_asset.h"
-
 #include <glm/glm.hpp>
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
@@ -25,8 +23,8 @@ namespace Scene2DGame
 {
 	uint32_t current_frame = 0;
 
-	const int WIDTH = 800;
-	const int HEIGHT = 1000;
+	const int WIDTH = 224;
+	const int HEIGHT = 384;
 
 	struct EnemyShipInstance
 	{
@@ -247,15 +245,15 @@ namespace Scene2DGame
 			UpdateInstanceList( bulletInstances, frameDeltaTime );
 			UpdateInstanceList( enemyShipSceneInstances, frameDeltaTime );
 
-			std::vector<GfxAssetInstance> drawList = { { &shipRenderable, shipSceneInstance } };
+			std::vector<GfxAssetInstance> drawList = { { &shipRenderable, shipSceneInstance, false } };
 			for( BackgroundInstance& i : backgroundInstances )
-				drawList.push_back( { i.asset, i.instance } );
+				drawList.push_back( { i.asset, i.instance, false } );
 			for( SceneInstance& i : cloudInstances )
-				drawList.push_back( { &cloudAsset, i } );
+				drawList.push_back( { &cloudAsset, i, true } );
 			for( BulletInstance& bi : bulletInstances )
-				drawList.push_back( { &bulletRenderable, bi.sceneInstance } );
+				drawList.push_back( { &bulletRenderable, bi.sceneInstance, false } );
 			for( EnemyShipInstance& enemyShipInstance : enemyShipSceneInstances )
-				drawList.push_back( { &shipRenderable, enemyShipInstance.sceneInstance } );
+				drawList.push_back( { &shipRenderable, enemyShipInstance.sceneInstance, false } );
 
 			std::vector<TextZone> textZones = UpdateText();
 
@@ -302,10 +300,10 @@ namespace Scene2DGame
 		std::vector<SceneInstance> clouds;
 		const float depth = 7.0f;
 
-		clouds.push_back( { glm::vec3( 1.0f, 2.0f, depth ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{ 0.0f, 1.0f, 0.0f } ), 4.0f } );
-		clouds.push_back( { glm::vec3( 10.0f, 4.0f, depth ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{ 0.0f, 1.0f, 0.0f } ), 6.0f } );
-		clouds.push_back( { glm::vec3( 5.0f, 5.0f, depth ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{ 0.0f, 1.0f, 0.0f } ), 5.0f } );
-		clouds.push_back( { glm::vec3( -5.0f, -10.0f, depth ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{ 0.0f, 1.0f, 0.0f } ), 8.0f } );
+		clouds.push_back( { glm::vec3( 1.0f, 2.0f, depth ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{ 0.0f, 1.0f, 0.0f } ), 2.0f } );
+		clouds.push_back( { glm::vec3( 10.0f, 4.0f, depth ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{ 0.0f, 1.0f, 0.0f } ), 2.0f } );
+		clouds.push_back( { glm::vec3( 5.0f, 5.0f, depth ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{ 0.0f, 1.0f, 0.0f } ), 2.0f } );
+		clouds.push_back( { glm::vec3( -5.0f, -10.0f, depth ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{ 0.0f, 1.0f, 0.0f } ), 2.0f } );
 
 		return clouds;
 	}

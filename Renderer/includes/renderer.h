@@ -1,10 +1,10 @@
 #pragma once
 
 #include "vk_globals.h"
-#include "scene_instance.h"
 #include "scene_frame_data.h"
 #include "swapchain.h"
 #include "frame_graph.h"
+#include "gfx_model.h"
 
 #include <vector>
 

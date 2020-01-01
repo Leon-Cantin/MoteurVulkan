@@ -3,7 +3,6 @@
 #include "vk_globals.h"
 
 #include "renderpass.h"
-#include "model_asset.h"
 #include "scene_frame_data.h"
 #include "material.h"
 #include "gfx_image.h"

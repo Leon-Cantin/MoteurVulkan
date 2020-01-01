@@ -5,6 +5,7 @@
 #include "vk_commands.h"
 #include "vk_debug.h"
 #include "vk_vertex_input.h"
+#include "gfx_model.h"
 #include "stb_font_consolas_24_latin1.inl"
 
 GfxModel textModel;

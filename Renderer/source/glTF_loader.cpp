@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "model_asset.h"
+#include "gfx_model.h"
 
 
 namespace glTF_L

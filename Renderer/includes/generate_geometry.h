@@ -1,7 +1,7 @@
 #pragma once
 
 #include "vk_globals.h"
-#include "model_asset.h"
+#include "gfx_model.h"
 
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>

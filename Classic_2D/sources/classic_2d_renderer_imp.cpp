@@ -40,12 +40,14 @@ static void UpdateSceneUniformBuffer(const glm::mat4& world_view_matrix, VkExten
 	UpdateGpuBuffer( sceneUniformBuffer, &sceneMatrices, sizeof( sceneMatrices ), 0 );
 }
 
+//Updates the data of a single instance (a draw or an object)
 static void UpdateGfxInstanceData( const GfxAssetInstance* assetInstance, SceneInstanceSet* sceneInstanceDescriptorSet, BufferAllocator* allocator )
 {
 	GfxInstanceData instanceMatrices = {};
 	instanceMatrices.model = ComputeSceneInstanceModelMatrix( assetInstance->instanceData );
 	for( uint32_t i = 0; i < assetInstance->asset->textureIndices.size(); ++i )
 		instanceMatrices.texturesIndexes[i] = assetInstance->asset->textureIndices[i];
+	instanceMatrices.dithering[0] = assetInstance->useDithering ? 1 : 0;
 
 	size_t allocationSize = sizeof( GfxInstanceData );
 	size_t memoryOffset = AllocateGpuBufferSlot( allocator, allocationSize );

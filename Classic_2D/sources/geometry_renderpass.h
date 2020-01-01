@@ -4,6 +4,7 @@
 
 #include "renderpass.h"
 #include "material.h"
+#include "scene_instance.h"//TODO: only there because scene_frame_data needs to have a definition for GfxAsset
 #include "scene_frame_data.h"
 
 GpuPipelineLayout GetGeoPipelineLayout();

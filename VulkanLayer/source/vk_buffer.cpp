@@ -76,9 +76,9 @@ void CreatePerFrameBuffer(VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags
 static void UpdateGpuMemory( const GpuMemory* dstMemory, const void* src, VkDeviceSize size, VkDeviceSize offset )
 {
 	assert( offset + size <= dstMemory->size );
-	void* data;
-	vkMapMemory( g_vk.device, dstMemory->memory, dstMemory->offset + offset, size, 0, &data );
-	memcpy( data, src, size );
+	void* dst;
+	vkMapMemory( g_vk.device, dstMemory->memory, dstMemory->offset + offset, size, 0, &dst );
+	memcpy( dst, src, size );
 	vkUnmapMemory( g_vk.device, dstMemory->memory );
 }
 

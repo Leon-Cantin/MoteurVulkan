@@ -1,17 +1,17 @@
-#include "model_asset.h"
+#include "gfx_model.h"
 
 #include "vk_buffer.h"
 
 #include <unordered_map>
 
-void DestroyGfxModel(GfxModel& o_modelAsset)
+void DestroyGfxModel(GfxModel& gfxModel)
 {
 	for( uint8_t i = 0; i < ( uint8_t )eVIDataType::VI_DATA_TYPE_COUNT; ++i )
 	{
-		if( o_modelAsset.vertAttribBuffers[i].buffer.gpuMemory.memory != VK_NULL_HANDLE )
-			DestroyCommitedGpuBuffer( &o_modelAsset.vertAttribBuffers[i].buffer );
+		if( gfxModel.vertAttribBuffers[i].buffer.gpuMemory.memory != VK_NULL_HANDLE )
+			DestroyCommitedGpuBuffer( &gfxModel.vertAttribBuffers[i].buffer );
 	}
-	DestroyCommitedGpuBuffer( &o_modelAsset.indexBuffer );
+	DestroyCommitedGpuBuffer( &gfxModel.indexBuffer );
 }
 
 static VkIndexType GetIndexType( uint8_t sizeofIndexType )

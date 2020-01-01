@@ -2,7 +2,6 @@
 
 #include "vk_buffer.h"
 #include "vk_debug.h"
-#include "scene_instance.h"
 #include "vk_commands.h"
 #include "profile.h"
 #include "vk_framework.h"

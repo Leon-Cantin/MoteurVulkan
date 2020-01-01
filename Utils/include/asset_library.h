@@ -1,6 +1,6 @@
 #pragma once
 #include "gfx_image.h"
-#include "model_asset.h"
+#include "gfx_model.h"
 
 #include "glm/vec4.hpp"
 

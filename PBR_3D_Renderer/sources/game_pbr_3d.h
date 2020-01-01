@@ -8,8 +8,6 @@
 #include "asset_library.h"
 #include "window_handler_vk.h"
 
-#include "model_asset.h"
-
 #include <glm/glm.hpp>
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>

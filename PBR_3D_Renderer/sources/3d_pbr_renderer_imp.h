@@ -1,9 +1,9 @@
 #pragma once
 
 #include "vk_globals.h"
-#include "scene_instance.h"
 #include "gfx_image.h"
 #include "bindless_textures.h"
+#include "gfx_instance.h"
 
 struct LightUniform {
 	glm::mat4 shadowMatrix;
