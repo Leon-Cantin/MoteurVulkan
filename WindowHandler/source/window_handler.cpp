@@ -33,7 +33,7 @@ namespace WH
 		return 0;
 	}
 
-	void init_window(int windowWidth, int windowHeight, const char * windowName)
+	void init_window(int clientAreaWidth, int clientAreaHeight, const char * windowName)
 	{
 		wchar_t windowNameW[256];
 		mbstowcs( windowNameW, windowName, 256 );
@@ -60,7 +60,10 @@ namespace WH
 			throw std::runtime_error("Failed to create window");
 		}
 
-		g_window = CreateWindow( windowNameW, windowNameW, WS_OVERLAPPEDWINDOW, 20, 20, windowWidth, windowHeight, nullptr, nullptr, g_instance, nullptr);
+		RECT windowRect = {0, 0, clientAreaWidth, clientAreaHeight};
+		AdjustWindowRect( &windowRect, WS_OVERLAPPEDWINDOW, false );
+
+		g_window = CreateWindow( windowNameW, windowNameW, WS_OVERLAPPEDWINDOW, 20, 20, windowRect.right - windowRect.left, windowRect.bottom - windowRect.top, nullptr, nullptr, g_instance, nullptr);
 		if (!g_window)
 			throw std::runtime_error("Failed to create window");
 

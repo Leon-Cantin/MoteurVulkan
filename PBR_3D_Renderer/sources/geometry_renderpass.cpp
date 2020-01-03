@@ -37,7 +37,6 @@ GpuPipelineState GetGeoPipelineState()
 
 	gpuPipelineState.blendEnabled = false;
 	gpuPipelineState.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	gpuPipelineState.framebufferExtent = { 0,0 }; //swapchain sized
 
 	return gpuPipelineState;
 }

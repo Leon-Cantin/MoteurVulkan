@@ -26,7 +26,6 @@ GpuPipelineState GetSkyboxPipelineState()
 	gpuPipelineState.depthStencilState.depthWrite = false;
 	gpuPipelineState.depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 
-	gpuPipelineState.framebufferExtent = { 0,0 }; // swapchain sized
 	gpuPipelineState.blendEnabled = false;
 	gpuPipelineState.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 

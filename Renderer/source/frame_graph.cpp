@@ -192,17 +192,11 @@ namespace FG
 			colorImages[i] = frameGraph->_render_targets[passCreationData.e_render_targets[i]].imageView;
 		VkImageView* depthImage = containsDepth ? &frameGraph->_render_targets[passCreationData.e_render_targets[colorCount]].imageView : nullptr;
 
-		if (outputBufferIndex < 0)
+		for( uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 		{
-			createFrameBuffer(colorImages, colorCount, depthImage, extent, renderpass->vk_renderpass, &renderpass->frameBuffer);
-		}
-		else //If we use the output buffer create one frame buffer per possible image
-		{
-			for (uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
-			{
+			if( outputBufferIndex >= 0 ) //If this pass uses( writes? ) to the backbuffer could probably be generalized to passes that can output to multiple targets (temporal stuff)
 				colorImages[outputBufferIndex] = frameGraph->_output_buffers[i].imageView;
-				createFrameBuffer(colorImages, colorCount, depthImage, extent, renderpass->vk_renderpass, &renderpass->outputFrameBuffer[i]);
-			}
+			createFrameBuffer( colorImages, colorCount, depthImage, extent, renderpass->vk_renderpass, &renderpass->outputFrameBuffer[i] );
 		}
 	}
 
@@ -218,13 +212,15 @@ namespace FG
 		subpass.pColorAttachments = passCreationData.references;
 		subpass.pDepthStencilAttachment = containsDepth ? &passCreationData.references[colorCount] : VK_NULL_HANDLE;
 
+		//TODO: have less agressive dst external dependency (maybe src too)
 		VkSubpassDependency dependency = {};
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.srcAccessMask = 0;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		dependency.srcSubpass = 0;
+		dependency.dstSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
+		dependency.srcAccessMask = VK_ACCESS_INPUT_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		dependency.dstAccessMask = 0;
+		dependency.dependencyFlags = 0;
 
 		VkRenderPassCreateInfo render_pass_info = {};
 		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -232,7 +228,7 @@ namespace FG
 		render_pass_info.pAttachments = passCreationData.descriptions;
 		render_pass_info.subpassCount = 1;
 		render_pass_info.pSubpasses = &subpass;
-		render_pass_info.dependencyCount = 1;
+		render_pass_info.dependencyCount = 1; //implicit dependency to VK_SUBPASS_EXTERNAL
 		render_pass_info.pDependencies = &dependency;
 
 		/*A render pass represents a collection of attachments, subpasses, and dependencies between the subpasses,
@@ -308,11 +304,6 @@ namespace FG
 		for (uint32_t i = 0; i < frameGraph->_render_passes_count; ++i)
 		{
 			RenderPass& renderpass = frameGraph->_render_passes[i];
-			if (renderpass.frameBuffer.frameBuffer)
-			{
-				vkDestroyFramebuffer(g_vk.device, renderpass.frameBuffer.frameBuffer, nullptr);
-				renderpass.frameBuffer.frameBuffer = VK_NULL_HANDLE;
-			}
 			for (uint32_t fb_index = 0; fb_index < SIMULTANEOUS_FRAMES; ++fb_index)
 			{
 				vkDestroyFramebuffer(g_vk.device, renderpass.outputFrameBuffer[fb_index].frameBuffer, nullptr);

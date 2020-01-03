@@ -159,13 +159,12 @@ namespace FG
 		if( vkCreatePipelineLayout( g_vk.device, &pipeline_layout_info, nullptr, &o_technique->pipelineLayout ) != VK_SUCCESS ) {
 			throw std::runtime_error( "failed to create pipeline layout!" );
 		}
-
-		//TODO: temp hack to get a relative size;
+				
 		GpuPipelineState pipelineState = passCreationData->frame_graph_node.gpuPipelineState;
-		if( pipelineState.framebufferExtent.width == 0 && pipelineState.framebufferExtent.height == 0 )
-			pipelineState.framebufferExtent = renderpass->outputFrameBuffer[0].extent;
+		VkExtent2D viewportSize = renderpass->outputFrameBuffer[0].extent;//TODO: temp hack to get a relative size;
 
 		CreatePipeline( pipelineState,
+			viewportSize,
 			renderpass->vk_renderpass,
 			o_technique->pipelineLayout,
 			&o_technique->pipeline );
@@ -228,7 +227,7 @@ namespace FG
 				}
 				writeDescriptors[writeDescriptorsCount++] = { dataBinding->binding, buffersCount, DescriptorTypeToVkType( techniqueDataEntry->descriptorType, dataBinding->descriptorAccess ), &descriptorBuffersInfos[bufferStart], nullptr };
 			}
-			else if( techniqueDataEntry->descriptorType == eDescriptorType::IMAGE_SAMPLER ) // Combined image samplers
+			else if( techniqueDataEntry->descriptorType == eDescriptorType::IMAGE_SAMPLER || techniqueDataEntry->descriptorType == eDescriptorType::IMAGE )
 			{
 				GfxImageSamplerCombined* images = GetImage( inputData, dataBinding->id );
 				uint32_t bufferStart = descriptorImagesInfosCount;

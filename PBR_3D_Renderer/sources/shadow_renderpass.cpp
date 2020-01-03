@@ -8,9 +8,6 @@
 
 #include "glm/gtc/matrix_transform.hpp"
 
-//TODO: this is redundant, also found in frame graph
-constexpr VkExtent2D RT_EXTENT_SHADOW = { 1024, 1024 };
-
 void computeShadowMatrix(const glm::vec3& light_location, glm::mat4* view, glm::mat4* projection)
 {
 	*view = glm::lookAt(light_location, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
@@ -50,7 +47,6 @@ GpuPipelineState GetShadowPipelineState()
 	gpuPipelineState.depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS;
 
 	gpuPipelineState.blendEnabled = false;
-	gpuPipelineState.framebufferExtent = RT_EXTENT_SHADOW;
 	gpuPipelineState.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
 	return gpuPipelineState;
@@ -63,7 +59,7 @@ GpuPipelineState GetShadowPipelineState()
 static void CmdBeginShadowPass( VkCommandBuffer commandBuffer, size_t currentFrame, const RenderPass * renderpass, const Technique * technique )
 {
 	CmdBeginVkLabel( commandBuffer, "Shadow Renderpass", glm::vec4( 0.5f, 0.2f, 0.4f, 1.0f ) );
-	BeginRenderPass( commandBuffer, *renderpass, renderpass->frameBuffer.frameBuffer, renderpass->frameBuffer.extent );
+	BeginRenderPass( commandBuffer, *renderpass, renderpass->outputFrameBuffer[currentFrame].frameBuffer, renderpass->outputFrameBuffer[currentFrame].extent );
 
 	BeginTechnique( commandBuffer, technique, currentFrame );
 }

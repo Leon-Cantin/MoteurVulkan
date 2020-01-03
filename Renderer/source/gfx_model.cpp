@@ -25,6 +25,7 @@ static VkIndexType GetIndexType( uint8_t sizeofIndexType )
 	default:
 		std::runtime_error( "Unknown index type" );
 	}
+	return VK_INDEX_TYPE_MAX_ENUM;
 }
 
 GfxModelVertexInput* GetVertexInput( GfxModel& gfxModel, eVIDataType dataType )

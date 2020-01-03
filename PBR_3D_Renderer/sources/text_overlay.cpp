@@ -45,7 +45,6 @@ GpuPipelineState GetTextPipelineState()
 	gpuPipelineState.depthStencilState.depthWrite = false;
 	gpuPipelineState.depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS;
 
-	gpuPipelineState.framebufferExtent = { 0,0 }; //swapchain sized;
 	gpuPipelineState.blendEnabled = true;
 	gpuPipelineState.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	return gpuPipelineState;

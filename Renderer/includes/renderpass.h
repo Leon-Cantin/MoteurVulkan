@@ -10,7 +10,6 @@ struct RenderPass {
 	VkRenderPass vk_renderpass;
 	std::vector<VkFormat> colorFormats;
 	VkFormat depthFormat;
-	FrameBuffer frameBuffer;
 	FrameBuffer outputFrameBuffer[SIMULTANEOUS_FRAMES];
 };
 

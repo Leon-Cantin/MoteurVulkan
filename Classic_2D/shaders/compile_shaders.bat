@@ -2,6 +2,8 @@ CALL :Compile triangle.vert
 CALL :Compile triangle.frag
 CALL :Compile text.vert
 CALL :Compile text.frag
+CALL :Compile copy.vert
+CALL :Compile copy.frag
 
 pause
 EXIT /B %ERRORLEVEL%

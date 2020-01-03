@@ -159,10 +159,11 @@ void InitRendererImp( VkSurfaceKHR swapchainSurface )
 	const uint32_t imageSamplersCount = geometryImageCount + skyboxImageCount + textImageCount;
 	const uint32_t storageImageCount = 1;
 	const uint32_t uniformBuffersDynamicCount = geomtryDynamicBuffersCount + shadowDynamicBuffersCount;
+	const uint32_t sampledImageCount = 0;
 
 	const uint32_t maxSets = geometryDescriptorSets + shadowDescriptorSets + skyboxDescriptorSetsCount + textDescriptorSetsCount;
 
-	createDescriptorPool(uniformBuffersCount, uniformBuffersDynamicCount, imageSamplersCount, storageImageCount, maxSets, &descriptorPool);
+	createDescriptorPool(uniformBuffersCount, uniformBuffersDynamicCount, imageSamplersCount, storageImageCount, sampledImageCount, maxSets, &descriptorPool);
 
 	LoadFontTexture();
 }

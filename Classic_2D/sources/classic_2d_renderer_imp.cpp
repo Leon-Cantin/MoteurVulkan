@@ -16,7 +16,6 @@ VkDescriptorPool descriptorPool;
 
 extern Swapchain g_swapchain;
 
-
 std::array< GpuInputData, SIMULTANEOUS_FRAMES> _inputBuffers;
 
 /*
@@ -28,9 +27,12 @@ static void UpdateSceneUniformBuffer(const glm::mat4& world_view_matrix, VkExten
 	SceneMatricesUniform sceneMatrices = {};
 	//sceneMatrices.view = world_view_matrix;
 	//Layout is columns are horizontal in memory
-	float ratio = (float)extent.width / extent.height;
-	float height = 50.0f;
-	float width = height * ratio;
+	//float ratio = (float)extent.width / extent.height;
+	//float height = 50.0f;
+	//float width = height * ratio;
+	float factor = 0.1;
+	float width = screenSize.width * factor;
+	float height = screenSize.height * factor;
 
 	float halfHeight = height / 2.0f;
 	float halfWidth = width / 2.0f;
@@ -76,7 +78,7 @@ static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cam
 
 	UpdateSceneUniformBuffer( world_view_matrix, swapChainExtent, GetBuffer( &currentGpuInputData, eTechniqueDataEntryName::SCENE_DATA ) );
 
-	UpdateText( textZones.data(), textZones.size(), g_swapchain.extent );
+	UpdateText( textZones.data(), textZones.size(), swapChainExtent );
 }
 
 static void PrepareSceneFrameData( SceneFrameData* frameData, uint32_t currentFrame, const SceneInstance* cameraSceneInstance, const std::vector<GfxAssetInstance>& drawList, const std::vector<TextZone>& textZones )
@@ -115,20 +117,23 @@ void InitRendererImp( VkSurfaceKHR swapchainSurface )
 
 	const uint32_t geometryDescriptorSets = 2 * SIMULTANEOUS_FRAMES;
 	const uint32_t geometryBuffersCount = 2 * SIMULTANEOUS_FRAMES;
-	const uint32_t geometryImageCount = 20 * SIMULTANEOUS_FRAMES;
+	const uint32_t geometryImageCount = 64 * SIMULTANEOUS_FRAMES;
 	const uint32_t geomtryDynamicBuffersCount = 1 * SIMULTANEOUS_FRAMES;
 
 	const uint32_t textDescriptorSetsCount = 2;
 	const uint32_t textImageCount = 2;
 
+	const uint32_t copyDescriptorSetsCount = 8;
+
 	const uint32_t uniformBuffersCount = geometryBuffersCount;
 	const uint32_t imageSamplersCount = geometryImageCount + textImageCount;
 	const uint32_t storageImageCount = 1;
 	const uint32_t uniformBuffersDynamicCount = geomtryDynamicBuffersCount;
+	const uint32_t sampledImageCount = 8;
 
-	const uint32_t maxSets = geometryDescriptorSets + textDescriptorSetsCount;
+	const uint32_t maxSets = geometryDescriptorSets + textDescriptorSetsCount + copyDescriptorSetsCount;
 
-	createDescriptorPool(uniformBuffersCount, uniformBuffersDynamicCount, imageSamplersCount, storageImageCount, maxSets, &descriptorPool);
+	createDescriptorPool(uniformBuffersCount, uniformBuffersDynamicCount, imageSamplersCount, storageImageCount, sampledImageCount, maxSets, &descriptorPool);
 
 	LoadFontTexture();
 }

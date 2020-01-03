@@ -37,7 +37,6 @@ GpuPipelineState GetGeoPipelineState()
 
 	gpuPipelineState.blendEnabled = true;
 	gpuPipelineState.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	gpuPipelineState.framebufferExtent = { 0,0 }; //swapchain sized
 
 	return gpuPipelineState;
 }
@@ -45,7 +44,8 @@ GpuPipelineState GetGeoPipelineState()
 void CmdBeginGeometryRenderPass(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t currentFrame, const RenderPass * renderpass, const Technique * technique)
 {
 	CmdBeginVkLabel(commandBuffer, "Geometry renderpass", glm::vec4(0.8f, 0.6f, 0.4f, 1.0f));
-	BeginRenderPass(commandBuffer, *renderpass, renderpass->outputFrameBuffer[currentFrame].frameBuffer, extent);
+	const FrameBuffer& frameBuffer = renderpass->outputFrameBuffer[currentFrame];
+	BeginRenderPass(commandBuffer, *renderpass, frameBuffer.frameBuffer, frameBuffer.extent );
 
 	BeginTechnique( commandBuffer, technique, currentFrame );
 }

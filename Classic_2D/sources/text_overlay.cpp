@@ -46,7 +46,6 @@ GpuPipelineState GetTextPipelineState()
 	gpuPipelineState.depthStencilState.depthWrite = false;
 	gpuPipelineState.depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS;
 
-	gpuPipelineState.framebufferExtent = { 0,0 }; //swapchain sized;
 	gpuPipelineState.blendEnabled = true;
 	gpuPipelineState.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	return gpuPipelineState;
@@ -55,7 +54,8 @@ GpuPipelineState GetTextPipelineState()
 static void CmdDrawText( VkCommandBuffer commandBuffer, VkExtent2D extent, size_t frameIndex, const RenderPass * renderpass, const Technique * technique )
 {
 	CmdBeginVkLabel(commandBuffer, "Text overlay Renderpass", glm::vec4(0.6f, 0.6f, 0.6f, 1.0f));
-	BeginRenderPass(commandBuffer, *renderpass, renderpass->outputFrameBuffer[frameIndex].frameBuffer, extent);
+	const FrameBuffer& frameBuffer = renderpass->outputFrameBuffer[frameIndex];
+	BeginRenderPass(commandBuffer, *renderpass, frameBuffer.frameBuffer, frameBuffer.extent);
 
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipeline );
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, 0, 1, &technique->renderPass_descriptor[0], 0, nullptr);

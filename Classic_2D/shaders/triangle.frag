@@ -31,7 +31,7 @@ void main() {
 	vec4 albedo = texture(bindlessTextures[instanceMat.textureIndices[0]] , fs_in.fragTexCoord);
 	//vec3 albedo = fs_in.fragColor;
 	if( instanceMat.dithering[0] != 0 )
-		if( int(gl_FragCoord.x) % 2 != 0 && int(gl_FragCoord.y) % 2 != 0 )
+		if( int(gl_FragCoord.x) % 2 != 0 ^^ int(gl_FragCoord.y) % 2 != 0 )
 			discard;
 	if( albedo.a != 1 )
 		discard;

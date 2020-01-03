@@ -42,7 +42,6 @@ struct GpuPipelineState
 {
 	VIState viState;
 	std::vector<ShaderCreation> shaders;
-	VkExtent2D framebufferExtent;
 	RasterizationState rasterizationState;
 	DepthStencilState depthStencilState;
 	bool blendEnabled;
@@ -50,4 +49,4 @@ struct GpuPipelineState
 };
 
 uint32_t GetBindingDescription( const std::vector<VIBinding>& VIBindings, VIState* o_viState );
-void CreatePipeline( const GpuPipelineState& gpuPipeline, VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline* o_pipeline );
+void CreatePipeline( const GpuPipelineState& gpuPipeline, const VkExtent2D& viewportSize, VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline* o_pipeline );

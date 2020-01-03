@@ -15,7 +15,7 @@ uint32_t GetBindingDescription( const std::vector<VIBinding>& VIBindings, VIStat
 	return count;
 }
 
-void CreatePipeline( const GpuPipelineState& gpuPipeline, VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline* o_pipeline )
+void CreatePipeline( const GpuPipelineState& gpuPipeline, const VkExtent2D& viewportSize, VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline* o_pipeline )
 {
 	//Vertex Input
 	const VIState& viState = gpuPipeline.viState;
@@ -120,14 +120,14 @@ void CreatePipeline( const GpuPipelineState& gpuPipeline, VkRenderPass renderPas
 	VkViewport viewport = {};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = static_cast< float >(gpuPipeline.framebufferExtent.width);
-	viewport.height = static_cast< float >(gpuPipeline.framebufferExtent.height);
+	viewport.width = static_cast< float >(viewportSize.width);
+	viewport.height = static_cast< float >(viewportSize.height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
 	VkRect2D scissor = {};
 	scissor.offset = { 0, 0 };
-	scissor.extent = gpuPipeline.framebufferExtent;
+	scissor.extent = viewportSize;
 
 	VkPipelineViewportStateCreateInfo viewport_state_info = {};
 	viewport_state_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
