@@ -2,14 +2,20 @@
 
 #include <stdexcept>
 
+bool IsRequiredMemoryType( uint32_t typeFilter, uint32_t memoryType )
+{
+	uint32_t memoryTypeBit = 1 << memoryType;
+	return (typeFilter & memoryTypeBit);
+}
+
 uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
 {
 	VkPhysicalDeviceMemoryProperties memProperties;
 	vkGetPhysicalDeviceMemoryProperties(g_vk.physicalDevice, &memProperties);
 
-	for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-		if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-			return i;
+	for (uint32_t memoryType = 0; memoryType < memProperties.memoryTypeCount; memoryType++) {
+		if ( IsRequiredMemoryType(typeFilter, memoryType) && (memProperties.memoryTypes[memoryType].propertyFlags & properties) == properties) {
+			return memoryType;
 		}
 	}
 

@@ -29,9 +29,10 @@ namespace FG
 	{
 		image->extent = extent;
 		image->format = format;
-		create_image(extent.width, extent.height, 1, format, usage_flags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image->image, image->memory);
-		image->imageView = createImageView(image->image, format, aspect_flags, 1);
-		transitionImageLayout(image->image, format, VK_IMAGE_LAYOUT_UNDEFINED, image_layout, 1, 1);
+		const uint32_t mipLevels = 1;
+		create_image_simple( extent.width, extent.height, mipLevels, format, usage_flags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &image->image, &image->memory );
+		image->imageView = Create2DImageView( image->image, format, aspect_flags, mipLevels );
+		transitionImageLayout( image->image, format, VK_IMAGE_LAYOUT_UNDEFINED, image_layout, 1, 1 );
 	}
 
 	static void CreateRTCommon(RenderPassCreationData& resource, VkFormat format, uint32_t render_target, VkImageLayout optimalLayout)

@@ -44,14 +44,11 @@ void Load2DTexture( void * data, uint32_t width, uint32_t height, uint32_t miple
 	VkDeviceSize imageSize = width * height * pixelByteSize;
 	o_image.mipLevels = miplevels;
 
-	create_image( width, height, o_image.mipLevels, format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, o_image.image, o_image.memory );
+	create_image_simple( width, height, o_image.mipLevels, format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &o_image.image, &o_image.memory, &o_image.imageView );
 
 	copyImageToDeviceLocalMemory( data, imageSize, width, height, 1, o_image.mipLevels, format, o_image.image );
-
-	o_image.imageView = createImageView( o_image.image, format, VK_IMAGE_ASPECT_COLOR_BIT, o_image.mipLevels );
 }
-
 
 void Load2DTextureFromFile( const char* filename, GfxImage& o_image )
 {
@@ -66,15 +63,22 @@ void Load2DTextureFromFile( const char* filename, GfxImage& o_image )
 		throw std::runtime_error( "failed to load texture image!" );
 
 	//TODO: now it's also a src image because of the generating mip map. Perhaps we could change it back to only dst somehow?
-	create_image( texWidth, texHeight, o_image.mipLevels, o_image.format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, o_image.image, o_image.memory );
+	create_image_simple( texWidth, texHeight, o_image.mipLevels, o_image.format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &o_image.image, &o_image.memory, &o_image.imageView );
+
+	create_image( texWidth, texHeight, o_image.mipLevels, o_image.format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, &o_image.image );
+	MarkVkObject( ( uint64_t )o_image.image, VK_OBJECT_TYPE_IMAGE, filename );
+
+	//---- Allocator
+	AllocateMemory( o_image.image, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
+	BindMemory( o_image.image, o_image.memory );
 
 	copyImageToDeviceLocalMemory( pixels, imageSize, texWidth, texHeight, 1, o_image.mipLevels, o_image.format, o_image.image );
-
+	
 	stbi_image_free( pixels );
-	o_image.imageView = createImageView( o_image.image, o_image.format, VK_IMAGE_ASPECT_COLOR_BIT, o_image.mipLevels );
+	//-----
 
-	MarkVkObject( ( uint64_t )o_image.image, VK_OBJECT_TYPE_IMAGE, filename );
+	o_image.imageView = Create2DImageView( o_image.image, o_image.format, VK_IMAGE_ASPECT_COLOR_BIT, o_image.mipLevels );
 	MarkVkObject( ( uint64_t )o_image.imageView, VK_OBJECT_TYPE_IMAGE_VIEW, filename );
 }
 
@@ -104,9 +108,9 @@ void CreateSolidColorImage( glm::vec4 color, GfxImage* o_image )
 		pixels[i * 4 + 3] = static_cast< uint8_t >(color.a * 255.0f);
 	}
 
-	create_image( width, height, 1, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, o_image->image, o_image->memory );
+	create_image_simple( width, height, 1, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		&o_image->image, &o_image->memory, &o_image->imageView );
 	copyImageToDeviceLocalMemory( pixels, memorySize, o_image->extent.width, o_image->extent.height, 1, o_image->mipLevels, o_image->format, o_image->image );
-	o_image->imageView = createImageView( o_image->image, o_image->format, VK_IMAGE_ASPECT_COLOR_BIT, o_image->mipLevels );
 }
 
 static void createPointSampler( VkSampler* o_sampler )
