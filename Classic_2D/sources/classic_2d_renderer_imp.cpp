@@ -30,7 +30,7 @@ static void UpdateSceneUniformBuffer(const glm::mat4& world_view_matrix, VkExten
 	//float ratio = (float)extent.width / extent.height;
 	//float height = 50.0f;
 	//float width = height * ratio;
-	float factor = 0.1;
+	float factor = 1.0;
 	float width = screenSize.width * factor;
 	float height = screenSize.height * factor;
 
@@ -45,17 +45,17 @@ static void UpdateSceneUniformBuffer(const glm::mat4& world_view_matrix, VkExten
 //Updates the data of a single instance (a draw or an object)
 static void UpdateGfxInstanceData( const GfxAssetInstance* assetInstance, SceneInstanceSet* sceneInstanceDescriptorSet, BufferAllocator* allocator )
 {
-	GfxInstanceData instanceMatrices = {};
-	instanceMatrices.model = ComputeSceneInstanceModelMatrix( assetInstance->instanceData );
+	GfxInstanceData instanceData = {};
+	instanceData.model = ComputeSceneInstanceModelMatrix( assetInstance->instanceData );
 	for( uint32_t i = 0; i < assetInstance->asset->textureIndices.size(); ++i )
-		instanceMatrices.texturesIndexes[i] = assetInstance->asset->textureIndices[i];
-	instanceMatrices.dithering[0] = assetInstance->useDithering ? 1 : 0;
+		instanceData.texturesIndexes[i] = assetInstance->asset->textureIndices[i];
+	instanceData.dithering[0] = assetInstance->useDithering ? 1 : 0;
 
 	size_t allocationSize = sizeof( GfxInstanceData );
 	size_t memoryOffset = AllocateGpuBufferSlot( allocator, allocationSize );
 
 	sceneInstanceDescriptorSet->geometryBufferOffsets = memoryOffset;
-	UpdateGpuBuffer( allocator->buffer, &instanceMatrices, allocationSize, memoryOffset );
+	UpdateGpuBuffer( allocator->buffer, &instanceData, allocationSize, memoryOffset );
 }
 
 //TODO seperate the buffer update and computation of frame data
@@ -63,9 +63,8 @@ static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cam
 {
 	glm::mat4 world_view_matrix = ComputeCameraSceneInstanceViewMatrix( *cameraSceneInstance );
 
-	VkExtent2D swapChainExtent = g_swapchain.extent;
-
 	GpuInputData currentGpuInputData = _inputBuffers[currentFrame];
+	VkExtent2D viewportExtent = GetImage( &currentGpuInputData, eTechniqueDataEntryImageName::SCENE_COLOR )->image->extent;
 
 	BufferAllocator allocator { GetBuffer( &currentGpuInputData, eTechniqueDataEntryName::INSTANCE_DATA ) };
 	for( uint32_t i = 0; i < drawList.size(); ++i )
@@ -76,9 +75,9 @@ static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cam
 		o_drawlist[i] = { drawList[i].asset, instanceDescSet };
 	}
 
-	UpdateSceneUniformBuffer( world_view_matrix, swapChainExtent, GetBuffer( &currentGpuInputData, eTechniqueDataEntryName::SCENE_DATA ) );
+	UpdateSceneUniformBuffer( world_view_matrix, viewportExtent, GetBuffer( &currentGpuInputData, eTechniqueDataEntryName::SCENE_DATA ) );
 
-	UpdateText( textZones.data(), textZones.size(), swapChainExtent );
+	UpdateText( textZones.data(), textZones.size(), viewportExtent );
 }
 
 static void PrepareSceneFrameData( SceneFrameData* frameData, uint32_t currentFrame, const SceneInstance* cameraSceneInstance, const std::vector<GfxAssetInstance>& drawList, const std::vector<TextZone>& textZones )

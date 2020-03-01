@@ -66,47 +66,58 @@ namespace Scene2DGame
 	size_t frameDeltaTime = 0;
 	uint32_t _score = 0;
 
+	glm::fquat defaultRotation = glm::angleAxis( glm::radians( 0.0f ), glm::vec3 { 0.0f, 1.0f, 0.0f } );
+	constexpr float quadSize = 1.0f;
+
 	bool UpdateInstance( size_t deltaTime, EnemyShipInstance* enemyShipInstance )
 	{
+		constexpr float movementSpeedPerSecond = 100.0f;
+		constexpr float yKill = -200.0f;
 		if( enemyShipInstance->currentHealth <= 0 )
 		{
 			++_score;
 			return false;
 		}
-		enemyShipInstance->sceneInstance.location.y -= 10.0f * (deltaTime / 1000.0f);
-		if( enemyShipInstance->sceneInstance.location.y < -30.0f )
+		enemyShipInstance->sceneInstance.location.y -= movementSpeedPerSecond * (deltaTime / 1000.0f);
+		if( enemyShipInstance->sceneInstance.location.y < yKill )
 			return false;
 		return true;
 	}
 
+	constexpr float shipSize = 21.0f;
+
 	void CreateEnemyShip()
 	{
-		float xRand = ((float)std::rand()/ RAND_MAX) * 20.0f;
-		EnemyShipInstance enemyShip = { 5.0f, 5.0f, { glm::vec3( -10.0f + xRand, 25.0f, 2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), -2.0f } };
+		const float x = ((float)std::rand()/ RAND_MAX) * 150.0f -75.0f;
+		constexpr float y = 150.0f;
+		EnemyShipInstance enemyShip = { 5.0f, 5.0f, { glm::vec3( x, y, 2.0f ), defaultRotation, -shipSize } };
 		enemyShipSceneInstances.push_back( enemyShip );
 	}
 
 	void createBullet()
 	{
+		constexpr float bulletSize = 7.0f;
 		static bool left = false;
 		left ^= true;
 		const float xoffset = left ? -0.15f : 0.15f;
 		const glm::vec3 offset( xoffset, 0.0f, 0.0f );
-		BulletInstance bulletInstance = { 0.0f, 2000.0f, { shipSceneInstance.location + offset, shipSceneInstance.orientation, 0.5f } };
+		BulletInstance bulletInstance = { 0.0f, 2000.0f, { shipSceneInstance.location + offset, shipSceneInstance.orientation, bulletSize } };
 		bulletInstances.push_back( bulletInstance );
 	}
 
 	bool UpdateInstance( size_t deltaTime, BulletInstance* instance )
 	{
+		constexpr float bulletSpeedPerSecond = 150.0f;
+		constexpr float collisionSphereRayLenght = 10.0f;
 		instance->lifeTime += deltaTime;
 		if( instance->lifeTime > instance->maxLifetime )
 			return false;
-		instance->sceneInstance.location.y += 50.0f * (deltaTime / 1000.0f);
+		instance->sceneInstance.location.y += bulletSpeedPerSecond * (deltaTime / 1000.0f);
 		for( auto& enemyShipSceneInstance : enemyShipSceneInstances )
 		{
 			float dx = abs( enemyShipSceneInstance.sceneInstance.location.x - instance->sceneInstance.location.x );
 			float dy = abs( enemyShipSceneInstance.sceneInstance.location.y - instance->sceneInstance.location.y );
-			if( sqrt( dx*dx + dy * dy ) < 1.0f )
+			if( sqrt( dx*dx + dy * dy ) < collisionSphereRayLenght )
 			{
 				enemyShipSceneInstance.currentHealth -= 1.0f;
 				return false;
@@ -167,10 +178,10 @@ namespace Scene2DGame
 		instances.resize( aliveCount );
 	}
 
-	const float movementSpeed = 10.0f;
+	const float movementSpeedPerSecond = 100.0f;
 	float GetMovement( size_t frameDeltaTime )
 	{
-		return movementSpeed * ( frameDeltaTime / 1000.0f );
+		return movementSpeedPerSecond * ( frameDeltaTime / 1000.0f );
 	}
 
 	void ForwardCallback()
@@ -274,9 +285,8 @@ namespace Scene2DGame
 	std::vector<BackgroundInstance> CreateBackground()
 	{
 		std::vector<BackgroundInstance> backgroundTiles;
-		const float scale = 2.0f;
+		const float scale = 20.0f;
 		const float depth = 8.0f;
-		const float quadSize = 1.0f;
 		const float offset = scale*quadSize;
 		const int xTiles = 6;
 		const int yTiles = 8;
@@ -289,7 +299,9 @@ namespace Scene2DGame
 					asset = &riverBankAsset;
 				if( xIndex > 3 )
 					asset = &riverAsset;
-				backgroundTiles.push_back( { { glm::vec3( 0.0f + offset * xIndex, 0.0f + offset * yIndex, depth ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{ 0.0f, 1.0f, 0.0f } ), scale }, asset } );
+				float xPos = 0.0f + offset * xIndex;
+				float yPos = 0.0f + offset * yIndex;
+				backgroundTiles.push_back( { { glm::vec3( xPos, yPos, depth ), defaultRotation, scale }, asset } );
 			}
 
 		return backgroundTiles;
@@ -300,17 +312,17 @@ namespace Scene2DGame
 		std::vector<SceneInstance> clouds;
 		const float depth = 7.0f;
 
-		clouds.push_back( { glm::vec3( 1.0f, 2.0f, depth ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{ 0.0f, 1.0f, 0.0f } ), 2.0f } );
-		clouds.push_back( { glm::vec3( 10.0f, 4.0f, depth ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{ 0.0f, 1.0f, 0.0f } ), 2.0f } );
-		clouds.push_back( { glm::vec3( 5.0f, 5.0f, depth ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{ 0.0f, 1.0f, 0.0f } ), 2.0f } );
-		clouds.push_back( { glm::vec3( -5.0f, -10.0f, depth ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{ 0.0f, 1.0f, 0.0f } ), 2.0f } );
+		clouds.push_back( { glm::vec3( 1.0f, 2.0f, depth ), defaultRotation, 2.0f } );
+		clouds.push_back( { glm::vec3( 10.0f, 4.0f, depth ), defaultRotation, 2.0f } );
+		clouds.push_back( { glm::vec3( 5.0f, 5.0f, depth ), defaultRotation, 2.0f } );
+		clouds.push_back( { glm::vec3( -5.0f, -10.0f, depth ), defaultRotation, 2.0f } );
 
 		return clouds;
 	}
 
 	void Init()
 	{
-		WH::InitializeWindow( WIDTH, HEIGHT, "Wild Weasel: Vietnam" );
+		WH::InitializeWindow( WIDTH*2, HEIGHT*2, "Wild Weasel: Vietnam" );
 		VK::Initialize();
 		WH::VK::InitializeWindow();
 		VK::PickSuitablePhysicalDevice( WH::VK::_windowSurface );
@@ -348,7 +360,7 @@ namespace Scene2DGame
 		GfxImage* riverTexture = AL::LoadTexture( "river_texture", "assets/river.png" );
 		GfxImage* cloudTexture = AL::LoadTexture( "cloud_texture", "assets/cloud.png" );
 
-		GfxModel* quadModel = AL::CreateQuad( "Quad", 1.0f );
+		GfxModel* quadModel = AL::CreateQuad( "Quad", quadSize );
 
 		uint32_t shipTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, shipTexture, eSamplers::Point );
 		uint32_t bulletTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, bulletTexture, eSamplers::Point );
@@ -368,8 +380,8 @@ namespace Scene2DGame
 
 		CompileScene( &bindlessTexturesState );
 
-		shipSceneInstance = { glm::vec3( 0.0f, 0.0f, 2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 2.0f };
-		cameraSceneInstance = { glm::vec3( 0.0f, 0.0f, -2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 1.0f };
+		shipSceneInstance = { glm::vec3( 0.0f, 0.0f, 2.0f ), defaultRotation, shipSize };
+		cameraSceneInstance = { glm::vec3( 0.0f, 0.0f, -2.0f ), defaultRotation, 1.0f };
 		backgroundInstances = CreateBackground();
 		cloudInstances = CreateClouds();
 	}
