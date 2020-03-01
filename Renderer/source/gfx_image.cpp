@@ -50,33 +50,31 @@ void Load2DTexture( void * data, uint32_t width, uint32_t height, uint32_t miple
 	copyImageToDeviceLocalMemory( data, imageSize, width, height, 1, o_image.mipLevels, format, o_image.image );
 }
 
-void Load2DTextureFromFile( const char* filename, GfxImage& o_image )
+void Load2DTextureFromFile( const char* filename, GfxImage& o_image, I_ImageAlloctor* allocator )
 {
 	int texWidth, texHeight, channelCount;
 	stbi_uc* pixels = stbi_load( filename, &texWidth, &texHeight, &channelCount, STBI_rgb_alpha );
 	VkDeviceSize imageSize = texWidth * texHeight * 4;
 	o_image.extent = { (uint32_t)texWidth, (uint32_t)texHeight };
 	o_image.format = VK_FORMAT_R8G8B8A8_UNORM;
-	o_image.mipLevels = static_cast< uint32_t >(std::floor( std::log2( std::max( texWidth, texHeight ) ) )) + 1;
+	o_image.mipLevels = 1; /*static_cast< uint32_t >(std::floor( std::log2( std::max( texWidth, texHeight ) ) )) + 1;*/
 
 	if( !pixels )
 		throw std::runtime_error( "failed to load texture image!" );
 
 	//TODO: now it's also a src image because of the generating mip map. Perhaps we could change it back to only dst somehow?
-	create_image_simple( texWidth, texHeight, o_image.mipLevels, o_image.format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &o_image.image, &o_image.memory, &o_image.imageView );
-
-	create_image( texWidth, texHeight, o_image.mipLevels, o_image.format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, &o_image.image );
+	create_image( o_image.extent.width, o_image.extent.height, o_image.mipLevels, o_image.format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, &o_image.image );
 	MarkVkObject( ( uint64_t )o_image.image, VK_OBJECT_TYPE_IMAGE, filename );
 
-	//---- Allocator
-	AllocateMemory( o_image.image, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
-	BindMemory( o_image.image, o_image.memory );
-
-	copyImageToDeviceLocalMemory( pixels, imageSize, texWidth, texHeight, 1, o_image.mipLevels, o_image.format, o_image.image );
-	
+	allocator->Allocate( o_image.image );
+	allocator->UploadData( o_image, pixels );
 	stbi_image_free( pixels );
-	//-----
+
+	//TODO: get a buffer to copy our data straight into
+	/*void* mem = allocator->GetMemory();
+	memcpy( mem, pixels, imageSize );
+	stbi_image_free( pixels );
+	allocator->Flush( mem );*/
 
 	o_image.imageView = Create2DImageView( o_image.image, o_image.format, VK_IMAGE_ASPECT_COLOR_BIT, o_image.mipLevels );
 	MarkVkObject( ( uint64_t )o_image.imageView, VK_OBJECT_TYPE_IMAGE_VIEW, filename );
@@ -86,10 +84,9 @@ void DestroyImage( GfxImage& image )
 {
 	vkDestroyImageView( g_vk.device, image.imageView, nullptr );
 	vkDestroyImage( g_vk.device, image.image, nullptr );
-	vkFreeMemory( g_vk.device, image.memory, nullptr );
-	image.imageView = VK_NULL_HANDLE;
-	image.image = VK_NULL_HANDLE;
-	image.memory = VK_NULL_HANDLE;
+	if( image.memory ) //Images allocated on a heap don't have memory
+		vkFreeMemory( g_vk.device, image.memory, nullptr );
+	image = {};
 }
 
 void CreateSolidColorImage( glm::vec4 color, GfxImage* o_image )

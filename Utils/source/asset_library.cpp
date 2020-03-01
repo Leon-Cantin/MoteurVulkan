@@ -39,10 +39,10 @@ namespace AL
 		return modelSlot;
 	}
 
-	GfxImage* LoadTexture(const char* assetName, const char* assetPath)
+	GfxImage* LoadTexture(const char* assetName, const char* assetPath, I_ImageAlloctor* allocator )
 	{
 		GfxImage* image = AL_GetImageSlot( assetName );
-		Load2DTextureFromFile( assetPath, *image );
+		Load2DTextureFromFile( assetPath, *image, allocator );
 		return image;
 	}
 

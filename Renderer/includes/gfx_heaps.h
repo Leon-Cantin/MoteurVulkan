@@ -24,4 +24,12 @@ GfxHeap create_gfx_heap( size_t size, uint32_t memoryTypeBits, VkMemoryPropertyF
 
 	if( vkAllocateMemory( g_vk.device, &allocInfo, nullptr, &heap.memory ) != VK_SUCCESS )
 		throw std::runtime_error( "failed to allocate image memory!" );
+
+	return heap;
+}
+
+void destroy( GfxHeap* gfxHeap )
+{
+	vkFreeMemory( g_vk.device, gfxHeap->memory, nullptr );
+	*gfxHeap = {};
 }

@@ -7,6 +7,8 @@
 #include "tick_system.h"
 #include "asset_library.h"
 #include "window_handler_vk.h"
+#include "gfx_heaps.h"
+#include "gfx_heaps_batched_allocator.h"
 
 #include <glm/glm.hpp>
 #include <glm/vec4.hpp>
@@ -68,6 +70,9 @@ namespace Scene2DGame
 
 	glm::fquat defaultRotation = glm::angleAxis( glm::radians( 0.0f ), glm::vec3 { 0.0f, 1.0f, 0.0f } );
 	constexpr float quadSize = 1.0f;
+
+	GfxHeap imagesHeap;
+	GfxHeaps_BatchedAllocator imagesAllocator;
 
 	bool UpdateInstance( size_t deltaTime, EnemyShipInstance* enemyShipInstance )
 	{
@@ -351,14 +356,18 @@ namespace Scene2DGame
 		//Init renderer stuff
 		InitRendererImp( WH::VK::_windowSurface );
 
+		imagesHeap = create_gfx_heap( 16 * 1024 * 1024, 15, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
+		imagesAllocator = GfxHeaps_BatchedAllocator( &imagesHeap );
+		imagesAllocator.Prepare();
 		//LoadAssets
-		GfxImage* shipTexture = AL::LoadTexture( "shipTexture", "assets/F14.png" );
-		GfxImage* bulletTexture = AL::LoadTexture( "bullet_texture", "assets/bullet_small.png" );
+		GfxImage* shipTexture = AL::LoadTexture( "shipTexture", "assets/F14.png", &imagesAllocator );
+		GfxImage* bulletTexture = AL::LoadTexture( "bullet_texture", "assets/bullet_small.png", &imagesAllocator );
 		GfxImage* backgroundTexture = AL::CreateSolidColorTexture( "background_texture", { 0.0f, 0.1f, 0.8f, 1.0f } );
-		GfxImage* treeTexture = AL::LoadTexture( "tree_texture", "assets/tree.png" );
-		GfxImage* riverBankTexture = AL::LoadTexture( "river_bank_texture", "assets/river_bank.png");
-		GfxImage* riverTexture = AL::LoadTexture( "river_texture", "assets/river.png" );
-		GfxImage* cloudTexture = AL::LoadTexture( "cloud_texture", "assets/cloud.png" );
+		GfxImage* treeTexture = AL::LoadTexture( "tree_texture", "assets/tree.png", &imagesAllocator );
+		GfxImage* riverBankTexture = AL::LoadTexture( "river_bank_texture", "assets/river_bank.png", &imagesAllocator );
+		GfxImage* riverTexture = AL::LoadTexture( "river_texture", "assets/river.png", &imagesAllocator );
+		GfxImage* cloudTexture = AL::LoadTexture( "cloud_texture", "assets/cloud.png", &imagesAllocator );
+		imagesAllocator.Commit();
 
 		GfxModel* quadModel = AL::CreateQuad( "Quad", quadSize );
 
@@ -391,6 +400,8 @@ namespace Scene2DGame
 		CleanupRendererImp();
 
 		AL::Cleanup();
+
+		destroy( &imagesHeap );
 	}
 
 	void run() 

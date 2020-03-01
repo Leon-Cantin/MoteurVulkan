@@ -26,8 +26,15 @@ enum class eSamplers
 	Count
 };
 
+class I_ImageAlloctor
+{
+public:
+	virtual bool Allocate( VkImage image ) = 0;
+	virtual bool UploadData( const GfxImage& image, void* data ) = 0;
+};
+
 void Load3DTexture( const char* filename, GfxImage& o_image );
-void Load2DTextureFromFile( const char* filename, GfxImage& o_image );
+void Load2DTextureFromFile( const char* filename, GfxImage& o_image, I_ImageAlloctor* allocator );
 void Load2DTexture( void * data, uint32_t width, uint32_t height, uint32_t miplevels, uint32_t pixelByteSize, VkFormat format, GfxImage& o_image );
 void CreateSolidColorImage( glm::vec4 color, GfxImage* o_image );
 

@@ -9,12 +9,10 @@
 #include <algorithm>
 #include <stdexcept>
 
-void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount)
+void copyBufferToImage( VkCommandBuffer commandBuffer, VkBuffer buffer, uint32_t bufferOffset, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount )
 {
-	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
-
 	VkBufferImageCopy region = {};
-	region.bufferOffset = 0;
+	region.bufferOffset = bufferOffset;
 	region.bufferRowLength = 0;
 	region.bufferImageHeight = 0;
 
@@ -38,6 +36,14 @@ void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t 
 		1,
 		&region
 	);
+}
+
+
+void copyBufferToImageImmediate(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount)
+{
+	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+
+	copyBufferToImage( commandBuffer, buffer, 0 ,image, width, height, layerCount );
 
 	endSingleTimeCommands(commandBuffer);
 }
@@ -170,15 +176,14 @@ VkImageView Create2DImageView(VkImage image, VkFormat format, VkImageAspectFlags
 	return CreateImageView( image, format, VK_IMAGE_VIEW_TYPE_2D, aspectFlags, mipLevels );
 }
 
-void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels)
+void generateMipmaps( VkCommandBuffer commandBuffer, VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels )
 {
+	//TODO: Move that check somewhere else
 	// Check if image format supports linear blitting
 	VkFormatProperties formatProperties;
-	vkGetPhysicalDeviceFormatProperties(g_vk.physicalDevice, imageFormat, &formatProperties);
-	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
-		throw std::runtime_error("texture image format does not support linear blitting!");
-
-	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+	vkGetPhysicalDeviceFormatProperties( g_vk.physicalDevice, imageFormat, &formatProperties );
+	if( !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT) )
+		throw std::runtime_error( "texture image format does not support linear blitting!" );
 
 	VkImageMemoryBarrier barrier = {};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -196,18 +201,18 @@ void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int3
 	/*All mips should be in DST_OPTIMAL at the start
 	Turn the last mip into SRC_OPTIMAL to transfer from last to current
 	At the end it is changed to SHADER_READ_ONLY_OPTIMAL*/
-	for (uint32_t i = 1; i < mipLevels; ++i) {
+	for( uint32_t i = 1; i < mipLevels; ++i ) {
 		barrier.subresourceRange.baseMipLevel = i - 1;
 		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 		barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 
-		vkCmdPipelineBarrier(commandBuffer,
+		vkCmdPipelineBarrier( commandBuffer,
 			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
 			0, nullptr,
 			0, nullptr,
-			1, &barrier);
+			1, &barrier );
 
 		VkImageBlit blit = {};
 		blit.srcOffsets[0] = { 0, 0, 0 };
@@ -224,25 +229,25 @@ void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int3
 		blit.dstSubresource.baseArrayLayer = 0;
 		blit.dstSubresource.layerCount = 1;
 
-		vkCmdBlitImage(commandBuffer,
+		vkCmdBlitImage( commandBuffer,
 			image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 			image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			1, &blit,
-			VK_FILTER_LINEAR);
+			VK_FILTER_LINEAR );
 
 		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-		vkCmdPipelineBarrier(commandBuffer,
+		vkCmdPipelineBarrier( commandBuffer,
 			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
 			0, nullptr,
 			0, nullptr,
-			1, &barrier);
+			1, &barrier );
 
-		if (mipWidth > 1) mipWidth /= 2;
-		if (mipHeight > 1) mipHeight /= 2;
+		if( mipWidth > 1 ) mipWidth /= 2;
+		if( mipHeight > 1 ) mipHeight /= 2;
 	}
 
 	//Transition the last one
@@ -252,11 +257,18 @@ void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int3
 	barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 	barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-	vkCmdPipelineBarrier(commandBuffer,
+	vkCmdPipelineBarrier( commandBuffer,
 		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
 		0, nullptr,
 		0, nullptr,
-		1, &barrier);
+		1, &barrier );
+}
+
+void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels)
+{
+	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+
+	generateMipmaps( commandBuffer, image, imageFormat, texWidth, texHeight, mipLevels );
 
 	endSingleTimeCommands(commandBuffer);
 }
@@ -387,20 +399,25 @@ void copyImageToDeviceLocalMemory(void* pixels, VkDeviceSize imageSize, uint32_t
 {
 	//TODO: Is using staging buffer for texture also better on AMD?
 	GpuBuffer stagingBuffer;
+	const size_t bufferOffset = 0;
 
 	CreateCommitedGpuBuffer( imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer );
 
-	UpdateGpuBuffer( &stagingBuffer, pixels, imageSize, 0 );
+	UpdateGpuBuffer( &stagingBuffer, pixels, imageSize, bufferOffset );
 
-	transitionImageLayout( image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevel, layerCount );
-	copyBufferToImage( stagingBuffer.buffer, image, texWidth, texHeight, layerCount );
+	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+
+	transitionImageLayout( commandBuffer, image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevel, layerCount );
+	copyBufferToImage( commandBuffer, stagingBuffer.buffer, bufferOffset, image, texWidth, texHeight, layerCount );
 
 	//TODO: mem requirement will be computed by memRequirement in create_image... I hope it's right
 	//GenerateMipmaps will do the transition, do it if we don't generate them
 	if (mipLevel > 1)
-		generateMipmaps(image, format, texWidth, texHeight, mipLevel);
+		generateMipmaps( commandBuffer, image, format, texWidth, texHeight, mipLevel);//TODO: should probably not be done here
 	else
-		transitionImageLayout(image, format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevel, layerCount);
+		transitionImageLayout( commandBuffer, image, format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevel, layerCount);
+
+	endSingleTimeCommands( commandBuffer );
 
 	DestroyCommitedGpuBuffer( &stagingBuffer );
 }
