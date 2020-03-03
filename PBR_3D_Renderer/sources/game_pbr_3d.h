@@ -23,8 +23,8 @@ namespace Scene2DGame
 {
 	uint32_t current_frame = 0;
 
-	const int WIDTH = 800;
-	const int HEIGHT = 600;
+	const int VIEWPORT_WIDTH = 800;
+	const int VIEWPORT_HEIGHT = 600;
 
 	SceneInstance planeSceneInstance;
 	GfxAsset planeRenderable;
@@ -129,7 +129,7 @@ namespace Scene2DGame
 
 	void Init()
 	{
-		WH::InitializeWindow( WIDTH, HEIGHT, "2D game" );
+		WH::InitializeWindow( VIEWPORT_WIDTH, VIEWPORT_HEIGHT, "2D game" );
 		VK::Initialize();
 		WH::VK::InitializeWindow();
 		VK::PickSuitablePhysicalDevice( WH::VK::_windowSurface );

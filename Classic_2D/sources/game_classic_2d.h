@@ -25,8 +25,11 @@ namespace Scene2DGame
 {
 	uint32_t current_frame = 0;
 
-	const int WIDTH = 224;
-	const int HEIGHT = 384;
+	const int VIEWPORT_WIDTH = 224;
+	const int VIEWPORT_HEIGHT = 384;
+	const int SCREEN_SCALE = 2;
+	const int SCREEN_WIDTH = VIEWPORT_WIDTH * SCREEN_SCALE;
+	const int SCREEN_HEIGHT = VIEWPORT_HEIGHT * SCREEN_SCALE;
 
 	struct EnemyShipInstance
 	{
@@ -56,12 +59,13 @@ namespace Scene2DGame
 	SceneInstance cameraSceneInstance;
 
 	GfxAsset shipRenderable;
-	GfxAsset backgroundAsset;
 	GfxAsset bulletRenderable;
 	GfxAsset treeAsset;
 	GfxAsset riverBankAsset;
 	GfxAsset riverAsset;
 	GfxAsset cloudAsset;
+	GfxAsset background_sprite_sheet_asset;
+	GfxModel backgroundModel;
 
 	BindlessTexturesState bindlessTexturesState;
 
@@ -72,7 +76,6 @@ namespace Scene2DGame
 	constexpr float quadSize = 1.0f;
 
 	GfxHeap imagesHeap;
-	GfxHeaps_BatchedAllocator imagesAllocator;
 
 	bool UpdateInstance( size_t deltaTime, EnemyShipInstance* enemyShipInstance )
 	{
@@ -287,29 +290,102 @@ namespace Scene2DGame
 		return asset;
 	}
 
-	std::vector<BackgroundInstance> CreateBackground()
+	static void GenerateQuadMegaTextureUVs( const uint32_t x_index, const uint32_t y_index, const uint32_t num_sprites_x, const uint32_t num_sprites_y,
+		glm::vec2* ll, glm::vec2* lr, glm::vec2* ur, glm::vec2* ul )
 	{
-		std::vector<BackgroundInstance> backgroundTiles;
-		const float scale = 20.0f;
+		float left = 1.0f / ( float )num_sprites_x * ( float )x_index;
+		float right = 1.0f / ( float )num_sprites_x * ( float )(x_index + 1);
+		float upper = 1.0f / ( float )num_sprites_y * ( float )y_index;
+		float lower = 1.0f / ( float )num_sprites_y * ( float )(y_index + 1);
+		*ll = { left, lower };
+		*lr = { right, lower };
+		*ur = { right, upper };
+		*ul = { left, upper };
+	}
+
+	typedef uint32_t Index_t;
+	GfxModel CreateBackgroundGfxModel( const uint32_t screen_width, const uint32_t screen_height )
+	{
+		const unsigned int sprite_size = 20;
+		const unsigned int num_sprites_x = 2;
+		const unsigned int num_sprites_y = 2;
+		const unsigned int river_bank_index = 0;
+		const unsigned int river_index = 1;
+		const unsigned int forest_index = 2;
 		const float depth = 8.0f;
-		const float offset = scale*quadSize;
-		const int xTiles = 6;
-		const int yTiles = 8;
+		const float offset = 1.0f;//Let's all have them 1 unit and scale at render time
+		const int tiles_count_x = screen_width / sprite_size + 1;
+		const int tiles_count_y = screen_height / sprite_size + 1;
 
-		for( int xIndex = -xTiles; xIndex < xTiles; ++xIndex )
-			for( int yIndex = -yTiles; yIndex < yTiles; ++yIndex )
+		const unsigned int vertices_per_quad = 4;
+		const unsigned int total_vertices = vertices_per_quad * tiles_count_x * tiles_count_y;
+		std::vector<glm::vec3> vertices_pos;
+		vertices_pos.resize( total_vertices );
+		std::vector<glm::vec3> vertices_color;
+		vertices_color.resize( total_vertices );
+		std::vector<glm::vec2> vertices_uv;
+		vertices_uv.resize( total_vertices );
+
+		const unsigned int index_per_quad = 6;
+		const unsigned int total_indices = index_per_quad * tiles_count_x * tiles_count_y;
+		std::vector<Index_t> indices;
+		indices.resize( total_indices );
+
+		for( unsigned int y = 0; y < tiles_count_y; ++y )
+		{
+			for( unsigned int x = 0; x < tiles_count_x; ++x )
 			{
-				GfxAsset* asset = &treeAsset;
-				if( xIndex > 2 )
-					asset = &riverBankAsset;
-				if( xIndex > 3 )
-					asset = &riverAsset;
-				float xPos = 0.0f + offset * xIndex;
-				float yPos = 0.0f + offset * yIndex;
-				backgroundTiles.push_back( { { glm::vec3( xPos, yPos, depth ), defaultRotation, scale }, asset } );
-			}
+				uint32_t mega_texture_index = forest_index;
+				if( x > 2 )
+					mega_texture_index = river_bank_index;
+				if( x > 3 )
+					mega_texture_index = river_index;
 
-		return backgroundTiles;
+				const unsigned int mega_texture_y_index = mega_texture_index / num_sprites_x;
+				const unsigned int mega_texture_x_index = mega_texture_index % num_sprites_x;
+
+				const unsigned int array_offset = (x + tiles_count_x * y);
+				const unsigned int vertices_array_offset = array_offset * vertices_per_quad;//TODO: probably wrapping around on y reset
+				vertices_pos[vertices_array_offset + 0] = { x*offset, y*offset, 0.0f };
+				vertices_pos[vertices_array_offset + 1] = { x*offset + offset, y*offset, 0.0f };
+				vertices_pos[vertices_array_offset + 2] = { x*offset + offset, y*offset + offset, 0.0f };
+				vertices_pos[vertices_array_offset + 3] = { x*offset, y*offset + offset, 0.0f };
+
+				vertices_color[vertices_array_offset + 0] = { 1.0f, 0.0f, 0.0f };
+				vertices_color[vertices_array_offset + 1] = { 0.0f, 1.0f, 0.0f };
+				vertices_color[vertices_array_offset + 2] = { 0.0f, 0.0f, 1.0f };
+				vertices_color[vertices_array_offset + 3] = { 1.0f, 1.0f, 1.0f };
+
+				GenerateQuadMegaTextureUVs( mega_texture_x_index, mega_texture_y_index, num_sprites_x, num_sprites_y,
+					&vertices_uv[vertices_array_offset + 0],
+					&vertices_uv[vertices_array_offset + 1],
+					&vertices_uv[vertices_array_offset + 2],
+					&vertices_uv[vertices_array_offset + 3]
+					);
+
+				const unsigned int index_array_offset = array_offset * index_per_quad;
+				indices[index_array_offset + 0] = vertices_array_offset + 0;
+				indices[index_array_offset + 1] = vertices_array_offset + 1;
+				indices[index_array_offset + 2] = vertices_array_offset + 2;
+				indices[index_array_offset + 3] = vertices_array_offset + 2;
+				indices[index_array_offset + 4] = vertices_array_offset + 3;
+				indices[index_array_offset + 5] = vertices_array_offset + 0;
+			}
+		}
+
+		std::vector<VIDesc> modelVIDescs = {
+			{ eVIDataType::POSITION, eVIDataElementType::FLOAT, 3 },
+			{ eVIDataType::COLOR, eVIDataElementType::FLOAT, 3 },
+			{ eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2 },
+		};
+
+		std::vector<void*> modelData = {
+			vertices_pos.data(),
+			vertices_color.data(),
+			vertices_uv.data(),
+		};
+
+		return CreateGfxModel( modelVIDescs, modelData, total_vertices, indices.data(), total_indices, sizeof( Index_t ) );
 	}
 
 	std::vector<SceneInstance> CreateClouds()
@@ -317,17 +393,17 @@ namespace Scene2DGame
 		std::vector<SceneInstance> clouds;
 		const float depth = 7.0f;
 
-		clouds.push_back( { glm::vec3( 1.0f, 2.0f, depth ), defaultRotation, 2.0f } );
-		clouds.push_back( { glm::vec3( 10.0f, 4.0f, depth ), defaultRotation, 2.0f } );
-		clouds.push_back( { glm::vec3( 5.0f, 5.0f, depth ), defaultRotation, 2.0f } );
-		clouds.push_back( { glm::vec3( -5.0f, -10.0f, depth ), defaultRotation, 2.0f } );
+		clouds.push_back( { glm::vec3( 100.0f, 200.0f, depth ), defaultRotation, 20.0f } );
+		clouds.push_back( { glm::vec3( 100.0f, 40.0f, depth ), defaultRotation, 20.0f } );
+		clouds.push_back( { glm::vec3( 50.0f, 50.0f, depth ), defaultRotation, 20.0f } );
+		clouds.push_back( { glm::vec3( -50.0f, -100.0f, depth ), defaultRotation, 20.0f } );
 
 		return clouds;
 	}
 
 	void Init()
 	{
-		WH::InitializeWindow( WIDTH*2, HEIGHT*2, "Wild Weasel: Vietnam" );
+		WH::InitializeWindow( SCREEN_WIDTH, SCREEN_HEIGHT, "Wild Weasel: Vietnam" );
 		VK::Initialize();
 		WH::VK::InitializeWindow();
 		VK::PickSuitablePhysicalDevice( WH::VK::_windowSurface );
@@ -356,42 +432,44 @@ namespace Scene2DGame
 		//Init renderer stuff
 		InitRendererImp( WH::VK::_windowSurface );
 
-		imagesHeap = create_gfx_heap( 16 * 1024 * 1024, 15, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
-		imagesAllocator = GfxHeaps_BatchedAllocator( &imagesHeap );
-		imagesAllocator.Prepare();
 		//LoadAssets
+		uint32_t memoryTypeMask = 15;/*TODO this works for now for textures, comes from asking VK for a textures*/
+		imagesHeap = create_gfx_heap( 16 * 1024 * 1024, memoryTypeMask, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
+		GfxHeaps_BatchedAllocator imagesAllocator( &imagesHeap );
+		imagesAllocator.Prepare();		
 		GfxImage* shipTexture = AL::LoadTexture( "shipTexture", "assets/F14.png", &imagesAllocator );
 		GfxImage* bulletTexture = AL::LoadTexture( "bullet_texture", "assets/bullet_small.png", &imagesAllocator );
-		GfxImage* backgroundTexture = AL::CreateSolidColorTexture( "background_texture", { 0.0f, 0.1f, 0.8f, 1.0f } );
 		GfxImage* treeTexture = AL::LoadTexture( "tree_texture", "assets/tree.png", &imagesAllocator );
 		GfxImage* riverBankTexture = AL::LoadTexture( "river_bank_texture", "assets/river_bank.png", &imagesAllocator );
 		GfxImage* riverTexture = AL::LoadTexture( "river_texture", "assets/river.png", &imagesAllocator );
 		GfxImage* cloudTexture = AL::LoadTexture( "cloud_texture", "assets/cloud.png", &imagesAllocator );
+		GfxImage* background_sprite_sheet = AL::LoadTexture( "background_sprite_sheet", "assets/ground_spritesheet.png", &imagesAllocator );
 		imagesAllocator.Commit();
 
 		GfxModel* quadModel = AL::CreateQuad( "Quad", quadSize );
 
 		uint32_t shipTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, shipTexture, eSamplers::Point );
 		uint32_t bulletTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, bulletTexture, eSamplers::Point );
-		uint32_t backgroundTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, backgroundTexture, eSamplers::Point );
 		uint32_t treeTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, treeTexture, eSamplers::Point );
 		uint32_t riverBankTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, riverBankTexture, eSamplers::Point );
 		uint32_t riverTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, riverTexture, eSamplers::Point );
 		uint32_t cloudTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, cloudTexture, eSamplers::Point );
+		uint32_t background_sprite_sheet_index = RegisterBindlessTexture( &bindlessTexturesState, background_sprite_sheet, eSamplers::Point );
 
 		shipRenderable = CreateGfxAsset( quadModel, shipTextureIndex );
 		bulletRenderable = CreateGfxAsset( quadModel, bulletTextureIndex );
-		backgroundAsset = CreateGfxAsset( quadModel, backgroundTextureIndex );
 		treeAsset = CreateGfxAsset( quadModel, treeTextureIndex );
 		riverBankAsset = CreateGfxAsset( quadModel, riverBankTextureIndex );
 		riverAsset = CreateGfxAsset( quadModel, riverTextureIndex );
 		cloudAsset = CreateGfxAsset( quadModel, cloudTextureIndex );
+		backgroundModel = CreateBackgroundGfxModel( VIEWPORT_WIDTH, VIEWPORT_HEIGHT );//TODO: move this to asset library
+		background_sprite_sheet_asset = CreateGfxAsset( &backgroundModel, background_sprite_sheet_index );
 
 		CompileScene( &bindlessTexturesState );
 
 		shipSceneInstance = { glm::vec3( 0.0f, 0.0f, 2.0f ), defaultRotation, shipSize };
 		cameraSceneInstance = { glm::vec3( 0.0f, 0.0f, -2.0f ), defaultRotation, 1.0f };
-		backgroundInstances = CreateBackground();
+		backgroundInstances.push_back( { { glm::vec3( -VIEWPORT_WIDTH/2.0f, -VIEWPORT_HEIGHT/2.0f, 8.0f ), defaultRotation, 20.0f }, &background_sprite_sheet_asset } );
 		cloudInstances = CreateClouds();
 	}
 

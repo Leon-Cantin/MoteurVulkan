@@ -139,7 +139,7 @@ static void createPointSampler( VkSampler* o_sampler )
 	if( vkCreateSampler( g_vk.device, &samplerInfo, nullptr, o_sampler ) != VK_SUCCESS )
 		throw std::runtime_error( "failed to create texture sampler!" );
 
-	MarkVkObject( ( uint64_t )*o_sampler, VK_OBJECT_TYPE_SAMPLER, "trilinear sampler" );
+	MarkVkObject( ( uint64_t )*o_sampler, VK_OBJECT_TYPE_SAMPLER, "point sampler" );
 }
 
 static void createTriLinearSampler( VkSampler* o_sampler )
