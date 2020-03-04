@@ -97,9 +97,19 @@ namespace Scene2DGame
 	void CreateEnemyShip()
 	{
 		const float x = ((float)std::rand()/ RAND_MAX) * 150.0f -75.0f;
-		constexpr float y = 150.0f;
+		constexpr float y = 200.0f;
 		EnemyShipInstance enemyShip = { 5.0f, 5.0f, { glm::vec3( x, y, 2.0f ), defaultRotation, -shipSize } };
 		enemyShipSceneInstances.push_back( enemyShip );
+	}
+
+	void CreateCloud()
+	{
+		//TODO: reuse variables
+		const float x = (( float )std::rand() / RAND_MAX) * 150.0f - 75.0f;
+		const float size = (( float )std::rand() / RAND_MAX) * 10.0f + 10.0f;
+		constexpr float y = 200.0f;
+		SceneInstance instance = { glm::vec3( x, y, 7.0f ), defaultRotation, size };
+		cloudInstances.push_back( instance );
 	}
 
 	void createBullet()
@@ -107,7 +117,8 @@ namespace Scene2DGame
 		constexpr float bulletSize = 7.0f;
 		static bool left = false;
 		left ^= true;
-		const float xoffset = left ? -0.15f : 0.15f;
+		const float bullet_offset = 2.0f;
+		const float xoffset = left ? -bullet_offset : bullet_offset;
 		const glm::vec3 offset( xoffset, 0.0f, 0.0f );
 		BulletInstance bulletInstance = { 0.0f, 2000.0f, { shipSceneInstance.location + offset, shipSceneInstance.orientation, bulletSize } };
 		bulletInstances.push_back( bulletInstance );
@@ -131,6 +142,17 @@ namespace Scene2DGame
 				return false;
 			}
 		}
+		return true;
+	}
+
+	//For clouds
+	bool UpdateInstance( size_t deltaTime, SceneInstance* instance )
+	{
+		constexpr float movementSpeedPerSecond = 100.0f;
+		constexpr float yKill = -200.0f;
+		instance->location.y -= movementSpeedPerSecond * (deltaTime / 1000.0f);
+		if( instance->location.y < yKill )
+			return false;
 		return true;
 	}
 
@@ -237,6 +259,14 @@ namespace Scene2DGame
 		return textZones;
 	}
 
+	void UpdateBackgroundScrolling( float frame_delta_time)
+	{
+		const float movement_speed = 200.0f;
+		backgroundInstances[0].instance.location.y -= movement_speed * (frame_delta_time / 1000.0f);
+		if( backgroundInstances[0].instance.location.y < ( -VIEWPORT_HEIGHT / 2.0f - 20.0f ) )
+			backgroundInstances[0].instance.location.y = -VIEWPORT_HEIGHT / 2.0f;
+	}
+
 	void mainLoop() {
 		while (!WH::shouldClose())
 		{
@@ -255,14 +285,18 @@ namespace Scene2DGame
 			if( lastSpawn == 0 || currentTime - lastSpawn > 1000 )
 			{
 				CreateEnemyShip();
+				CreateCloud();
 				lastSpawn = currentTime;
 			}
 
+			UpdateBackgroundScrolling( frameDeltaTime );
+
 			//Update objects
-			TickUpdate( frameDeltaTime );
+			//TickUpdate( frameDeltaTime );
 
 			UpdateInstanceList( bulletInstances, frameDeltaTime );
 			UpdateInstanceList( enemyShipSceneInstances, frameDeltaTime );
+			UpdateInstanceList( cloudInstances, frameDeltaTime );
 
 			std::vector<GfxAssetInstance> drawList = { { &shipRenderable, shipSceneInstance, false } };
 			for( BackgroundInstance& i : backgroundInstances )
@@ -315,7 +349,7 @@ namespace Scene2DGame
 		const float depth = 8.0f;
 		const float offset = 1.0f;//Let's all have them 1 unit and scale at render time
 		const int tiles_count_x = screen_width / sprite_size + 1;
-		const int tiles_count_y = screen_height / sprite_size + 1;
+		const int tiles_count_y = screen_height / sprite_size + 2;
 
 		const unsigned int vertices_per_quad = 4;
 		const unsigned int total_vertices = vertices_per_quad * tiles_count_x * tiles_count_y;
