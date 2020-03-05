@@ -23,8 +23,17 @@ struct PerFrameBuffer
 	VkDeviceSize stride;
 };
 
+class I_BufferAllocator
+{
+public:
+	virtual bool Allocate( VkBuffer buffer ) = 0;
+	virtual bool UploadData( const GpuBuffer& buffer, const void* data ) = 0;
+};
+
+VkBuffer create_buffer( VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags );
 void CreateCommitedGpuBuffer( VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags, VkMemoryPropertyFlags memoryProperties, GpuBuffer* o_buffer );
 void CopyBufferImmediate(VkBuffer dstBuffer, VkBuffer srcBuffer, VkDeviceSize size);
+void copy_buffer( VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkBuffer srcBuffer, VkDeviceSize dst_offset, VkDeviceSize src_offset, VkDeviceSize size );
 void copy_buffer(VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkBuffer srcBuffer, VkDeviceSize size);
 void createBufferToDeviceLocalMemory(VkDeviceSize bufferSize, VkBufferUsageFlags usageFlags, VkBuffer* o_buffer, VkDeviceMemory* o_VkDeviceMemory);
 void createBufferToDeviceLocalMemory(const void* data, VkDeviceSize bufferSize, VkBufferUsageFlags usageFlags, VkBuffer* o_buffer, VkDeviceMemory* o_VkDeviceMemory);

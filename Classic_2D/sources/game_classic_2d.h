@@ -65,7 +65,6 @@ namespace Scene2DGame
 	GfxAsset riverAsset;
 	GfxAsset cloudAsset;
 	GfxAsset background_sprite_sheet_asset;
-	GfxModel backgroundModel;
 
 	BindlessTexturesState bindlessTexturesState;
 
@@ -338,7 +337,7 @@ namespace Scene2DGame
 	}
 
 	typedef uint32_t Index_t;
-	GfxModel CreateBackgroundGfxModel( const uint32_t screen_width, const uint32_t screen_height )
+	GfxModel CreateBackgroundGfxModel( const uint32_t screen_width, const uint32_t screen_height, I_BufferAllocator* allocator )
 	{
 		const unsigned int sprite_size = 20;
 		const unsigned int num_sprites_x = 2;
@@ -419,7 +418,7 @@ namespace Scene2DGame
 			vertices_uv.data(),
 		};
 
-		return CreateGfxModel( modelVIDescs, modelData, total_vertices, indices.data(), total_indices, sizeof( Index_t ) );
+		return CreateGfxModel( modelVIDescs, modelData, total_vertices, indices.data(), total_indices, sizeof( Index_t ), allocator );
 	}
 
 	std::vector<SceneInstance> CreateClouds()
@@ -477,10 +476,11 @@ namespace Scene2DGame
 		GfxImage* riverBankTexture = AL::LoadTexture( "river_bank_texture", "assets/river_bank.png", &imagesAllocator );
 		GfxImage* riverTexture = AL::LoadTexture( "river_texture", "assets/river.png", &imagesAllocator );
 		GfxImage* cloudTexture = AL::LoadTexture( "cloud_texture", "assets/cloud.png", &imagesAllocator );
-		GfxImage* background_sprite_sheet = AL::LoadTexture( "background_sprite_sheet", "assets/ground_spritesheet.png", &imagesAllocator );
-		imagesAllocator.Commit();
+		GfxImage* background_sprite_sheet = AL::LoadTexture( "background_sprite_sheet", "assets/ground_spritesheet.png", &imagesAllocator );		
 
-		GfxModel* quadModel = AL::CreateQuad( "Quad", quadSize );
+		GfxModel* quadModel = AL::CreateQuad( "Quad", quadSize, &imagesAllocator );
+		GfxModel* backgroundModel = AL::RegisterGfxModel( "background", CreateBackgroundGfxModel( VIEWPORT_WIDTH, VIEWPORT_HEIGHT, &imagesAllocator ));
+		imagesAllocator.Commit();
 
 		uint32_t shipTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, shipTexture, eSamplers::Point );
 		uint32_t bulletTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, bulletTexture, eSamplers::Point );
@@ -495,9 +495,8 @@ namespace Scene2DGame
 		treeAsset = CreateGfxAsset( quadModel, treeTextureIndex );
 		riverBankAsset = CreateGfxAsset( quadModel, riverBankTextureIndex );
 		riverAsset = CreateGfxAsset( quadModel, riverTextureIndex );
-		cloudAsset = CreateGfxAsset( quadModel, cloudTextureIndex );
-		backgroundModel = CreateBackgroundGfxModel( VIEWPORT_WIDTH, VIEWPORT_HEIGHT );//TODO: move this to asset library
-		background_sprite_sheet_asset = CreateGfxAsset( &backgroundModel, background_sprite_sheet_index );
+		cloudAsset = CreateGfxAsset( quadModel, cloudTextureIndex );	
+		background_sprite_sheet_asset = CreateGfxAsset( backgroundModel, background_sprite_sheet_index );
 
 		CompileScene( &bindlessTexturesState );
 

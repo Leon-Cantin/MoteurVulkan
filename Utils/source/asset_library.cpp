@@ -62,27 +62,34 @@ namespace AL
 		return colorImage;
 	}
 
-	GfxModel* Load3DModel(const char* assetName, const char* assetPath, uint32_t hackIndex)
+	GfxModel* Load3DModel (const char* assetName, const char* assetPath, uint32_t hackIndex, I_BufferAllocator* allocator )
 	{
-		GfxModel* modelAsset = AL_GetModelSlot(assetName);
-		LoadModel_AssImp(assetPath, *modelAsset, hackIndex);
+		GfxModel* modelAsset = AL_GetModelSlot( assetName );
+		LoadModel_AssImp( assetPath, *modelAsset, hackIndex, allocator );
 
 		return modelAsset;
 	}
 
-	GfxModel* LoadglTf3DModel( const char* assetName, const char* assetPath )
+	GfxModel* LoadglTf3DModel( const char* assetName, const char* assetPath, I_BufferAllocator* allocator )
 	{
 		GfxModel* modelAsset = AL_GetModelSlot( assetName );
-		glTF_L::LoadMesh( assetPath, modelAsset);
+		glTF_L::LoadMesh( assetPath, modelAsset, allocator );
 
 		return modelAsset;
 	}
 
-	GfxModel* CreateQuad( const char* assetName, float size )
+	GfxModel* CreateQuad( const char* assetName, float size, I_BufferAllocator* allocator )
 	{
 		GfxModel* modelAsset = AL_GetModelSlot( assetName );
-		*modelAsset = GenerateQuad( size );
+		*modelAsset = GenerateQuad( size, allocator );
 
+		return modelAsset;
+	}
+
+	GfxModel* RegisterGfxModel( const char* asset_name, GfxModel&& model )
+	{
+		GfxModel* modelAsset = AL_GetModelSlot( asset_name );
+		*modelAsset = model;
 		return modelAsset;
 	}
 

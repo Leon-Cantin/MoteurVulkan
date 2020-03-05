@@ -156,7 +156,7 @@ namespace glTF_L
 		return *reinterpret_cast< const T* >(&ptr[(index * TYPE_ELEMENT_COUNTS[type] + elementIndex) * COMPONENT_TYPE_SIZES[componentType]]);
 	};
 
-	void LoadMesh( const char* fileName, GfxModel* model )
+	void LoadMesh( const char* fileName, GfxModel* model, I_BufferAllocator* allocator )
 	{
 		std::fstream fs( fileName, std::fstream::in | std::fstream::binary );
 
@@ -270,6 +270,6 @@ namespace glTF_L
 			vertTexCoord.data(),
 		};
 
-		*model = CreateGfxModel( modelVIDescs, modelData, vertexCount, indexes_32.data(), indexCount, sizeof(uint32_t) );
+		*model = CreateGfxModel( modelVIDescs, modelData, vertexCount, indexes_32.data(), indexCount, sizeof(uint32_t), allocator );
 	}
 }

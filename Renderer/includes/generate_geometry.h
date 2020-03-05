@@ -12,7 +12,7 @@ typedef uint32_t Index_t;
 const uint32_t verticesPerQuad = 4;
 const uint32_t indexesPerQuad = 6;
 
-GfxModel GenerateQuad( float size )
+GfxModel GenerateQuad( float size, I_BufferAllocator* allocator )
 {
 	std::vector<glm::vec3> text_vertices_pos;
 	text_vertices_pos.resize( verticesPerQuad );
@@ -60,5 +60,5 @@ GfxModel GenerateQuad( float size )
 		text_vertices_uv.data(),
 	};
 
-	return CreateGfxModel( modelVIDescs, modelData, verticesPerQuad, text_indices.data(), indexesPerQuad, sizeof( Index_t ) );
+	return CreateGfxModel( modelVIDescs, modelData, verticesPerQuad, text_indices.data(), indexesPerQuad, sizeof( Index_t ), allocator );
 }

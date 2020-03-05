@@ -51,5 +51,5 @@ struct GfxModel
 GfxModelVertexInput* GetVertexInput( GfxModel& gfxModel, eVIDataType dataType );
 const GfxModelVertexInput* GetVertexInput( const GfxModel& gfxModel, eVIDataType dataType );
 GfxModel CreateGfxModel( const std::vector<VIDesc>& viDescs, size_t vertexCount, size_t indiceCount, uint8_t indexTypeSize );
-GfxModel CreateGfxModel( const std::vector<VIDesc>& viDescs, const std::vector<void*>& data, size_t vertexCount, const void* indicesData, size_t indiceCount, uint8_t indexTypeSize );
+GfxModel CreateGfxModel( const std::vector<VIDesc>& viDescs, const std::vector<void*>& data, size_t vertexCount, const void* indicesData, size_t indiceCount, uint8_t indexTypeSize, I_BufferAllocator* allocator );
 void DestroyGfxModel(GfxModel& o_modelAsset);

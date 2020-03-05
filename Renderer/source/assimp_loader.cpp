@@ -6,7 +6,7 @@
 
 #include <vector>
 
-void LoadModel_AssImp( const char * filename, GfxModel& o_modelAsset, size_t hackModelIndex )
+void LoadModel_AssImp( const char * filename, GfxModel& o_modelAsset, size_t hackModelIndex, I_BufferAllocator* allocator )
 {
 	Assimp::Importer importer;
 	const aiScene* scene = importer.ReadFile( filename,
@@ -61,5 +61,5 @@ void LoadModel_AssImp( const char * filename, GfxModel& o_modelAsset, size_t hac
 		vertTexCoord.data(),
 	};
 
-	o_modelAsset = CreateGfxModel( modelVIDescs, modelData, mesh->mNumVertices, indices.data(), indexCount, sizeof(uint32_t) );
+	o_modelAsset = CreateGfxModel( modelVIDescs, modelData, mesh->mNumVertices, indices.data(), indexCount, sizeof(uint32_t), allocator );
 }

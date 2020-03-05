@@ -8,7 +8,7 @@
 #include "vk_commands.h"
 #include <cassert>
 
-class GfxHeaps_BatchedAllocator : public I_ImageAlloctor
+class GfxHeaps_BatchedAllocator : public I_ImageAlloctor, public I_BufferAllocator
 {
 public:
 	GfxHeaps_BatchedAllocator();
@@ -16,8 +16,14 @@ public:
 	void Prepare();
 	void Commit();
 
+	//Image allocator
 	bool Allocate( VkImage image );
-	bool UploadData( const GfxImage& image, void* data );
+	bool UploadData( const GfxImage& image, const void* data );
+
+	//Buffer allocator
+	bool Allocate( VkBuffer buffer );
+	bool UploadData( const GpuBuffer& buffer, const void* data );
+
 private:
 	GfxHeap* _heap;
 	size_t head;
@@ -70,7 +76,7 @@ bool GfxHeaps_BatchedAllocator::Allocate( VkImage image )
 	return true;
 }
 
-bool GfxHeaps_BatchedAllocator::UploadData( const GfxImage& gfxImage, void* data )
+bool GfxHeaps_BatchedAllocator::UploadData( const GfxImage& gfxImage, const void* data )
 {
 	assert( gfxImage.format == VK_FORMAT_R8G8B8A8_UNORM ); //assuming 32bits per pixel
 	const VkDeviceSize memorySize = gfxImage.extent.width * gfxImage.extent.height * 4;
@@ -88,6 +94,34 @@ bool GfxHeaps_BatchedAllocator::UploadData( const GfxImage& gfxImage, void* data
 		generateMipmaps( commandBuffer, gfxImage.image, gfxImage.format, gfxImage.extent.width, gfxImage.extent.height, gfxImage.mipLevels );//TODO: should probably not be done here
 	else
 		transitionImageLayout( commandBuffer, gfxImage.image, gfxImage.format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, gfxImage.mipLevels, layerCount );
+
+	return true;
+}
+
+bool GfxHeaps_BatchedAllocator::Allocate( VkBuffer buffer )
+{
+	VkMemoryRequirements memRequirements;
+	vkGetBufferMemoryRequirements( g_vk.device, buffer, &memRequirements );
+
+	assert( IsRequiredMemoryType( memRequirements.memoryTypeBits, _heap->memoryTypeIndex ) );
+
+	const size_t alignementOffset = memRequirements.alignment - (head % memRequirements.alignment);
+	const size_t memOffset = head + alignementOffset;
+	const size_t newHead = memOffset + memRequirements.size;
+
+	vkBindBufferMemory( g_vk.device, buffer, _heap->memory, memOffset );
+
+	head = newHead;
+
+	return true;
+}
+
+bool GfxHeaps_BatchedAllocator::UploadData( const GpuBuffer& buffer, const void* data )
+{
+	VkDeviceSize memorySize = buffer.gpuMemory.size;
+	VkDeviceSize stagingBufferOffset = AllocateGpuBufferSlot( &stagingBufferAllocator, memorySize );
+	UpdateGpuBuffer( &stagingBuffer, data, memorySize, stagingBufferOffset );
+	copy_buffer( commandBuffer, buffer.buffer, stagingBuffer.buffer, 0, stagingBufferOffset, memorySize );
 
 	return true;
 }

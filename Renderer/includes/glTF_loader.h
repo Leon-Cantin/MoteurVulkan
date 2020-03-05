@@ -4,5 +4,5 @@
 
 namespace glTF_L
 {
-	void LoadMesh( const char* fileName, GfxModel* model );
+	void LoadMesh( const char* fileName, GfxModel* model, I_BufferAllocator* allocator );
 }

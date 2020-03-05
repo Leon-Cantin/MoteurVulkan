@@ -30,7 +30,7 @@ class I_ImageAlloctor
 {
 public:
 	virtual bool Allocate( VkImage image ) = 0;
-	virtual bool UploadData( const GfxImage& image, void* data ) = 0;
+	virtual bool UploadData( const GfxImage& image, const void* data ) = 0;
 };
 
 void Load3DTexture( const char* filename, GfxImage& o_image );

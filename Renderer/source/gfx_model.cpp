@@ -60,7 +60,7 @@ GfxModel CreateGfxModel( const std::vector<VIDesc>& viDescs, size_t vertexCount,
 	return gfxModel;
 }
 
-GfxModel CreateGfxModel( const std::vector<VIDesc>& viDescs, const std::vector<void*>& data, size_t vertexCount, const void* indicesData, size_t indiceCount, uint8_t indexTypeSize )
+GfxModel CreateGfxModel( const std::vector<VIDesc>& viDescs, const std::vector<void*>& data, size_t vertexCount, const void* indicesData, size_t indiceCount, uint8_t indexTypeSize, I_BufferAllocator* allocator )
 {
 	GfxModel gfxModel = {};
 	gfxModel.vertexCount = vertexCount;
@@ -72,13 +72,17 @@ GfxModel CreateGfxModel( const std::vector<VIDesc>& viDescs, const std::vector<v
 		GfxModelVertexInput* currentVI = GetVertexInput( gfxModel, viDesc.dataType );
 		currentVI->desc = viDesc;
 		VkDeviceSize bufferSize = GetBindingSize( &viDesc ) * vertexCount;
-		CreateCommitedGpuBuffer( bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &currentVI->buffer );
-		copyDataToDeviceLocalMemoryImmediate( currentVI->buffer.buffer, data[i], bufferSize );
+		currentVI->buffer.buffer = create_buffer( bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT );
+		currentVI->buffer.gpuMemory.size = bufferSize;//TODO: this should be done automaticaly
+		allocator->Allocate( currentVI->buffer.buffer );
+		allocator->UploadData( currentVI->buffer, data[i] );
 	}
 
 	VkDeviceSize bufferSize = indexTypeSize * indiceCount;
-	CreateCommitedGpuBuffer( bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &gfxModel.indexBuffer );
-	copyDataToDeviceLocalMemoryImmediate( gfxModel.indexBuffer.buffer, indicesData, bufferSize );
+	gfxModel.indexBuffer.buffer = create_buffer( bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT );
+	gfxModel.indexBuffer.gpuMemory.size = bufferSize;//TODO: this should be done automaticaly
+	allocator->Allocate( gfxModel.indexBuffer.buffer );
+	allocator->UploadData( gfxModel.indexBuffer, indicesData );
 	gfxModel.indexType = GetIndexType( indexTypeSize );
 
 	return gfxModel;

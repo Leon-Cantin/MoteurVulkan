@@ -30,6 +30,21 @@ static void create_buffer( VkDeviceSize size, VkBufferUsageFlags bufferUsageFlag
 	vkBindBufferMemory( g_vk.device, o_buffer, o_deviceMemory, 0 );
 }
 
+VkBuffer create_buffer( VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags )
+{
+	VkBufferCreateInfo bufferInfo = {};
+	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferInfo.size = size;
+	bufferInfo.usage = bufferUsageFlags;
+	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	VkBuffer buffer;
+	if( vkCreateBuffer( g_vk.device, &bufferInfo, nullptr, &buffer ) != VK_SUCCESS )
+		throw std::runtime_error( "failed to create buffer!" );
+
+	return buffer;
+}
+
 void CreateCommitedGpuBuffer( VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags, VkMemoryPropertyFlags memoryProperties, GpuBuffer* o_buffer )
 {
 	create_buffer( size, bufferUsageFlags, memoryProperties, o_buffer->buffer, o_buffer->gpuMemory.memory );
@@ -104,15 +119,19 @@ void DestroyPerFrameBuffer(PerFrameBuffer * o_buffer)
 	*o_buffer = {};
 }
 
-
-void copy_buffer( VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkBuffer srcBuffer, VkDeviceSize size )
+void copy_buffer( VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkBuffer srcBuffer, VkDeviceSize dst_offset, VkDeviceSize src_offset, VkDeviceSize size )
 {
 	//TODO: maybe create a new command pool with VK_COMMAND_POOL_CREATE_TRANSIENT_BIT for memory transfers
 	VkBufferCopy copyRegion = {};
-	copyRegion.srcOffset = 0;
-	copyRegion.dstOffset = 0;
+	copyRegion.srcOffset = src_offset;
+	copyRegion.dstOffset = dst_offset;
 	copyRegion.size = size;
 	vkCmdCopyBuffer( commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion );
+}
+
+void copy_buffer( VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkBuffer srcBuffer, VkDeviceSize size )
+{
+	copy_buffer( commandBuffer, dstBuffer, srcBuffer, 0, 0, size );
 }
 
 
