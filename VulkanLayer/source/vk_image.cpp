@@ -278,7 +278,8 @@ void BindMemory( VkImage image, VkDeviceMemory memory )
 	vkBindImageMemory( g_vk.device, image, memory, 0 );
 }
 
-VkDeviceMemory AllocateMemory( const VkImage image, const VkMemoryPropertyFlags properties )
+//TODO: this function could be removed by using other stuff
+static VkDeviceMemory AllocateMemory( const VkImage image, const VkMemoryPropertyFlags properties )
 {
 	VkDeviceMemory imageMemory;
 	VkMemoryRequirements memRequirements;

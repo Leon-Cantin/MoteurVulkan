@@ -335,7 +335,7 @@ namespace FG
 
 		for( uint32_t i = 0; i < frameGraph->creationData.resources.size(); ++i )
 		{
-			if( frameGraph->allbuffers[i].memory )
+			if( frameGraph->allbuffers[i].gfx_mem_alloc.memory )
 				DestroyPerFrameBuffer( &frameGraph->allbuffers[i] );
 		}
 		frameGraph->allImages = {};

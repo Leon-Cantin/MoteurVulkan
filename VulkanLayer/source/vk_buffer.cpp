@@ -6,30 +6,6 @@
 #include <cassert>
 #include <stdexcept>
 
-static void create_buffer( VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags, VkMemoryPropertyFlags memoryProperties, VkBuffer& o_buffer, VkDeviceMemory& o_deviceMemory )
-{
-	VkBufferCreateInfo bufferInfo = {};
-	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferInfo.size = size;
-	bufferInfo.usage = bufferUsageFlags;
-	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	if( vkCreateBuffer( g_vk.device, &bufferInfo, nullptr, &o_buffer ) != VK_SUCCESS )
-		throw std::runtime_error( "failed to create buffer!" );
-
-	VkMemoryRequirements memRequirements;
-	vkGetBufferMemoryRequirements( g_vk.device, o_buffer, &memRequirements );
-
-	VkMemoryAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = findMemoryType( memRequirements.memoryTypeBits, memoryProperties );
-
-	if( vkAllocateMemory( g_vk.device, &allocInfo, nullptr, &o_deviceMemory ) != VK_SUCCESS )
-		throw std::runtime_error( "failed to allocate buffer memory!" );
-
-	vkBindBufferMemory( g_vk.device, o_buffer, o_deviceMemory, 0 );
-}
-
 VkBuffer create_buffer( VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags )
 {
 	VkBufferCreateInfo bufferInfo = {};
@@ -45,56 +21,50 @@ VkBuffer create_buffer( VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags )
 	return buffer;
 }
 
+static GpuBuffer bind_gfx_buffer_mem( const VkBuffer buffer, const GfxMemAlloc& gfx_mem_alloc )
+{
+	vkBindBufferMemory( g_vk.device, buffer, gfx_mem_alloc.memory, gfx_mem_alloc.offset );
+	const GpuBuffer gfx_buffer { buffer, gfx_mem_alloc };
+	return gfx_buffer;
+}
+
 void CreateCommitedGpuBuffer( VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags, VkMemoryPropertyFlags memoryProperties, GpuBuffer* o_buffer )
 {
-	create_buffer( size, bufferUsageFlags, memoryProperties, o_buffer->buffer, o_buffer->gpuMemory.memory );
-	o_buffer->gpuMemory.offset = 0;
-	o_buffer->gpuMemory.size = size;
+	const VkBuffer buffer = create_buffer( size, bufferUsageFlags );
+
+	VkMemoryRequirements memRequirements;
+	vkGetBufferMemoryRequirements( g_vk.device, buffer, &memRequirements );
+
+	const uint32_t mem_type = findMemoryType( memRequirements.memoryTypeBits, memoryProperties );
+	const GfxMemAlloc gfx_mem = allocate_gfx_memory( memRequirements.size, mem_type );
+
+	*o_buffer = bind_gfx_buffer_mem( buffer, gfx_mem );
 }
 
 void CreatePerFrameBuffer(VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags, VkMemoryPropertyFlags memoryProperties, PerFrameBuffer * o_buffer)
 {
-	VkBufferCreateInfo bufferInfo = {};
-	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferInfo.size = size;
-	bufferInfo.usage = bufferUsageFlags;
-	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-	for(uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
-		if (vkCreateBuffer(g_vk.device, &bufferInfo, nullptr, &o_buffer->buffers[i].buffer) != VK_SUCCESS)
-			throw std::runtime_error("failed to create buffer!");
+	for( uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
+		o_buffer->buffers[i].buffer = create_buffer( size, bufferUsageFlags );
 
 	VkMemoryRequirements memRequirements;
 	//Call it on all just so the validation layer doesn't complain
 	for(uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
 		vkGetBufferMemoryRequirements(g_vk.device, o_buffer->buffers[i].buffer, &memRequirements);
 
-	VkMemoryAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = memRequirements.size * SIMULTANEOUS_FRAMES;
-	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, memoryProperties);
-
-	if (vkAllocateMemory(g_vk.device, &allocInfo, nullptr, &o_buffer->memory) != VK_SUCCESS)
-		throw std::runtime_error("failed to allocate buffer memory!");
+	//TODO: respect alignement!!!!!
+	const VkDeviceSize mem_size = memRequirements.size * SIMULTANEOUS_FRAMES;
+	const uint32_t mem_type = findMemoryType( memRequirements.memoryTypeBits, memoryProperties );
+	const GfxMemAlloc gfx_mem = allocate_gfx_memory( mem_size, mem_type );
 
 	VkDeviceSize memoryStride = memRequirements.size;
 	for( uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 	{
-		VkDeviceSize memoryOffset = memoryStride * i;
-		vkBindBufferMemory( g_vk.device, o_buffer->buffers[i].buffer, o_buffer->memory, memoryOffset );
-		o_buffer->buffers[i].gpuMemory = { o_buffer->memory, memoryOffset, memoryStride };
+		const VkDeviceSize memoryOffset = memoryStride * i;
+		const GfxMemAlloc sub_gfx_mem = suballocate_gfx_memory( gfx_mem, memoryStride, memoryOffset );
+		o_buffer->buffers[i] = bind_gfx_buffer_mem( o_buffer->buffers[i].buffer, sub_gfx_mem );
 	}
-	o_buffer->stride = memoryStride;
-}
 
-
-static void UpdateGpuMemory( const GpuMemory* dstMemory, const void* src, VkDeviceSize size, VkDeviceSize offset )
-{
-	assert( offset + size <= dstMemory->size );
-	void* dst;
-	vkMapMemory( g_vk.device, dstMemory->memory, dstMemory->offset + offset, size, 0, &dst );
-	memcpy( dst, src, size );
-	vkUnmapMemory( g_vk.device, dstMemory->memory );
+	o_buffer->gfx_mem_alloc = gfx_mem;
 }
 
 void UpdateGpuBuffer( const GpuBuffer* buffer, const void* src, VkDeviceSize size, VkDeviceSize offset )
@@ -106,7 +76,7 @@ void UpdatePerFrameBuffer(const PerFrameBuffer * buffer, const void* src, VkDevi
 {
 	assert( frame < SIMULTANEOUS_FRAMES );
 
-	VkDeviceSize frameMemoryOffset = buffer->stride * frame;
+	const VkDeviceSize frameMemoryOffset = buffer->buffers[frame].gpuMemory.offset;
 	UpdateGpuBuffer( &buffer->buffers[frame], src, size, frameMemoryOffset );
 }
 
@@ -114,7 +84,7 @@ void DestroyPerFrameBuffer(PerFrameBuffer * o_buffer)
 {
 	for(uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
 		vkDestroyBuffer(g_vk.device, o_buffer->buffers[i].buffer, nullptr);		
-	vkFreeMemory(g_vk.device, o_buffer->memory, nullptr);
+	vkFreeMemory(g_vk.device, o_buffer->gfx_mem_alloc.memory, nullptr);
 
 	*o_buffer = {};
 }
@@ -133,61 +103,6 @@ void copy_buffer( VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkBuffer sr
 {
 	copy_buffer( commandBuffer, dstBuffer, srcBuffer, 0, 0, size );
 }
-
-
-void CopyBufferImmediate(VkBuffer dstBuffer, VkBuffer srcBuffer, VkDeviceSize size)
-{
-	//TODO: maybe create a new command pool with VK_COMMAND_POOL_CREATE_TRANSIENT_BIT for memory transfers
-	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
-	copy_buffer( commandBuffer, dstBuffer, srcBuffer, size );
-	endSingleTimeCommands(commandBuffer);
-}
-
-
-void copyDataToDeviceLocalMemory(VkCommandBuffer commandBuffer, VkBuffer dstBuffer, const void* data, VkDeviceSize bufferSize)
-{
-	GpuBuffer stagingBuffer;
-
-	//TODO: have a big temp staging buffer
-	CreateCommitedGpuBuffer( bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer );
-
-	UpdateGpuBuffer( &stagingBuffer, data, bufferSize, 0 );
-
-	copy_buffer(commandBuffer, dstBuffer, stagingBuffer.buffer, bufferSize);
-
-	DestroyCommitedGpuBuffer( &stagingBuffer );
-}
-
-
-void copyDataToDeviceLocalMemoryImmediate( VkBuffer dstBuffer, const void* data, VkDeviceSize bufferSize )
-{
-	GpuBuffer stagingBuffer;
-
-	//TODO: have a big temp staging buffer
-	CreateCommitedGpuBuffer( bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer );
-
-	UpdateGpuBuffer( &stagingBuffer, data, bufferSize, 0 );
-
-	CopyBufferImmediate( dstBuffer, stagingBuffer.buffer, bufferSize );
-
-	DestroyCommitedGpuBuffer( &stagingBuffer );
-}
-
-
-void createBufferToDeviceLocalMemory(VkDeviceSize bufferSize, VkBufferUsageFlags usageFlags, VkBuffer* o_buffer, VkDeviceMemory* o_VkDeviceMemory)
-{
-	create_buffer(bufferSize, usageFlags | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		*o_buffer, *o_VkDeviceMemory);
-}
-
-
-void createBufferToDeviceLocalMemory(const void* data, VkDeviceSize bufferSize, VkBufferUsageFlags usageFlags, VkBuffer* o_buffer, VkDeviceMemory* o_VkDeviceMemory)
-{
-	createBufferToDeviceLocalMemory(bufferSize, usageFlags, o_buffer, o_VkDeviceMemory);
-
-	copyDataToDeviceLocalMemoryImmediate(*o_buffer, data, bufferSize);
-}
-
 
 void DestroyCommitedGpuBuffer( GpuBuffer* buffer )
 {

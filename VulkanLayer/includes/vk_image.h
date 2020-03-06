@@ -9,7 +9,6 @@ void create_image_simple( uint32_t width, uint32_t height, uint32_t mipLevels, V
 VkImageView createCubeImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
 VkImageView Create2DImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
 void create_image( uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageUsageFlags usage, VkImage* image );
-VkDeviceMemory AllocateMemory( const VkImage image, const VkMemoryPropertyFlags properties );
 void BindMemory( VkImage image, VkDeviceMemory memory );
 
 void copyBufferToImage( VkCommandBuffer commandBuffer, VkBuffer buffer, uint32_t bufferOffset, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount );

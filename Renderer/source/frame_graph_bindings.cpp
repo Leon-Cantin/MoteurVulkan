@@ -98,7 +98,7 @@ namespace FG
 			if( IsBufferType( dataEntry->descriptorType ) )
 			{
 				PerFrameBuffer* buffer = &frameGraph->imp->allbuffers[dataEntry->id];
-				if( buffer->memory == VK_NULL_HANDLE )
+				if( buffer->gfx_mem_alloc.memory == VK_NULL_HANDLE )
 				{
 					CreatePerFrameBuffer( frameGraph, dataEntry, dataBinding, buffer );
 					for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
