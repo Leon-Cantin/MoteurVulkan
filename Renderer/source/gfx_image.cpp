@@ -1,17 +1,14 @@
 #include "gfx_image.h"
 
 #include "vk_debug.h"
+#include "vk_commands.h"
+#include "vk_buffer.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #include "ktx_loader.h"
-#include <algorithm>
-#include <array>
 
-
-std::array<VkSampler, ( size_t )(eSamplers::Count)> samplers;
-
-void Load3DTexture( const char* filename, GfxImage& o_image )
+void Load3DTexture( const char* filename, GfxImage* o_image, I_ImageAlloctor* allocator )
 {
 	std::vector<char> pixels;
 	KTX_Header header;
@@ -24,50 +21,59 @@ void Load3DTexture( const char* filename, GfxImage& o_image )
 
 	int texWidth = header.pixelwidth, texHeight = header.pixelheight;
 	VkDeviceSize imageSize = texWidth * texHeight * 4 * layerCount;
-	o_image.mipLevels = 1;
-	o_image.extent = { ( uint32_t )texWidth, ( uint32_t )texHeight };
-	o_image.format = format;
+	o_image->mipLevels = 1;
+	o_image->extent = { ( uint32_t )texWidth, ( uint32_t )texHeight };
+	o_image->format = format;
 	//TODO: now it's also a src image because of the generating mip map. Perhaps we could change it back to only dst somehow?
-	create_cube_image( texWidth, texHeight, o_image.mipLevels, format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, o_image.image, o_image.memory );
+	create_cube_image( texWidth, texHeight, o_image->mipLevels, format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, o_image->image, o_image->gfx_mem_alloc.memory );
+	MarkVkObject( ( uint64_t )o_image->image, VK_OBJECT_TYPE_IMAGE, filename );
 
-	copyImageToDeviceLocalMemory( pixels.data(), imageSize, texWidth, texHeight, layerCount, 1, format, o_image.image );
+	//TODO; won't work with create_cube_image above
+	allocator->Allocate( o_image->image, &o_image->gfx_mem_alloc );
+	allocator->UploadData( *o_image, pixels.data() );
 
-	o_image.imageView = createCubeImageView( o_image.image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1 );
-
-	MarkVkObject( ( uint64_t )o_image.image, VK_OBJECT_TYPE_IMAGE, filename );
-	MarkVkObject( ( uint64_t )o_image.imageView, VK_OBJECT_TYPE_IMAGE_VIEW, filename );
+	o_image->imageView = createCubeImageView( o_image->image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, o_image->mipLevels );
+	MarkVkObject( ( uint64_t )o_image->imageView, VK_OBJECT_TYPE_IMAGE_VIEW, filename );
 }
 
-void Load2DTexture( void * data, uint32_t width, uint32_t height, uint32_t miplevels, uint32_t pixelByteSize, VkFormat format, GfxImage& o_image )
+void Load2DTexture( void * data, uint32_t width, uint32_t height, uint32_t miplevels, VkFormat format, GfxImage* o_image, I_ImageAlloctor* allocator )
 {
-	VkDeviceSize imageSize = width * height * pixelByteSize;
-	o_image.mipLevels = miplevels;
+	o_image->mipLevels = miplevels;
+	o_image->format = format;
+	o_image->extent.width = width;
+	o_image->extent.height = height;
 
-	create_image_simple( width, height, o_image.mipLevels, format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &o_image.image, &o_image.memory, &o_image.imageView );
+	create_image( o_image->extent.width, o_image->extent.height, o_image->mipLevels, o_image->format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, &o_image->image );
 
-	copyImageToDeviceLocalMemory( data, imageSize, width, height, 1, o_image.mipLevels, format, o_image.image );
+	allocator->Allocate( o_image->image, &o_image->gfx_mem_alloc );
+	allocator->UploadData( *o_image, data );
+
+	o_image->imageView = Create2DImageView( o_image->image, o_image->format, VK_IMAGE_ASPECT_COLOR_BIT, o_image->mipLevels );
 }
 
-void Load2DTextureFromFile( const char* filename, GfxImage& o_image, I_ImageAlloctor* allocator )
+void Load2DTextureFromFile( const char* filename, GfxImage* o_image, I_ImageAlloctor* allocator )
 {
 	int texWidth, texHeight, channelCount;
 	stbi_uc* pixels = stbi_load( filename, &texWidth, &texHeight, &channelCount, STBI_rgb_alpha );
 	VkDeviceSize imageSize = texWidth * texHeight * 4;
-	o_image.extent = { (uint32_t)texWidth, (uint32_t)texHeight };
-	o_image.format = VK_FORMAT_R8G8B8A8_UNORM;
-	o_image.mipLevels = 1; /*static_cast< uint32_t >(std::floor( std::log2( std::max( texWidth, texHeight ) ) )) + 1;*/
+	o_image->extent = { (uint32_t)texWidth, (uint32_t)texHeight };
+	o_image->format = VK_FORMAT_R8G8B8A8_UNORM;
+	o_image->mipLevels = 1; /*static_cast< uint32_t >(std::floor( std::log2( std::max( texWidth, texHeight ) ) )) + 1;*/
 
 	if( !pixels )
 		throw std::runtime_error( "failed to load texture image!" );
 
 	//TODO: now it's also a src image because of the generating mip map. Perhaps we could change it back to only dst somehow?
-	create_image( o_image.extent.width, o_image.extent.height, o_image.mipLevels, o_image.format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, &o_image.image );
-	MarkVkObject( ( uint64_t )o_image.image, VK_OBJECT_TYPE_IMAGE, filename );
+	create_image( o_image->extent.width, o_image->extent.height, o_image->mipLevels, o_image->format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, &o_image->image );
+	MarkVkObject( ( uint64_t )o_image->image, VK_OBJECT_TYPE_IMAGE, filename );
 
-	allocator->Allocate( o_image.image );
-	allocator->UploadData( o_image, pixels );
+	allocator->Allocate( o_image->image, &o_image->gfx_mem_alloc );
+	allocator->UploadData( *o_image, pixels );
+
+	o_image->imageView = Create2DImageView( o_image->image, o_image->format, VK_IMAGE_ASPECT_COLOR_BIT, o_image->mipLevels );
+	MarkVkObject( ( uint64_t )o_image->imageView, VK_OBJECT_TYPE_IMAGE_VIEW, filename );
+
 	stbi_image_free( pixels );
 
 	//TODO: get a buffer to copy our data straight into
@@ -75,21 +81,17 @@ void Load2DTextureFromFile( const char* filename, GfxImage& o_image, I_ImageAllo
 	memcpy( mem, pixels, imageSize );
 	stbi_image_free( pixels );
 	allocator->Flush( mem );*/
-
-	o_image.imageView = Create2DImageView( o_image.image, o_image.format, VK_IMAGE_ASPECT_COLOR_BIT, o_image.mipLevels );
-	MarkVkObject( ( uint64_t )o_image.imageView, VK_OBJECT_TYPE_IMAGE_VIEW, filename );
 }
 
-void DestroyImage( GfxImage& image )
+void DestroyImage( GfxImage* image )
 {
-	vkDestroyImageView( g_vk.device, image.imageView, nullptr );
-	vkDestroyImage( g_vk.device, image.image, nullptr );
-	if( image.memory ) //Images allocated on a heap don't have memory
-		vkFreeMemory( g_vk.device, image.memory, nullptr );
+	vkDestroyImageView( g_vk.device, image->imageView, nullptr );
+	vkDestroyImage( g_vk.device, image->image, nullptr );
+	destroy_gfx_memory( &image->gfx_mem_alloc );
 	image = {};
 }
 
-void CreateSolidColorImage( glm::vec4 color, GfxImage* o_image )
+void CreateSolidColorImage( glm::vec4 color, GfxImage* o_image, I_ImageAlloctor* allocator )
 {
 	const uint32_t width = 4, height = 4;
 	o_image->extent = { width, height };
@@ -105,121 +107,98 @@ void CreateSolidColorImage( glm::vec4 color, GfxImage* o_image )
 		pixels[i * 4 + 3] = static_cast< uint8_t >(color.a * 255.0f);
 	}
 
-	create_image_simple( width, height, 1, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		&o_image->image, &o_image->memory, &o_image->imageView );
-	copyImageToDeviceLocalMemory( pixels, memorySize, o_image->extent.width, o_image->extent.height, 1, o_image->mipLevels, o_image->format, o_image->image );
+	create_image( o_image->extent.width, o_image->extent.height, o_image->mipLevels, o_image->format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, &o_image->image );
+
+	allocator->Allocate( o_image->image, &o_image->gfx_mem_alloc );
+	allocator->UploadData( *o_image, pixels );
+
+	o_image->imageView = Create2DImageView( o_image->image, o_image->format, VK_IMAGE_ASPECT_COLOR_BIT, o_image->mipLevels );
 }
 
-static void createPointSampler( VkSampler* o_sampler )
+void generateMipmaps( VkCommandBuffer commandBuffer, VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels )
 {
-	VkSamplerCreateInfo samplerInfo = {};
-	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	//TODO: Move that check somewhere else
+	// Check if image format supports linear blitting
+	VkFormatProperties formatProperties;
+	vkGetPhysicalDeviceFormatProperties( g_vk.physicalDevice, imageFormat, &formatProperties );
+	if( !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT) )
+		throw std::runtime_error( "texture image format does not support linear blitting!" );
 
-	samplerInfo.magFilter = VK_FILTER_NEAREST;
-	samplerInfo.minFilter = VK_FILTER_NEAREST;
+	VkImageMemoryBarrier barrier = {};
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.image = image;
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+	barrier.subresourceRange.levelCount = 1;
 
-	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	int32_t mipWidth = texWidth;
+	int32_t mipHeight = texHeight;
 
-	samplerInfo.anisotropyEnable = VK_TRUE;
-	samplerInfo.maxAnisotropy = 16;
+	/*All mips should be in DST_OPTIMAL at the start
+	Turn the last mip into SRC_OPTIMAL to transfer from last to current
+	At the end it is changed to SHADER_READ_ONLY_OPTIMAL*/
+	for( uint32_t i = 1; i < mipLevels; ++i ) {
+		barrier.subresourceRange.baseMipLevel = i - 1;
+		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 
-	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-	samplerInfo.unnormalizedCoordinates = VK_FALSE;
+		vkCmdPipelineBarrier( commandBuffer,
+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
+			0, nullptr,
+			0, nullptr,
+			1, &barrier );
 
-	samplerInfo.compareEnable = VK_FALSE;
-	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+		VkImageBlit blit = {};
+		blit.srcOffsets[0] = { 0, 0, 0 };
+		blit.srcOffsets[1] = { mipWidth, mipHeight, 1 };
+		blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		blit.srcSubresource.mipLevel = i - 1;
+		blit.srcSubresource.baseArrayLayer = 0;
+		blit.srcSubresource.layerCount = 1;
 
-	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-	samplerInfo.mipLodBias = 0.0f;
-	samplerInfo.minLod = 0.0f;
-	samplerInfo.maxLod = std::numeric_limits<float>::max();
+		blit.dstOffsets[0] = { 0, 0, 0 };
+		blit.dstOffsets[1] = { mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1 };
+		blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		blit.dstSubresource.mipLevel = i;
+		blit.dstSubresource.baseArrayLayer = 0;
+		blit.dstSubresource.layerCount = 1;
 
-	if( vkCreateSampler( g_vk.device, &samplerInfo, nullptr, o_sampler ) != VK_SUCCESS )
-		throw std::runtime_error( "failed to create texture sampler!" );
+		vkCmdBlitImage( commandBuffer,
+			image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			1, &blit,
+			VK_FILTER_LINEAR );
 
-	MarkVkObject( ( uint64_t )*o_sampler, VK_OBJECT_TYPE_SAMPLER, "point sampler" );
-}
+		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-static void createTriLinearSampler( VkSampler* o_sampler )
-{
-	VkSamplerCreateInfo samplerInfo = {};
-	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		vkCmdPipelineBarrier( commandBuffer,
+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+			0, nullptr,
+			0, nullptr,
+			1, &barrier );
 
-	samplerInfo.magFilter = VK_FILTER_LINEAR;
-	samplerInfo.minFilter = VK_FILTER_LINEAR;
+		if( mipWidth > 1 ) mipWidth /= 2;
+		if( mipHeight > 1 ) mipHeight /= 2;
+	}
 
-	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	//Transition the last one
+	barrier.subresourceRange.baseMipLevel = mipLevels - 1;
+	barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-	samplerInfo.anisotropyEnable = VK_TRUE;
-	samplerInfo.maxAnisotropy = 16;
-
-	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-	samplerInfo.unnormalizedCoordinates = VK_FALSE;
-
-	samplerInfo.compareEnable = VK_FALSE;
-	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-
-	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-	samplerInfo.mipLodBias = 0.0f;
-	samplerInfo.minLod = 0.0f;
-	samplerInfo.maxLod = std::numeric_limits<float>::max();
-
-	if( vkCreateSampler( g_vk.device, &samplerInfo, nullptr, o_sampler ) != VK_SUCCESS )
-		throw std::runtime_error( "failed to create texture sampler!" );
-
-	MarkVkObject( ( uint64_t )*o_sampler, VK_OBJECT_TYPE_SAMPLER, "trilinear sampler" );
-}
-
-static void createShadowSampler( VkSampler* o_sampler )
-{
-	VkSamplerCreateInfo samplerInfo = {};
-	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-
-	samplerInfo.magFilter = VK_FILTER_LINEAR;
-	samplerInfo.minFilter = VK_FILTER_LINEAR;
-
-	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-
-	samplerInfo.anisotropyEnable = VK_TRUE;
-	samplerInfo.maxAnisotropy = 16;
-
-	samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-	samplerInfo.unnormalizedCoordinates = VK_FALSE;
-
-	samplerInfo.compareEnable = VK_TRUE;
-	samplerInfo.compareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-
-	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-	samplerInfo.mipLodBias = 0.0f;
-	samplerInfo.minLod = 0.0f;
-	samplerInfo.maxLod = std::numeric_limits<float>::max();
-
-	if( vkCreateSampler( g_vk.device, &samplerInfo, nullptr, o_sampler ) != VK_SUCCESS )
-		throw std::runtime_error( "failed to create texture sampler!" );
-
-	MarkVkObject( ( uint64_t )*o_sampler, VK_OBJECT_TYPE_SAMPLER, "shadow sampler" );
-}
-
-void InitSamplers()
-{
-	createPointSampler( &samplers[( size_t )eSamplers::Point] );
-	createTriLinearSampler( &samplers[( size_t )eSamplers::Trilinear] );
-	createShadowSampler( &samplers[( size_t )eSamplers::Shadow] );
-}
-
-void DestroySamplers()
-{
-	for( size_t i = 0; i < samplers.size(); ++i )
-		vkDestroySampler( g_vk.device, samplers[i], nullptr );
-}
-
-VkSampler GetSampler( eSamplers samplerId )
-{
-	return samplers[( size_t )samplerId];
+	vkCmdPipelineBarrier( commandBuffer,
+		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+		0, nullptr,
+		0, nullptr,
+		1, &barrier );
 }

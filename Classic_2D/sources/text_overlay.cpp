@@ -5,6 +5,7 @@
 #include "vk_commands.h"
 #include "vk_debug.h"
 #include "vk_vertex_input.h"
+#include "gfx_heaps_batched_allocator.h"
 #include "gfx_model.h"
 #include "stb_font_consolas_24_latin1.inl"
 
@@ -166,12 +167,15 @@ void LoadFontTexture()
 	static unsigned char font24pixels[fontWidth][fontHeight];
 	stb_font_consolas_24_latin1(stbFontData, font24pixels, fontHeight);
 
-	Load2DTexture(&font24pixels[0][0], fontWidth, fontHeight, 1, 1, VK_FORMAT_R8_UNORM, g_fontImage);
+	GfxHeaps_CommitedResourceAllocator allocator = {};
+	allocator.Prepare();
+	Load2DTexture( &font24pixels[0][0], fontWidth, fontHeight, 1, VK_FORMAT_R8_UNORM, &g_fontImage, &allocator );
+	allocator.Commit();
 }
 
 void CleanupTextRenderPass()
 {
-	DestroyImage( g_fontImage );
+	DestroyImage( &g_fontImage );
 	DestroyGfxModel( textModel );
 }
 

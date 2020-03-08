@@ -1,5 +1,6 @@
 #include "frame_graph_bindings.h"
 #include "frame_graph_common_internal.h"
+#include "gfx_heaps_batched_allocator.h"
 
 #include "descriptors.h"
 #include "material.h"
@@ -295,8 +296,13 @@ namespace FG
 	void UpdateTechniqueDescriptorSets( const FG::FrameGraph* frameGraph, const std::array< GpuInputData, SIMULTANEOUS_FRAMES>& inputBuffers )
 	{
 		//TODO: dsetroy this dummy image and find a better system to bind null or remove the warning for unbound descriptors
-		if( dummyImage.memory == VK_NULL_HANDLE )
-			CreateSolidColorImage( glm::vec4(0,0,0,0), &dummyImage );
+		if( dummyImage.gfx_mem_alloc.memory == VK_NULL_HANDLE )
+		{
+			GfxHeaps_CommitedResourceAllocator allocator = {};
+			allocator.Prepare();
+			CreateSolidColorImage( glm::vec4( 0, 0, 0, 0 ), &dummyImage, &allocator );
+			allocator.Commit();
+		}
 
 		for( uint32_t i = 0; i < frameGraph->imp->_render_passes_count; ++i )
 		{

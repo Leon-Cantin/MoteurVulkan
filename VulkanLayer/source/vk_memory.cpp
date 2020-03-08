@@ -15,15 +15,24 @@ GfxMemAlloc allocate_gfx_memory( VkDeviceSize size, uint32_t type )
 		throw std::runtime_error( "failed to allocate buffer memory!" );
 
 	const VkDeviceSize offset = 0;
-	return { memory, offset, size };
+	const bool is_parent_pool = true;
+	return { memory, offset, size, is_parent_pool };
 }
 
 GfxMemAlloc suballocate_gfx_memory( const GfxMemAlloc& gfx_mem, VkDeviceSize size, VkDeviceSize offset )
 {
 	//TODO: respect alignement!!!!!
 	assert( offset + size <= gfx_mem.size );
-	const GfxMemAlloc sub_alloc { gfx_mem.memory, offset, size };
+	assert( gfx_mem.offset == 0 );//Just to be sure right now
+	const bool is_parent_pool = false;
+	const GfxMemAlloc sub_alloc { gfx_mem.memory, gfx_mem.offset + offset, size, is_parent_pool };
 	return sub_alloc;
+}
+
+void destroy_gfx_memory( GfxMemAlloc* gfx_mem )
+{
+	if( gfx_mem->is_parent_pool )
+		vkFreeMemory( g_vk.device, gfx_mem->memory, nullptr );
 }
 
 void UpdateGpuMemory( const GfxMemAlloc* dstMemory, const void* src, VkDeviceSize size, VkDeviceSize offset )

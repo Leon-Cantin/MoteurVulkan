@@ -3,6 +3,7 @@
 
 #include "framebuffer.h"
 #include "vk_debug.h"
+#include "vk_commands.h"
 
 #include <vector>
 #include <map>
@@ -30,9 +31,11 @@ namespace FG
 		image->extent = extent;
 		image->format = format;
 		const uint32_t mipLevels = 1;
-		create_image_simple( extent.width, extent.height, mipLevels, format, usage_flags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &image->image, &image->memory );
+		create_image_simple( extent.width, extent.height, mipLevels, format, usage_flags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &image->image, &image->gfx_mem_alloc.memory );
 		image->imageView = Create2DImageView( image->image, format, aspect_flags, mipLevels );
-		transitionImageLayout( image->image, format, VK_IMAGE_LAYOUT_UNDEFINED, image_layout, 1, 1 );
+		VkCommandBuffer command_buffer = beginSingleTimeCommands();
+		transitionImageLayout( command_buffer, image->image, format, VK_IMAGE_LAYOUT_UNDEFINED, image_layout, 1, 1 );
+		endSingleTimeCommands( command_buffer );
 	}
 
 	static void CreateRTCommon(RenderPassCreationData& resource, VkFormat format, uint32_t render_target, VkImageLayout optimalLayout)
@@ -297,8 +300,8 @@ namespace FG
 		for (uint32_t i = 0; i < frameGraph->_render_targets_count; ++i)
 		{
 			GfxImage& image = frameGraph->_render_targets[i];
-			if (image.image && i != frameGraph->creationData.RT_OUTPUT_TARGET)
-				DestroyImage(image);
+			if( image.image && i != frameGraph->creationData.RT_OUTPUT_TARGET )
+				DestroyImage( &image );
 		}
 		frameGraph->_render_targets_count = 0;
 

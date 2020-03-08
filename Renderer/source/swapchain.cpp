@@ -105,6 +105,6 @@ void createSwapChain(VkSurfaceKHR vkSurface, uint32_t maxWidth, uint32_t maxHeig
 	o_swapchain.extent = extent;
 	o_swapchain.presentMode = presentMode;
 	o_swapchain.surfaceFormat = surfaceFormat;
-	for (size_t i = 0; i < image_count; ++i)
-		o_swapchain.images[i] = { swapChainImages[i], VK_NULL_HANDLE, swapChainImageViews[i], surfaceFormat.format, extent };
+	for( size_t i = 0; i < image_count; ++i )
+		o_swapchain.images[i] = { swapChainImages[i], swapChainImageViews[i], surfaceFormat.format, extent, 1, { VK_NULL_HANDLE, 0, 0 } };
 }

@@ -42,22 +42,22 @@ namespace AL
 	GfxImage* LoadTexture(const char* assetName, const char* assetPath, I_ImageAlloctor* allocator )
 	{
 		GfxImage* image = AL_GetImageSlot( assetName );
-		Load2DTextureFromFile( assetPath, *image, allocator );
+		Load2DTextureFromFile( assetPath, image, allocator );
 		return image;
 	}
 
-	GfxImage* LoadCubeTexture(const char* assetName, const char* assetPath)
+	GfxImage* LoadCubeTexture(const char* assetName, const char* assetPath, I_ImageAlloctor* allocator )
 	{
-		GfxImage* cubeImage = AL_GetImageSlot(assetName);
-		Load3DTexture(assetPath, *cubeImage);
+		GfxImage* cubeImage = AL_GetImageSlot( assetName );
+		Load3DTexture( assetPath, cubeImage, allocator );
 
 		return cubeImage;
 	}
 
-	GfxImage* CreateSolidColorTexture(const char* assetName, glm::vec4 color)
+	GfxImage* CreateSolidColorTexture(const char* assetName, glm::vec4 color, I_ImageAlloctor* allocator )
 	{
-		GfxImage* colorImage = AL_GetImageSlot(assetName);
-		CreateSolidColorImage(color, colorImage);
+		GfxImage* colorImage = AL_GetImageSlot( assetName );
+		CreateSolidColorImage( color, colorImage, allocator );
 
 		return colorImage;
 	}
@@ -100,8 +100,8 @@ namespace AL
 
 	void Cleanup()
 	{
-		for (size_t i = 0; i < _imagesCount; ++i)
-			DestroyImage(_images[i]);
+		for( size_t i = 0; i < _imagesCount; ++i )
+			DestroyImage( &_images[i] );
 		_imagesCount = 0;
 
 		for (size_t i = 0; i < _modelAssetsCount; ++i)

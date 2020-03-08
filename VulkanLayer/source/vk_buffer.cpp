@@ -1,7 +1,6 @@
 #include "vk_buffer.h"
 
 #include "vk_memory.h"
-#include "vk_commands.h"
 
 #include <cassert>
 #include <stdexcept>
@@ -82,10 +81,9 @@ void UpdatePerFrameBuffer(const PerFrameBuffer * buffer, const void* src, VkDevi
 
 void DestroyPerFrameBuffer(PerFrameBuffer * o_buffer)
 {
-	for(uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
-		vkDestroyBuffer(g_vk.device, o_buffer->buffers[i].buffer, nullptr);		
-	vkFreeMemory(g_vk.device, o_buffer->gfx_mem_alloc.memory, nullptr);
-
+	for( uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
+		vkDestroyBuffer( g_vk.device, o_buffer->buffers[i].buffer, nullptr );
+	destroy_gfx_memory( &o_buffer->gfx_mem_alloc );
 	*o_buffer = {};
 }
 
@@ -108,6 +106,6 @@ void DestroyCommitedGpuBuffer( GpuBuffer* buffer )
 {
 	//TODO: differentiate between placed buffers and commited buffers, don't destroy memory in the first case
 	vkDestroyBuffer( g_vk.device, buffer->buffer, nullptr );
-	vkFreeMemory( g_vk.device, buffer->gpuMemory.memory, nullptr );
-	memset( buffer, 0, sizeof( GpuBuffer ) );
+	destroy_gfx_memory( &buffer->gpuMemory );
+	*buffer = {};
 }

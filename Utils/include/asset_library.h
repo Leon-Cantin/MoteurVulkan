@@ -7,8 +7,8 @@
 namespace AL
 {
 	GfxImage* LoadTexture( const char* assetName, const char* assetPath, I_ImageAlloctor* allocator );
-	GfxImage* LoadCubeTexture(const char* assetName, const char* assetPath);
-	GfxImage* CreateSolidColorTexture(const char* assetName, glm::vec4 color);
+	GfxImage* LoadCubeTexture(const char* assetName, const char* assetPath, I_ImageAlloctor* allocator );
+	GfxImage* CreateSolidColorTexture(const char* assetName, glm::vec4 color, I_ImageAlloctor* allocator );
 	GfxModel* CreateQuad( const char* assetName, float size, I_BufferAllocator* allocator );
 
 	GfxModel* Load3DModel(const char* assetName, const char* assetPath, uint32_t hackIndex, I_BufferAllocator* allocator );
