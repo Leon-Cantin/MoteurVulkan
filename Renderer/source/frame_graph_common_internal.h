@@ -3,6 +3,7 @@
 #include <vector>
 #include <array>
 #include "gfx_image.h"
+#include "gfx_heaps.h"
 
 namespace FG
 {
@@ -39,6 +40,8 @@ namespace FG
 		}
 
 		FrameGraphCreationData creationData;
+
+		GfxHeap _gfx_mem_heap;
 
 		//hack
 		std::array<PerFrameBuffer, 32> allbuffers;

@@ -4,6 +4,7 @@
 #include "framebuffer.h"
 #include "vk_debug.h"
 #include "vk_commands.h"
+#include "gfx_heaps_batched_allocator.h"
 
 #include <vector>
 #include <map>
@@ -26,14 +27,19 @@ namespace FG
 	FrameGraph::FrameGraph( FrameGraphInternal* imp )
 		: imp( imp ) {}
 
-	static void CreateImage(VkFormat format, VkExtent2D extent, GfxImage* image, VkImageUsageFlagBits usage_flags, VkImageAspectFlagBits aspect_flags, VkImageLayout image_layout)
+	static GfxImage CreateImage( VkFormat format, VkExtent2D extent, VkImageUsageFlagBits usage_flags, VkImageAspectFlagBits aspect_flags, VkImageLayout image_layout, I_ImageAlloctor* allocator )
 	{
-		const uint32_t mipLevels = 1;
-		//TODO: don't use the "simple" version will need to do something about those command buffers
-		create_image_simple( extent.width, extent.height, mipLevels, format, usage_flags, aspect_flags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image );
-		VkCommandBuffer command_buffer = beginSingleTimeCommands();
-		transitionImageLayout( command_buffer, image->image, format, VK_IMAGE_LAYOUT_UNDEFINED, image_layout, 1, 1 );
-		endSingleTimeCommands( command_buffer );
+		//TODO: we aren't getting any error for not transitionning to the image_layout? is it done in the renderpass?
+		GfxImage image;
+		image.format = format;
+		image.extent = extent;
+		image.mipLevels = 1;
+
+		create_image( extent.width, extent.height, image.mipLevels, format, usage_flags, &image.image );
+		allocator->Allocate( image.image, &image.gfx_mem_alloc );
+		image.imageView = create_image_view( image.image, VK_IMAGE_VIEW_TYPE_2D, format, aspect_flags, image.mipLevels );
+
+		return image;
 	}
 
 	static void CreateRTCommon(RenderPassCreationData& resource, VkFormat format, uint32_t render_target, VkImageLayout optimalLayout)
@@ -104,6 +110,10 @@ namespace FG
 
 	static void ComposeGraph( FrameGraphCreationData& creationData, FrameGraphInternal* o_frameGraph )
 	{
+		o_frameGraph->_gfx_mem_heap = create_gfx_heap( 8 * 1024 * 1024, 15, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
+		GfxHeaps_BatchedAllocator image_allocator( &o_frameGraph->_gfx_mem_heap );
+		image_allocator.Prepare();
+
 		o_frameGraph->_render_targets_count = creationData.resources.size();
 		std::map< uint32_t, RenderPassCreationData*> lastPass;
 
@@ -127,8 +137,7 @@ namespace FG
 					ResourceDesc* resourceDesc = &creationData.resources[renderTargetId].resourceDesc;
 					if (renderTargetId != creationData.RT_OUTPUT_TARGET)
 					{
-						GfxImage* rt_image = &o_frameGraph->_render_targets[renderTargetId];
-						CreateImage( resourceDesc->format, resourceDesc->extent, rt_image, resourceDesc->usage_flags, resourceDesc->aspect_flags, resourceDesc->image_layout);
+						o_frameGraph->_render_targets[renderTargetId] = CreateImage( resourceDesc->format, resourceDesc->extent, resourceDesc->usage_flags, resourceDesc->aspect_flags, resourceDesc->image_layout, &image_allocator);
 					}
 				}
 				else
@@ -176,6 +185,8 @@ namespace FG
 				}
 			}
 		}
+
+		image_allocator.Commit();
 
 		//Transition the last pass with RT_OUTPUT_TARGET to present
 		auto it_found = lastPass.find( creationData.RT_OUTPUT_TARGET );
@@ -340,6 +351,8 @@ namespace FG
 				DestroyPerFrameBuffer( &frameGraph->allbuffers[i] );
 		}
 		frameGraph->allImages = {};
+
+		destroy( &frameGraph->_gfx_mem_heap );
 
 		delete frameGraph;
 		frameGraphExternal->imp = nullptr;
