@@ -1,7 +1,7 @@
 #pragma once
 #include "vk_globals.h"
 #include "vk_vertex_input.h"
-#include "vk_buffer.h"
+#include "gfx_buffer.h"
 
 #include <glm/vec3.hpp>
 #include <glm/vec2.hpp>

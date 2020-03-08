@@ -19,7 +19,7 @@ public:
 	bool UploadData( const GfxImage& image, const void* data );
 
 	//Buffer allocator
-	bool Allocate( VkBuffer buffer );
+	bool Allocate( VkBuffer buffer, GfxMemAlloc* o_gfx_mem_alloc );
 	bool UploadData( const GpuBuffer& buffer, const void* data );
 
 private:

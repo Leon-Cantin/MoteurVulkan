@@ -33,3 +33,5 @@ void CreateSolidColorImage( glm::vec4 color, GfxImage* o_image, I_ImageAlloctor*
 void generateMipmaps( VkCommandBuffer commandBuffer, VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels );
 
 void DestroyImage( GfxImage* image );
+
+void create_image_simple( uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageUsageFlags usage, VkImageAspectFlagBits aspect_flags, VkMemoryPropertyFlags properties, GfxImage* o_gfx_image );

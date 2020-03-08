@@ -24,16 +24,13 @@ void Load3DTexture( const char* filename, GfxImage* o_image, I_ImageAlloctor* al
 	o_image->mipLevels = 1;
 	o_image->extent = { ( uint32_t )texWidth, ( uint32_t )texHeight };
 	o_image->format = format;
-	//TODO: now it's also a src image because of the generating mip map. Perhaps we could change it back to only dst somehow?
-	create_cube_image( texWidth, texHeight, o_image->mipLevels, format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, o_image->image, o_image->gfx_mem_alloc.memory );
+	create_cube_image( texWidth, texHeight, o_image->mipLevels, format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, &o_image->image );
 	MarkVkObject( ( uint64_t )o_image->image, VK_OBJECT_TYPE_IMAGE, filename );
 
-	//TODO; won't work with create_cube_image above
 	allocator->Allocate( o_image->image, &o_image->gfx_mem_alloc );
 	allocator->UploadData( *o_image, pixels.data() );
 
-	o_image->imageView = createCubeImageView( o_image->image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, o_image->mipLevels );
+	o_image->imageView = create_image_view( o_image->image, VK_IMAGE_VIEW_TYPE_CUBE, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, o_image->mipLevels );
 	MarkVkObject( ( uint64_t )o_image->imageView, VK_OBJECT_TYPE_IMAGE_VIEW, filename );
 }
 
@@ -49,7 +46,7 @@ void Load2DTexture( void * data, uint32_t width, uint32_t height, uint32_t miple
 	allocator->Allocate( o_image->image, &o_image->gfx_mem_alloc );
 	allocator->UploadData( *o_image, data );
 
-	o_image->imageView = Create2DImageView( o_image->image, o_image->format, VK_IMAGE_ASPECT_COLOR_BIT, o_image->mipLevels );
+	o_image->imageView = create_image_view( o_image->image, VK_IMAGE_VIEW_TYPE_2D, o_image->format, VK_IMAGE_ASPECT_COLOR_BIT, o_image->mipLevels );
 }
 
 void Load2DTextureFromFile( const char* filename, GfxImage* o_image, I_ImageAlloctor* allocator )
@@ -64,14 +61,13 @@ void Load2DTextureFromFile( const char* filename, GfxImage* o_image, I_ImageAllo
 	if( !pixels )
 		throw std::runtime_error( "failed to load texture image!" );
 
-	//TODO: now it's also a src image because of the generating mip map. Perhaps we could change it back to only dst somehow?
 	create_image( o_image->extent.width, o_image->extent.height, o_image->mipLevels, o_image->format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, &o_image->image );
 	MarkVkObject( ( uint64_t )o_image->image, VK_OBJECT_TYPE_IMAGE, filename );
 
 	allocator->Allocate( o_image->image, &o_image->gfx_mem_alloc );
 	allocator->UploadData( *o_image, pixels );
 
-	o_image->imageView = Create2DImageView( o_image->image, o_image->format, VK_IMAGE_ASPECT_COLOR_BIT, o_image->mipLevels );
+	o_image->imageView = create_image_view( o_image->image, VK_IMAGE_VIEW_TYPE_2D, o_image->format, VK_IMAGE_ASPECT_COLOR_BIT, o_image->mipLevels );
 	MarkVkObject( ( uint64_t )o_image->imageView, VK_OBJECT_TYPE_IMAGE_VIEW, filename );
 
 	stbi_image_free( pixels );
@@ -112,7 +108,7 @@ void CreateSolidColorImage( glm::vec4 color, GfxImage* o_image, I_ImageAlloctor*
 	allocator->Allocate( o_image->image, &o_image->gfx_mem_alloc );
 	allocator->UploadData( *o_image, pixels );
 
-	o_image->imageView = Create2DImageView( o_image->image, o_image->format, VK_IMAGE_ASPECT_COLOR_BIT, o_image->mipLevels );
+	o_image->imageView = create_image_view( o_image->image, VK_IMAGE_VIEW_TYPE_2D, o_image->format, VK_IMAGE_ASPECT_COLOR_BIT, o_image->mipLevels );
 }
 
 void generateMipmaps( VkCommandBuffer commandBuffer, VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels )
@@ -201,4 +197,21 @@ void generateMipmaps( VkCommandBuffer commandBuffer, VkImage image, VkFormat ima
 		0, nullptr,
 		0, nullptr,
 		1, &barrier );
+}
+
+void create_image_simple( uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageUsageFlags usage, VkImageAspectFlagBits aspect_flags, VkMemoryPropertyFlags properties, GfxImage* o_gfx_image )
+{
+	o_gfx_image->extent = { width, height };
+	o_gfx_image->mipLevels = mipLevels;
+	o_gfx_image->format = format;
+
+	create_image( width, height, mipLevels, format, usage, &o_gfx_image->image );
+
+	VkMemoryRequirements mem_requirements;
+	vkGetImageMemoryRequirements( g_vk.device, o_gfx_image->image, &mem_requirements );
+	uint32_t memoryType = findMemoryType( mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
+	o_gfx_image->gfx_mem_alloc = allocate_gfx_memory( mem_requirements.size, memoryType );
+	BindMemory( o_gfx_image->image, o_gfx_image->gfx_mem_alloc );
+
+	o_gfx_image->imageView = create_image_view( o_gfx_image->image, VK_IMAGE_VIEW_TYPE_2D, format, aspect_flags, mipLevels );
 }

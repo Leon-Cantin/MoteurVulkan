@@ -73,15 +73,13 @@ GfxModel CreateGfxModel( const std::vector<VIDesc>& viDescs, const std::vector<v
 		currentVI->desc = viDesc;
 		VkDeviceSize bufferSize = GetBindingSize( &viDesc ) * vertexCount;
 		currentVI->buffer.buffer = create_buffer( bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT );
-		currentVI->buffer.gpuMemory.size = bufferSize;//TODO: this should be done automaticaly
-		allocator->Allocate( currentVI->buffer.buffer );
+		allocator->Allocate( currentVI->buffer.buffer, &currentVI->buffer.gpuMemory );
 		allocator->UploadData( currentVI->buffer, data[i] );
 	}
 
 	VkDeviceSize bufferSize = indexTypeSize * indiceCount;
 	gfxModel.indexBuffer.buffer = create_buffer( bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT );
-	gfxModel.indexBuffer.gpuMemory.size = bufferSize;//TODO: this should be done automaticaly
-	allocator->Allocate( gfxModel.indexBuffer.buffer );
+	allocator->Allocate( gfxModel.indexBuffer.buffer, &gfxModel.indexBuffer.gpuMemory );
 	allocator->UploadData( gfxModel.indexBuffer, indicesData );
 	gfxModel.indexType = GetIndexType( indexTypeSize );
 

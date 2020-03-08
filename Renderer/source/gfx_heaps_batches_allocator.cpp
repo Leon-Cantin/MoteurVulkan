@@ -48,17 +48,16 @@ bool GfxHeaps_BatchedAllocator::Allocate( VkImage image, GfxMemAlloc* o_gfx_mem_
 	return true;
 }
 
-bool GfxHeaps_BatchedAllocator::UploadData( const GfxImage& gfxImage, const void* data )
+static bool UploadDataCommon( VkCommandBuffer commandBuffer, const GfxImage& gfxImage, const void* data, BufferAllocator* stagingBufferAllocator, GpuBuffer* stagingBuffer )
 {
 	const uint32_t layerCount = 1;
 
-	VkDeviceSize stagingBufferOffset = AllocateGpuBufferSlot( &stagingBufferAllocator, gfxImage.gfx_mem_alloc.size );
-	UpdateGpuBuffer( &stagingBuffer, data, gfxImage.gfx_mem_alloc.size, stagingBufferOffset );
+	VkDeviceSize stagingBufferOffset = AllocateGpuBufferSlot( stagingBufferAllocator, gfxImage.gfx_mem_alloc.size );
+	UpdateGpuBuffer( stagingBuffer, data, gfxImage.gfx_mem_alloc.size, stagingBufferOffset );
 
 	transitionImageLayout( commandBuffer, gfxImage.image, gfxImage.format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, gfxImage.mipLevels, layerCount );
-	copyBufferToImage( commandBuffer, stagingBuffer.buffer, stagingBufferOffset, gfxImage.image, gfxImage.extent.width, gfxImage.extent.height, layerCount );
+	copyBufferToImage( commandBuffer, stagingBuffer->buffer, stagingBufferOffset, gfxImage.image, gfxImage.extent.width, gfxImage.extent.height, layerCount );
 
-	//TODO: mem requirement will be computed by memRequirement in create_image... I hope it's right
 	//GenerateMipmaps will do the transition, do it if we don't generate them
 	if( gfxImage.mipLevels > 1 )
 		generateMipmaps( commandBuffer, gfxImage.image, gfxImage.format, gfxImage.extent.width, gfxImage.extent.height, gfxImage.mipLevels );//TODO: should probably not be done here
@@ -68,7 +67,12 @@ bool GfxHeaps_BatchedAllocator::UploadData( const GfxImage& gfxImage, const void
 	return true;
 }
 
-bool GfxHeaps_BatchedAllocator::Allocate( VkBuffer buffer )
+bool GfxHeaps_BatchedAllocator::UploadData( const GfxImage& gfxImage, const void* data )
+{
+	return UploadDataCommon( commandBuffer, gfxImage, data, &stagingBufferAllocator, &stagingBuffer );
+}
+
+bool GfxHeaps_BatchedAllocator::Allocate( VkBuffer buffer, GfxMemAlloc* o_gfx_mem_alloc )
 {
 	VkMemoryRequirements memRequirements;
 	vkGetBufferMemoryRequirements( g_vk.device, buffer, &memRequirements );
@@ -79,7 +83,8 @@ bool GfxHeaps_BatchedAllocator::Allocate( VkBuffer buffer )
 	const size_t memOffset = head + alignementOffset;
 	const size_t newHead = memOffset + memRequirements.size;
 
-	vkBindBufferMemory( g_vk.device, buffer, _heap->gfx_mem_alloc.memory, memOffset );
+	*o_gfx_mem_alloc = suballocate_gfx_memory( _heap->gfx_mem_alloc, memRequirements.size, memOffset );
+	BindMemory( buffer, *o_gfx_mem_alloc );
 
 	head = newHead;
 
@@ -124,23 +129,7 @@ bool GfxHeaps_CommitedResourceAllocator::Allocate( VkImage image, GfxMemAlloc* o
 	return true;
 }
 
-//TODO: bunch of stuff shared with above allocator
 bool GfxHeaps_CommitedResourceAllocator::UploadData( const GfxImage& gfxImage, const void* data )
 {
-	const uint32_t layerCount = 1;
-
-	VkDeviceSize stagingBufferOffset = AllocateGpuBufferSlot( &stagingBufferAllocator, gfxImage.gfx_mem_alloc.size );
-	UpdateGpuBuffer( &stagingBuffer, data, gfxImage.gfx_mem_alloc.size, stagingBufferOffset );
-
-	transitionImageLayout( commandBuffer, gfxImage.image, gfxImage.format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, gfxImage.mipLevels, layerCount );
-	copyBufferToImage( commandBuffer, stagingBuffer.buffer, stagingBufferOffset, gfxImage.image, gfxImage.extent.width, gfxImage.extent.height, layerCount );
-
-	//TODO: mem requirement will be computed by memRequirement in create_image... I hope it's right
-	//GenerateMipmaps will do the transition, do it if we don't generate them
-	if( gfxImage.mipLevels > 1 )
-		generateMipmaps( commandBuffer, gfxImage.image, gfxImage.format, gfxImage.extent.width, gfxImage.extent.height, gfxImage.mipLevels );//TODO: should probably not be done here
-	else
-		transitionImageLayout( commandBuffer, gfxImage.image, gfxImage.format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, gfxImage.mipLevels, layerCount );
-
-	return true;
+	return UploadDataCommon( commandBuffer, gfxImage, data, &stagingBufferAllocator, &stagingBuffer );
 }

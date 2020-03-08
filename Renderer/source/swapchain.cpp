@@ -98,7 +98,7 @@ void createSwapChain(VkSurfaceKHR vkSurface, uint32_t maxWidth, uint32_t maxHeig
 
 	std::vector<VkImageView> swapChainImageViews(image_count);
 	for (size_t i = 0; i < image_count; ++i)
-		swapChainImageViews[i] = Create2DImageView(swapChainImages[i], swapchainFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+		swapChainImageViews[i] = create_image_view(swapChainImages[i], VK_IMAGE_VIEW_TYPE_2D, swapchainFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 
 	o_swapchain.images.resize(image_count);
 	o_swapchain.imageCount = image_count;

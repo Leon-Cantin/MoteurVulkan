@@ -28,11 +28,9 @@ namespace FG
 
 	static void CreateImage(VkFormat format, VkExtent2D extent, GfxImage* image, VkImageUsageFlagBits usage_flags, VkImageAspectFlagBits aspect_flags, VkImageLayout image_layout)
 	{
-		image->extent = extent;
-		image->format = format;
 		const uint32_t mipLevels = 1;
-		create_image_simple( extent.width, extent.height, mipLevels, format, usage_flags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &image->image, &image->gfx_mem_alloc.memory );
-		image->imageView = Create2DImageView( image->image, format, aspect_flags, mipLevels );
+		//TODO: don't use the "simple" version will need to do something about those command buffers
+		create_image_simple( extent.width, extent.height, mipLevels, format, usage_flags, aspect_flags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image );
 		VkCommandBuffer command_buffer = beginSingleTimeCommands();
 		transitionImageLayout( command_buffer, image->image, format, VK_IMAGE_LAYOUT_UNDEFINED, image_layout, 1, 1 );
 		endSingleTimeCommands( command_buffer );

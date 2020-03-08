@@ -1,5 +1,5 @@
 #pragma once
-#include "vk_buffer.h"
+#include "gfx_buffer.h"
 #include "gfx_image.h"
 
 enum eDescriptorType

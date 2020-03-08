@@ -6,7 +6,7 @@ GfxHeap create_gfx_heap( size_t size, uint32_t memoryTypeBits, VkMemoryPropertyF
 {
 	GfxHeap heap = {};
 	heap.memoryTypeIndex = findMemoryType( memoryTypeBits, properties );
-	heap.properties = properties; //TODO: this is not the type of the heap, but the type we want. May slightly differ
+	heap.properties = properties; //TODOTODO: this is not the type of the heap, but the type we want. May slightly differ
 	heap.gfx_mem_alloc = allocate_gfx_memory( size, heap.memoryTypeIndex );
 
 	return heap;

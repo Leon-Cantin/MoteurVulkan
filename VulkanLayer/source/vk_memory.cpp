@@ -21,7 +21,6 @@ GfxMemAlloc allocate_gfx_memory( VkDeviceSize size, uint32_t type )
 
 GfxMemAlloc suballocate_gfx_memory( const GfxMemAlloc& gfx_mem, VkDeviceSize size, VkDeviceSize offset )
 {
-	//TODO: respect alignement!!!!!
 	assert( offset + size <= gfx_mem.size );
 	assert( gfx_mem.offset == 0 );//Just to be sure right now
 	const bool is_parent_pool = false;
@@ -50,7 +49,7 @@ bool IsRequiredMemoryType( uint32_t typeFilter, uint32_t memoryType )
 	return (typeFilter & memoryTypeBit);
 }
 
-uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+uint32_t findMemoryType( uint32_t typeFilter, VkMemoryPropertyFlags properties )
 {
 	VkPhysicalDeviceMemoryProperties memProperties;
 	vkGetPhysicalDeviceMemoryProperties(g_vk.physicalDevice, &memProperties);

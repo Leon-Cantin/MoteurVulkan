@@ -1,6 +1,6 @@
 #pragma once
 #include <cassert>
-#include "vk_buffer.h"
+#include "gfx_buffer.h"
 
 struct BufferAllocator
 {

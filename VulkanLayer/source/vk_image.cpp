@@ -145,14 +145,9 @@ static VkImageView CreateImageView( VkImage image, VkFormat format, VkImageViewT
 	return imageView;
 }
 
-VkImageView createCubeImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels)
+VkImageView create_image_view( VkImage image, VkImageViewType type, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels )
 {
-	return CreateImageView( image, format, VK_IMAGE_VIEW_TYPE_CUBE, aspectFlags, mipLevels );
-}
-
-VkImageView Create2DImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels)
-{
-	return CreateImageView( image, format, VK_IMAGE_VIEW_TYPE_2D, aspectFlags, mipLevels );
+	return CreateImageView( image, format, type, aspectFlags, mipLevels );
 }
 
 void BindMemory( VkImage image, VkDeviceMemory memory )
@@ -165,24 +160,6 @@ void BindMemory( VkImage image, const GfxMemAlloc& gfx_mem_alloc )
 	vkBindImageMemory( g_vk.device, image, gfx_mem_alloc.memory, gfx_mem_alloc.offset );
 }
 
-//TODO: this function and stuff that calls it could go away or use gfx_mem_alloc
-static VkDeviceMemory AllocateMemory( const VkImage image, const VkMemoryPropertyFlags properties )
-{
-	VkDeviceMemory imageMemory;
-	VkMemoryRequirements memRequirements;
-	vkGetImageMemoryRequirements( g_vk.device, image, &memRequirements );
-
-	VkMemoryAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = findMemoryType( memRequirements.memoryTypeBits, properties );
-
-	if( vkAllocateMemory( g_vk.device, &allocInfo, nullptr, &imageMemory ) != VK_SUCCESS )
-		throw std::runtime_error( "failed to allocate image memory!" );
-
-	return imageMemory;
-}
-
 static VkImage CreateImage( const VkImageCreateInfo& imageInfo )
 {
 	VkImage image;
@@ -193,20 +170,13 @@ static VkImage CreateImage( const VkImageCreateInfo& imageInfo )
 	return image;
 }
 
-static void CreateImageAndAllocate( const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage* image, VkDeviceMemory* imageMemory )
-{
-	*image = CreateImage( imageInfo );
-	*imageMemory = AllocateMemory( *image, properties );
-	BindMemory( *image, *imageMemory );
-}
-
-void create_cube_image(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
+static VkImageCreateInfo fill_cube_image_info( uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageUsageFlags usage )
 {
 	VkImageCreateInfo imageInfo = {};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	imageInfo.imageType = VK_IMAGE_TYPE_2D;
-	imageInfo.extent.width = static_cast<uint32_t>(width);
-	imageInfo.extent.height = static_cast<uint32_t>(height);
+	imageInfo.extent.width = static_cast< uint32_t >(width);
+	imageInfo.extent.height = static_cast< uint32_t >(height);
 	imageInfo.extent.depth = 1;
 	imageInfo.mipLevels = mipLevels;
 	imageInfo.arrayLayers = 6;
@@ -217,8 +187,7 @@ void create_cube_image(uint32_t width, uint32_t height, uint32_t mipLevels, VkFo
 	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 	imageInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT; // Optional
-
-	CreateImageAndAllocate( imageInfo, properties, &image, &imageMemory );
+	return imageInfo;
 }
 
 static VkImageCreateInfo fill_image_info( VkImageType type, uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageUsageFlags usage )
@@ -247,16 +216,10 @@ void create_image( uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat
 	*image = CreateImage( imageInfo );
 }
 
-void create_image_simple(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage* image, VkDeviceMemory* imageMemory )
+void create_cube_image( uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageUsageFlags usage, VkImage* image )
 {
-	VkImageCreateInfo imageInfo = fill_image_info( VK_IMAGE_TYPE_2D, width, height, mipLevels, format, usage );
-	CreateImageAndAllocate( imageInfo, properties, image, imageMemory );
-}
-
-void create_image_simple( uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage* image, VkDeviceMemory* imageMemory, VkImageView* imageView )
-{
-	create_image_simple( width, height, mipLevels, format, usage, properties, image, imageMemory );
-	*imageView = Create2DImageView( *image, format, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels );
+	VkImageCreateInfo imageInfo = fill_cube_image_info( width, height, mipLevels, format, usage );
+	*image = CreateImage( imageInfo );
 }
 
 VkFormat findDepthFormat() {
