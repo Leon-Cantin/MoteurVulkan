@@ -1,9 +1,9 @@
-#include "game_classic_2d.h"
+#include "engine.h"
 
 int main() {
 
 	try {
-		Scene2DGame::run();
+		Engine::Start( mainScene );
 	}
 	catch (const std::exception& e) {
 		std::cerr << e.what() << std::endl;

@@ -5,7 +5,7 @@
 #include <assert.h>
 
 #include "window_handler.h"
-
+//TODO: this is starting to be a mess. especially init and cleanup
 namespace IH
 {
 	typedef void(*ActionCallback)(void);
@@ -92,10 +92,21 @@ namespace IH
 		inputsActive = value;
 	}
 
+	void CleanupInputs()
+	{
+		heldKeysSize = 0;
+		memset( heldKeys, UNKNOWN, sizeof( heldKeys ) );
+		memset( lastKeysState, 0, sizeof( lastKeysState ) );
+		inputsActive = true;
+
+		name_action_map.clear();
+		input_action_map.clear();
+		character_callbacks.clear();
+	}
+
 	void InitInputs()
 	{
-		memset(heldKeys, UNKNOWN, sizeof(heldKeys));
-
+		CleanupInputs();
 		WH::SetCharCallback(character_callback);
 	}
 }

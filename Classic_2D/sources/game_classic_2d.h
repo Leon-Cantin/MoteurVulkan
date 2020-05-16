@@ -23,15 +23,9 @@
 #include <algorithm>
 #include <assert.h>
 
-namespace Scene2DGame
+namespace WildWeasel_Game
 {
 	uint32_t current_frame = 0;
-
-	const int VIEWPORT_WIDTH = 224;
-	const int VIEWPORT_HEIGHT = 384;
-	const int SCREEN_SCALE = 2;
-	const int SCREEN_WIDTH = VIEWPORT_WIDTH * SCREEN_SCALE;
-	const int SCREEN_HEIGHT = VIEWPORT_HEIGHT * SCREEN_SCALE;
 
 	struct EnemyShipInstance
 	{
@@ -250,54 +244,48 @@ namespace Scene2DGame
 		return textZones;
 	}
 
-	void mainLoop() {
-		while (!WH::shouldClose())
-		{
-			//TODO: thread this
-			WH::ProcessMessages();
-			size_t currentTime = WH::GetTime();
-			static size_t lastTime = currentTime;
+	void Update() {
+
+		size_t currentTime = WH::GetTime();
+		static size_t lastTime = currentTime;
 			
-			frameDeltaTime = static_cast<size_t>(currentTime - lastTime);
-			lastTime = currentTime;
+		frameDeltaTime = static_cast<size_t>(currentTime - lastTime);
+		lastTime = currentTime;
 
-			//Input
-			IH::DoCommands();
+		//Input
+		IH::DoCommands();
 
-			static size_t lastSpawn = 0;
-			if( lastSpawn == 0 || currentTime - lastSpawn > 1000 )
-			{
-				CreateEnemyShip();
-				CreateCloud();
-				lastSpawn = currentTime;
-			}
-
-			UpdateBackgroundScrolling( &backgroundInstance, frameDeltaTime );
-
-			//Update objects
-			//TickUpdate( frameDeltaTime );
-
-			UpdateInstanceList( bulletInstances, frameDeltaTime );
-			UpdateInstanceList( enemyShipSceneInstances, frameDeltaTime );
-			UpdateInstanceList( cloudInstances, frameDeltaTime );
-
-			std::vector<GfxAssetInstance> drawList = { { &shipRenderable, shipSceneInstance, false } };
-			drawList.push_back( { &backgroundInstance.asset, backgroundInstance.instance, false } );
-			for( SceneInstance& i : cloudInstances )
-				drawList.push_back( { &cloudAsset, i, true } );
-			for( BulletInstance& bi : bulletInstances )
-				drawList.push_back( { &bulletRenderable, bi.sceneInstance, false } );
-			for( EnemyShipInstance& enemyShipInstance : enemyShipSceneInstances )
-				drawList.push_back( { &shipRenderable, enemyShipInstance.sceneInstance, false } );
-
-			std::vector<TextZone> textZones = UpdateText();
-
-			DrawFrame( current_frame, &cameraSceneInstance, drawList, textZones );
-
-			current_frame = (++current_frame) % SIMULTANEOUS_FRAMES;
+		static size_t lastSpawn = 0;
+		if( lastSpawn == 0 || currentTime - lastSpawn > 1000 )
+		{
+			CreateEnemyShip();
+			CreateCloud();
+			lastSpawn = currentTime;
 		}
 
-		vkDeviceWaitIdle(g_vk.device);
+		UpdateBackgroundScrolling( &backgroundInstance, frameDeltaTime );
+
+		//Update objects
+		//TickUpdate( frameDeltaTime );
+
+		UpdateInstanceList( bulletInstances, frameDeltaTime );
+		UpdateInstanceList( enemyShipSceneInstances, frameDeltaTime );
+		UpdateInstanceList( cloudInstances, frameDeltaTime );
+
+		std::vector<GfxAssetInstance> drawList = { { &shipRenderable, shipSceneInstance, false } };
+		drawList.push_back( { &backgroundInstance.asset, backgroundInstance.instance, false } );
+		for( SceneInstance& i : cloudInstances )
+			drawList.push_back( { &cloudAsset, i, true } );
+		for( BulletInstance& bi : bulletInstances )
+			drawList.push_back( { &bulletRenderable, bi.sceneInstance, false } );
+		for( EnemyShipInstance& enemyShipInstance : enemyShipSceneInstances )
+			drawList.push_back( { &shipRenderable, enemyShipInstance.sceneInstance, false } );
+
+		std::vector<TextZone> textZones = UpdateText();
+
+		DrawFrame( current_frame, &cameraSceneInstance, drawList, textZones );
+
+		current_frame = (++current_frame) % SIMULTANEOUS_FRAMES;
 	}
 
 	std::vector<SceneInstance> CreateClouds()
@@ -315,11 +303,6 @@ namespace Scene2DGame
 
 	void Init()
 	{
-		WH::InitializeWindow( SCREEN_WIDTH, SCREEN_HEIGHT, "Wild Weasel: Vietnam" );
-		VK::Initialize();
-		WH::VK::InitializeWindow();
-		VK::PickSuitablePhysicalDevice( WH::VK::_windowSurface );
-
 		//Input callbacks
 		IH::InitInputs();
 		IH::RegisterAction( "console", IH::Pressed, &ConCom::OpenConsole );
@@ -340,9 +323,6 @@ namespace Scene2DGame
 
 		//Objects update callbacks
 		//RegisterTickFunction( &TickObjectCallback );
-
-		//Init renderer stuff
-		InitRendererImp( WH::VK::_windowSurface );
 
 		//LoadAssets
 		uint32_t memoryTypeMask = 15;/*TODO this works for now for textures, comes from asking VK for a textures*/
@@ -386,22 +366,14 @@ namespace Scene2DGame
 		cloudInstances = CreateClouds();
 	}
 
-	void cleanup() 
+	void Destroy() 
 	{
-		CleanupRendererImp();
+		//TODO: "Decompile scene"
+		IH::CleanupInputs();
+		ConCom::Cleanup();
 
 		AL::Cleanup();
 
 		destroy( &gfx_heap );
-	}
-
-	void run() 
-	{
-		Init();
-		mainLoop();
-		cleanup();
-		WH::VK::ShutdownWindow();
-		VK::Shutdown();
-		WH::ShutdownWindow();
 	}
 }

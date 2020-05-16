@@ -7,6 +7,8 @@
 #include <iostream>
 #include <stdlib.h>
 
+//TODO: Could be cool to not have a reference to input handler
+
 namespace ConCom
 {
 	bool console_active = false;
@@ -106,8 +108,16 @@ namespace ConCom
 		return string;
 	}
 
+	void Cleanup()
+	{
+		console_active = false;
+		command_map.clear();
+		console_string.clear();
+	}
+
 	void Init()
 	{
+		Cleanup();
 		IH::RegisterCharacterCallback(CharacterReceived);
 	}
 

@@ -15,4 +15,5 @@ namespace IH
 	void DoCommands();
 	void ActiveInputs(bool value);
 	void InitInputs();
+	void CleanupInputs();
 }
