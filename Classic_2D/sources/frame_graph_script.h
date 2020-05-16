@@ -5,6 +5,7 @@
 #include "geometry_renderpass.h"
 #include "text_overlay.h"
 #include "descriptors.h"
+#include "..\shaders\shadersCommon.h"
 
 #include <unordered_map>
 
@@ -85,6 +86,7 @@ inline GfxImageSamplerCombined* GetImage( const GpuInputData* buffers, eTechniqu
 
 GfxDescriptorSetDesc geoPassSetDesc =
 {
+	RENDERPASS_SET,
 	{
 		{ static_cast< uint32_t >(eTechniqueDataEntryName::SCENE_DATA), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
 
@@ -94,6 +96,7 @@ GfxDescriptorSetDesc geoPassSetDesc =
 
 GfxDescriptorSetDesc geoInstanceSetDesc =
 {
+	INSTANCE_SET,
 	{
 		{ static_cast< uint32_t >(eTechniqueDataEntryName::INSTANCE_DATA), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
 	}
@@ -117,14 +120,15 @@ static FG::RenderPassCreationData FG_Geometry_CreateGraphNode( const Swapchain* 
 
 	frameGraphNode->gpuPipelineLayout = GetGeoPipelineLayout();
 	frameGraphNode->gpuPipelineState = GetGeoPipelineState();
-	frameGraphNode->instanceSet = &geoInstanceSetDesc;
-	frameGraphNode->passSet = &geoPassSetDesc;
+	frameGraphNode->descriptorSets.push_back( geoPassSetDesc );
+	frameGraphNode->descriptorSets.push_back( geoInstanceSetDesc );
 
 	return renderPassCreationData;
 }
 
 GfxDescriptorSetDesc textPassSet =
 {
+	RENDERPASS_SET,
 	{
 		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::TEXT), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_FRAGMENT_BIT }
 	}
@@ -144,15 +148,15 @@ static FG::RenderPassCreationData FG_TextOverlay_CreateGraphNode( const Swapchai
 
 	frameGraphNode->gpuPipelineLayout = GetTextPipelineLayout();
 	frameGraphNode->gpuPipelineState = GetTextPipelineState();
-	frameGraphNode->instanceSet = nullptr;
 	//TODO: we don't need one set per frame for this one
-	frameGraphNode->passSet = &textPassSet;
+	frameGraphNode->descriptorSets.push_back( textPassSet );
 
 	return renderPassCreationData;
 }
 
 GfxDescriptorSetDesc copyPassSet =
 {
+	RENDERPASS_SET,
 	{
 		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::SCENE_COLOR), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_FRAGMENT_BIT }
 	}
@@ -169,7 +173,7 @@ void CopyRecordDrawCommandsBuffer( uint32_t currentFrame, const SceneFrameData* 
 	BeginRenderPass( graphicsCommandBuffer, *renderpass, frameBuffer.frameBuffer, frameBuffer.extent );
 
 	vkCmdBindPipeline( graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipeline );
-	vkCmdBindDescriptorSets( graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, 0, 1, &technique->renderPass_descriptor[currentFrame], 0, nullptr );
+	vkCmdBindDescriptorSets( graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, 0, 1, &technique->descriptor_sets[RENDERPASS_SET].hw_descriptorSets[currentFrame], 0, nullptr );
 
 	vkCmdDraw( graphicsCommandBuffer, 4, 1, 0, 0 );
 
@@ -218,8 +222,7 @@ static FG::RenderPassCreationData FG_Copy_CreateGraphNode( const Swapchain* swap
 	frameGraphNode->gpuPipelineLayout = GpuPipelineLayout();
 	frameGraphNode->gpuPipelineState = GetCopyPipelineState();
 	//TODO: generalize instance and pass set into an array of binding point and set
-	frameGraphNode->instanceSet = nullptr;
-	frameGraphNode->passSet = &copyPassSet;
+	frameGraphNode->descriptorSets.push_back( copyPassSet );
 
 	return renderPassCreationData;
 }

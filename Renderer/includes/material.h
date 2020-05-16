@@ -1,17 +1,22 @@
 #pragma once
 
 #include "descriptors.h"
+#include "bindings.h"
 
 #include <array>
 
+struct GfxDescriptorSetBinding
+{
+	std::array< VkDescriptorSet, SIMULTANEOUS_FRAMES> hw_descriptorSets;
+	//TODO: something to manage and generate descriptor sets. Passes can register to use one of many descriptor set layout
+	VkDescriptorSetLayout hw_layout;
+	GfxDescriptorSetDesc desc;
+	bool isValid = false;
+};
+
 struct Technique
 {
-	std::array< VkDescriptorSet, SIMULTANEOUS_FRAMES> renderPass_descriptor;
-	std::array< VkDescriptorSet, SIMULTANEOUS_FRAMES> instance_descriptor;
-
-	//TODO: something to manage and generate descriptor sets. Passes can register to use one of many descriptor set layout
-	VkDescriptorSetLayout renderpass_descriptor_layout;
-	VkDescriptorSetLayout instance_descriptor_layout;
+	std::array< GfxDescriptorSetBinding, 8 > descriptor_sets;
 
 	VkPipelineLayout pipelineLayout;
 	VkPipeline pipeline;
@@ -19,11 +24,6 @@ struct Technique
 	VkDescriptorPool parentDescriptorPool;
 };
 
-struct GfxMaterial
-{	
-	Technique techniques[1];
-};
-
 //Don't recall this if the technique is the same
 void BeginTechnique( VkCommandBuffer commandBuffer, const Technique* technique, size_t currentFrame );
-void Destroy( GfxMaterial* material );
+void Destroy( Technique* technique );

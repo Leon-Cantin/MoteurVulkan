@@ -120,44 +120,42 @@ namespace FG
 		}
 	}
 
-	static void CreateTechnique( FG::FrameGraph* frameGraph, VkDescriptorPool descriptorPool, const RenderPass* renderpass, const FG::RenderPassCreationData* passCreationData, Technique* o_technique )
+	static Technique CreateTechnique( FG::FrameGraph* frameGraph, VkDescriptorPool descriptorPool, const RenderPass* renderpass, const FG::RenderPassCreationData* passCreationData )
 	{
-		const GfxDescriptorSetDesc* passSet = passCreationData->frame_graph_node.passSet;
-		const GfxDescriptorSetDesc* instanceSet = passCreationData->frame_graph_node.instanceSet;
-
+		Technique technique;
 		//Create descriptors
-		if( passSet )
+		for( const GfxDescriptorSetDesc& setDesc : passCreationData->frame_graph_node.descriptorSets )
 		{
-			CreateDescriptorSetLayout( frameGraph, passSet, &o_technique->renderpass_descriptor_layout );
+			VkDescriptorSetLayout layout;
+			CreateDescriptorSetLayout( frameGraph, &setDesc, &layout );
+
 			//TODO: not all of them need one for each simultaneous frames
+			GfxDescriptorSetBinding setBinding;
+			setBinding.desc = setDesc;
+			setBinding.hw_layout = layout;
+			setBinding.isValid = true;
+
 			for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
-				CreateDescriptorSet( o_technique->renderpass_descriptor_layout, descriptorPool, &o_technique->renderPass_descriptor[i] );
+				CreateDescriptorSet( layout, descriptorPool, &setBinding.hw_descriptorSets[i]);
+
+			technique.descriptor_sets[setDesc.id] = setBinding;
 		}
-		if( instanceSet )
-		{
-			CreateDescriptorSetLayout( frameGraph, instanceSet, &o_technique->instance_descriptor_layout );
-			//TODO: not all of them need one for each simultaneous frames
-			for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
-				CreateDescriptorSet( o_technique->instance_descriptor_layout, descriptorPool, &o_technique->instance_descriptor[i] );
-		}
-		o_technique->parentDescriptorPool = descriptorPool;
+		technique.parentDescriptorPool = descriptorPool;
 
 		//Create pipeline layout
-		uint32_t dscriptorSetLayoutsCount = 0;
-		std::array< VkDescriptorSetLayout, 2 > descriptorSetLayouts;
-		if( passSet )
-			descriptorSetLayouts[dscriptorSetLayoutsCount++] = o_technique->renderpass_descriptor_layout;
-		if( instanceSet )
-			descriptorSetLayouts[dscriptorSetLayoutsCount++] = o_technique->instance_descriptor_layout;
+		//TODO: this won't work if there's one binding point with no set. As the location in the array denote the set's binding point
+		std::vector< VkDescriptorSetLayout > descriptorSetLayouts;
+		for( const GfxDescriptorSetDesc& setDesc : passCreationData->frame_graph_node.descriptorSets )
+			descriptorSetLayouts.push_back( technique.descriptor_sets[setDesc.id].hw_layout );
 
 		VkPipelineLayoutCreateInfo pipeline_layout_info = {};
 		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipeline_layout_info.setLayoutCount = dscriptorSetLayoutsCount;
+		pipeline_layout_info.setLayoutCount = descriptorSetLayouts.size();
 		pipeline_layout_info.pSetLayouts = descriptorSetLayouts.data();
 		pipeline_layout_info.pushConstantRangeCount = passCreationData->frame_graph_node.gpuPipelineLayout.pushConstantRanges.size();
 		pipeline_layout_info.pPushConstantRanges = passCreationData->frame_graph_node.gpuPipelineLayout.pushConstantRanges.data();
 
-		if( vkCreatePipelineLayout( g_vk.device, &pipeline_layout_info, nullptr, &o_technique->pipelineLayout ) != VK_SUCCESS ) {
+		if( vkCreatePipelineLayout( g_vk.device, &pipeline_layout_info, nullptr, &technique.pipelineLayout ) != VK_SUCCESS ) {
 			throw std::runtime_error( "failed to create pipeline layout!" );
 		}
 				
@@ -167,15 +165,17 @@ namespace FG
 		CreatePipeline( pipelineState,
 			viewportSize,
 			renderpass->vk_renderpass,
-			o_technique->pipelineLayout,
-			&o_technique->pipeline );
+			technique.pipelineLayout,
+			&technique.pipeline );
+
+		return technique;
 	}
 
 	void CreateTechniques( FG::FrameGraph* frameGraph, VkDescriptorPool descriptorPool )
 	{
 		for( uint32_t i = 0; i < frameGraph->imp->_render_passes_count; ++i )
 		{
-			CreateTechnique( frameGraph, descriptorPool, &frameGraph->imp->_render_passes[i], &frameGraph->imp->creationData.renderPasses[i], &frameGraph->imp->_techniques[i] );
+			frameGraph->imp->_techniques[i] = CreateTechnique( frameGraph, descriptorPool, &frameGraph->imp->_render_passes[i], &frameGraph->imp->creationData.renderPasses[i] );
 			++frameGraph->imp->_techniques_count;
 		}
 	}
@@ -186,14 +186,8 @@ namespace FG
 		{
 			const FG::RenderPassCreationData* passCreationData = &frameGraph->imp->creationData.renderPasses[i];
 
-			const GfxDescriptorSetDesc* passSet = passCreationData->frame_graph_node.passSet;
-			const GfxDescriptorSetDesc* instanceSet = passCreationData->frame_graph_node.instanceSet;
-
-			//Create buffers if required
-			if( passSet )
-				SetOrCreateDataIfNeeded( frameGraph, &inputBuffers, passSet );
-			if( instanceSet )
-				SetOrCreateDataIfNeeded( frameGraph, &inputBuffers, instanceSet );
+			for( const GfxDescriptorSetDesc& set : passCreationData->frame_graph_node.descriptorSets )
+				SetOrCreateDataIfNeeded( frameGraph, &inputBuffers, &set );
 		}
 	}
 
@@ -251,13 +245,13 @@ namespace FG
 		UpdateDescriptorSets( 1, &writeDescriptorSet, descriptorSet );
 	}
 
-	static void FillWithDummyDescriptors( const FG::FrameGraph* frameGraph, const GpuInputData* inputData, const GfxDescriptorSetDesc* descriptorSetDesc, VkDescriptorSet* descriptorSet )
+	static void FillWithDummyDescriptors( const FG::FrameGraph* frameGraph, const GpuInputData* inputData, const GfxDescriptorSetDesc& descriptorSetDesc, VkDescriptorSet* descriptorSet )
 	{
 		//Update descriptor sets
-		assert( descriptorSetDesc->dataBindings.size() <= MAX_DATA_ENTRIES );
+		assert( descriptorSetDesc.dataBindings.size() <= MAX_DATA_ENTRIES );
 		WriteDescriptor writeDescriptors[8];
 		uint32_t writeDescriptorsCount = 0;
-		WriteDescriptorSet writeDescriptorSet = { writeDescriptors, descriptorSetDesc->dataBindings.size() };
+		WriteDescriptorSet writeDescriptorSet = { writeDescriptors, descriptorSetDesc.dataBindings.size() };
 
 		VkDescriptorBufferInfo descriptorBuffersInfos[16];
 		uint32_t descriptorBuffersInfosCount = 0;
@@ -265,9 +259,9 @@ namespace FG
 		uint32_t descriptorImagesInfosCount = 0;
 
 		//Fill in buffer
-		for( uint32_t dataBindingIndex = 0; dataBindingIndex < descriptorSetDesc->dataBindings.size(); ++dataBindingIndex )
+		for( uint32_t dataBindingIndex = 0; dataBindingIndex < descriptorSetDesc.dataBindings.size(); ++dataBindingIndex )
 		{
-			const GfxDataBinding* dataBinding = &descriptorSetDesc->dataBindings[dataBindingIndex];
+			const GfxDataBinding* dataBinding = &descriptorSetDesc.dataBindings[dataBindingIndex];
 			const FG::DataEntry* techniqueDataEntry = GetDataEntry( frameGraph, dataBinding->id );
 			if( IsBufferType( techniqueDataEntry->descriptorType ) )//Buffers
 			{
@@ -306,27 +300,17 @@ namespace FG
 
 		for( uint32_t i = 0; i < frameGraph->imp->_render_passes_count; ++i )
 		{
-			Technique* technique = &frameGraph->imp->_techniques[i];
+			Technique& technique = frameGraph->imp->_techniques[i];
 			const FG::RenderPassCreationData* passCreationData = &frameGraph->imp->creationData.renderPasses[i];
-			const GfxDescriptorSetDesc* passSet = passCreationData->frame_graph_node.passSet;
-			const GfxDescriptorSetDesc* instanceSet = passCreationData->frame_graph_node.instanceSet;
-			//Update descriptors
-			if( passSet )
+
+			for( const GfxDescriptorSetDesc& setDesc : passCreationData->frame_graph_node.descriptorSets )
 			{
 				//TODO: not all of them need one for each simultaneous frames
 				for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 				{
-					FillWithDummyDescriptors( frameGraph, &inputBuffers[i], passSet, &technique->renderPass_descriptor[i] );
-					UpdateDescriptorSet( frameGraph, &inputBuffers[i], passSet, &technique->renderPass_descriptor[i] );
-				}
-			}
-			if( instanceSet )
-			{
-				//TODO: not all of them need one for each simultaneous frames
-				for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
-				{
-					FillWithDummyDescriptors( frameGraph, &inputBuffers[i], instanceSet, &technique->instance_descriptor[i] );
-					UpdateDescriptorSet( frameGraph, &inputBuffers[i], instanceSet, &technique->instance_descriptor[i] );
+					VkDescriptorSet descriptorSet = technique.descriptor_sets[setDesc.id].hw_descriptorSets[i];
+					FillWithDummyDescriptors( frameGraph, &inputBuffers[i], setDesc, &descriptorSet );
+					UpdateDescriptorSet( frameGraph, &inputBuffers[i], &setDesc, &descriptorSet );
 				}
 			}
 		}

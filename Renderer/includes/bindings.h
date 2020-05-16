@@ -32,6 +32,7 @@ struct GfxDataBinding
 
 struct GfxDescriptorSetDesc
 {
+	uint32_t id;
 	std::vector<GfxDataBinding> dataBindings;
 };
 

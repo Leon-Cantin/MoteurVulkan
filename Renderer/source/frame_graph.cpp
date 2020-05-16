@@ -331,16 +331,7 @@ namespace FG
 		for( uint32_t i = 0; i < frameGraph->_techniques_count; ++i )
 		{
 			Technique& technique = frameGraph->_techniques[i];
-			vkDestroyPipeline( g_vk.device, technique.pipeline, nullptr );
-			vkDestroyPipelineLayout( g_vk.device, technique.pipelineLayout, nullptr );
-			vkDestroyDescriptorSetLayout( g_vk.device, technique.renderpass_descriptor_layout, nullptr );
-			vkDestroyDescriptorSetLayout( g_vk.device, technique.instance_descriptor_layout, nullptr );
-			for( uint32_t j = 0; j < technique.instance_descriptor.size(); ++j )
-				if( technique.instance_descriptor[j] )
-					vkFreeDescriptorSets( g_vk.device, technique.parentDescriptorPool, 1, &technique.instance_descriptor[j] );
-			for( uint32_t j = 0; j < technique.renderPass_descriptor.size(); ++j )
-				if( technique.renderPass_descriptor[j] )
-					vkFreeDescriptorSets( g_vk.device, technique.parentDescriptorPool, 1, &technique.renderPass_descriptor[j] );
+			Destroy( &technique );
 			technique = {};
 		}
 		frameGraph->_techniques_count = 0;

@@ -8,6 +8,7 @@
 #include "gfx_heaps_batched_allocator.h"
 #include "gfx_model.h"
 #include "stb_font_consolas_24_latin1.inl"
+#include "..\shaders\shadersCommon.h"
 
 GfxModel textModel;
 uint32_t maxTextCharCount = 0;
@@ -59,7 +60,7 @@ static void CmdDrawText( VkCommandBuffer commandBuffer, VkExtent2D extent, size_
 	BeginRenderPass(commandBuffer, *renderpass, frameBuffer.frameBuffer, frameBuffer.extent);
 
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipeline );
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, 0, 1, &technique->renderPass_descriptor[0], 0, nullptr);
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, RENDERPASS_SET, 1, &technique->descriptor_sets[RENDERPASS_SET].hw_descriptorSets[0], 0, nullptr);
 
 	CmdBindVertexInputs( commandBuffer, VIBindings_PosColUV, textModel );
 	vkCmdBindIndexBuffer( commandBuffer, textModel.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);

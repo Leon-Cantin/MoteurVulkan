@@ -65,7 +65,7 @@ static void CmdDrawModelAsset( VkCommandBuffer commandBuffer, const DrawListEntr
 	const SceneInstanceSet* instanceSet = &drawModel->descriptorSet;
 	const GfxModel* modelAsset = drawModel->asset->modelAsset;
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, INSTANCE_SET, 1,
-		&technique->instance_descriptor[currentFrame], 1, &instanceSet->geometryBufferOffsets);
+		&technique->descriptor_sets[INSTANCE_SET].hw_descriptorSets[currentFrame], 1, &instanceSet->geometryBufferOffsets);
 	CmdDrawIndexed(commandBuffer, VIBindings_PosColUV, *modelAsset);
 }
 

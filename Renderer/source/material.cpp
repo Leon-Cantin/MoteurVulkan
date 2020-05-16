@@ -12,16 +12,19 @@
 void BeginTechnique( VkCommandBuffer commandBuffer, const Technique* technique, size_t currentFrame )
 {
 	vkCmdBindPipeline( commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipeline );
-	vkCmdBindDescriptorSets( commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, RENDERPASS_SET, 1, &technique->renderPass_descriptor[currentFrame], 0, nullptr );
+	vkCmdBindDescriptorSets( commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, RENDERPASS_SET, 1, &technique->descriptor_sets[RENDERPASS_SET].hw_descriptorSets[currentFrame], 0, nullptr );
 }
 
-void Destroy( GfxMaterial* material )
+void Destroy( Technique* technique )
 {
-	for( Technique& technique : material->techniques )
+	vkDestroyPipeline( g_vk.device, technique->pipeline, nullptr );
+	vkDestroyPipelineLayout( g_vk.device, technique->pipelineLayout, nullptr );
+	for( GfxDescriptorSetBinding& setBinding : technique->descriptor_sets )
 	{
-		vkDestroyPipeline( g_vk.device, technique.pipeline, nullptr );
-		vkDestroyPipelineLayout( g_vk.device, technique.pipelineLayout, nullptr );
-		vkDestroyDescriptorSetLayout( g_vk.device, technique.renderpass_descriptor_layout, nullptr );
-		vkDestroyDescriptorSetLayout( g_vk.device, technique.instance_descriptor_layout, nullptr );
+		if( setBinding.isValid )
+		{
+			vkDestroyDescriptorSetLayout( g_vk.device, setBinding.hw_layout, nullptr );
+			vkFreeDescriptorSets( g_vk.device, technique->parentDescriptorPool, setBinding.hw_descriptorSets.size(), setBinding.hw_descriptorSets.data() );
+		}
 	}
 }
