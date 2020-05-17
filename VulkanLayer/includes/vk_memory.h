@@ -18,4 +18,9 @@ void UpdateGpuMemory( const GfxMemAlloc* dstMemory, const void* src, VkDeviceSiz
 bool IsRequiredMemoryType( uint32_t typeFilter, uint32_t memoryType );
 uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
+inline bool IsValid( const GfxMemAlloc& mem_alloc )
+{
+	return mem_alloc.memory != VK_NULL_HANDLE;
+}
+
 

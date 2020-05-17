@@ -35,3 +35,8 @@ void generateMipmaps( VkCommandBuffer commandBuffer, VkImage image, VkFormat ima
 void DestroyImage( GfxImage* image );
 
 void create_image_simple( uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageUsageFlags usage, VkImageAspectFlagBits aspect_flags, VkMemoryPropertyFlags properties, GfxImage* o_gfx_image );
+
+inline bool IsValid( const GfxImage& image )
+{
+	return IsValid( image.gfx_mem_alloc );
+}

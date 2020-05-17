@@ -7,6 +7,7 @@
 #include "vk_framework.h"
 #include "gpu_synchronization.h"
 #include "frame_graph.h"
+#include "gfx_heaps_batched_allocator.h"
 
 #include <array>
 #include <iostream>
@@ -29,6 +30,8 @@ bool( *_needResize )();
 void( *_getFrameBufferSize )(uint64_t* width, uint64_t* height);
 
 VkSurfaceKHR _swapchainSurface;
+
+GfxImage dummyImage;
 
 static void CreateCommandBuffer()
 {
@@ -96,6 +99,14 @@ static void cleanup_swap_chain()
 	vkDestroySwapchainKHR(g_vk.device, g_swapchain.vkSwapchain, nullptr);
 }
 
+static void CreateDummyImage()
+{
+	GfxHeaps_CommitedResourceAllocator allocator = {};
+	allocator.Prepare();
+	CreateSolidColorImage( glm::vec4( 0, 0, 0, 0 ), &dummyImage, &allocator );
+	allocator.Commit();
+}
+
 void InitRenderer( VkSurfaceKHR swapchainSurface, bool( *needResize )(), void( *getFrameBufferSize )(uint64_t* width, uint64_t* height) )
 {
 	//TODO: do better than this shit
@@ -119,6 +130,8 @@ void InitRenderer( VkSurfaceKHR swapchainSurface, bool( *needResize )(), void( *
 	create_sync_objects();
 
 	CreateTimeStampsQueryPool( SIMULTANEOUS_FRAMES );
+
+	CreateDummyImage();
 }
 
 static void CompileFrameGraph()
@@ -242,6 +255,8 @@ void draw_frame(uint32_t currentFrame, const SceneFrameData* frameData)
 }
 
 void CleanupRenderer() {
+	DestroyImage( &dummyImage );
+
 	cleanup_swap_chain();
 
 	DestroySamplers();

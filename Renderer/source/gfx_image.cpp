@@ -89,6 +89,8 @@ void DestroyImage( GfxImage* image )
 
 void CreateSolidColorImage( glm::vec4 color, GfxImage* o_image, I_ImageAlloctor* allocator )
 {
+	assert( !IsValid( *o_image ) );
+
 	const uint32_t width = 4, height = 4;
 	o_image->extent = { width, height };
 	o_image->format = VK_FORMAT_R8G8B8A8_UNORM;

@@ -6,9 +6,7 @@
 #include "material.h"
 
 namespace FG
-{
-	GfxImage dummyImage;
-	
+{	
 	static const FG::DataEntry* GetDataEntry( const FG::FrameGraph* frameGraph, uint32_t entryId )
 	{
 		const FG::DataEntry* dataEntry = &frameGraph->imp->creationData.resources[entryId];
@@ -143,10 +141,12 @@ namespace FG
 		technique.parentDescriptorPool = descriptorPool;
 
 		//Create pipeline layout
-		//TODO: this won't work if there's one binding point with no set. As the location in the array denote the set's binding point
 		std::vector< VkDescriptorSetLayout > descriptorSetLayouts;
 		for( const GfxDescriptorSetDesc& setDesc : passCreationData->frame_graph_node.descriptorSets )
+		{
+			assert( descriptorSetLayouts.size() == setDesc.id ); //We can't leave any hole in the pilpeline layout
 			descriptorSetLayouts.push_back( technique.descriptor_sets[setDesc.id].hw_layout );
+		}
 
 		VkPipelineLayoutCreateInfo pipeline_layout_info = {};
 		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -191,49 +191,68 @@ namespace FG
 		}
 	}
 
-	static void UpdateDescriptorSet( const FG::FrameGraph* frameGraph, const GpuInputData* inputData, const GfxDescriptorSetDesc* descriptorSetDesc, VkDescriptorSet* descriptorSet )
+	class BatchDescriptorsUpdater
 	{
-		//Update descriptor sets
-		assert( descriptorSetDesc->dataBindings.size() <= MAX_DATA_ENTRIES );
+	private:
 		WriteDescriptor writeDescriptors[8];
 		uint32_t writeDescriptorsCount = 0;
-		WriteDescriptorSet writeDescriptorSet = { writeDescriptors, descriptorSetDesc->dataBindings.size() };
 
 		VkDescriptorBufferInfo descriptorBuffersInfos[16];
 		uint32_t descriptorBuffersInfosCount = 0;
 		VkDescriptorImageInfo descriptorImagesInfos[16];
 		uint32_t descriptorImagesInfosCount = 0;
 
+	public:
+		void AddImagesBinding( const GfxImageSamplerCombined* images, uint32_t count, uint32_t binding, eDescriptorType type, eDescriptorAccess access )
+		{
+			uint32_t bufferStart = descriptorImagesInfosCount;
+			for( uint32_t descriptorIndex = 0; descriptorIndex < count; ++descriptorIndex )
+			{
+				assert( descriptorImagesInfosCount < 16 );
+				descriptorImagesInfos[descriptorImagesInfosCount++] = { images[descriptorIndex].sampler, images[descriptorIndex].image->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+			}
+			//TODO: type could probably be infered
+			writeDescriptors[writeDescriptorsCount++] = { binding, count, DescriptorTypeToVkType( type, access ), nullptr, &descriptorImagesInfos[bufferStart] };
+		}
+
+		void AddBuffersBinding( const GpuBuffer* buffers, uint32_t count, uint32_t binding, eDescriptorType type, eDescriptorAccess access )
+		{
+			uint32_t bufferStart = descriptorBuffersInfosCount;
+			for( uint32_t descriptorIndex = 0; descriptorIndex < count; ++descriptorIndex )
+			{
+				assert( descriptorBuffersInfosCount < 16 );
+				descriptorBuffersInfos[descriptorBuffersInfosCount++] = { buffers[descriptorIndex].buffer, 0, VK_WHOLE_SIZE };
+			}
+			writeDescriptors[writeDescriptorsCount++] = { binding, count, DescriptorTypeToVkType( type, access ), &descriptorBuffersInfos[bufferStart], nullptr };
+		}
+
+		void Submit( VkDescriptorSet descriptorSet )
+		{
+			WriteDescriptorSet writeDescriptorSet = { writeDescriptors, writeDescriptorsCount };
+			UpdateDescriptorSets( 1, &writeDescriptorSet, &descriptorSet );
+		}
+	};
+
+	static void UpdateDescriptorSet( const FG::FrameGraph* frameGraph, const GpuInputData* inputData, const GfxDescriptorSetDesc* descriptorSetDesc, VkDescriptorSet* descriptorSet )
+	{
+		assert( descriptorSetDesc->dataBindings.size() <= MAX_DATA_ENTRIES );
+		BatchDescriptorsUpdater batchDescriptorsUpdater;
+
 		//Fill in buffer
 		for( uint32_t dataBindingIndex = 0; dataBindingIndex < descriptorSetDesc->dataBindings.size(); ++dataBindingIndex )
 		{
 			const GfxDataBinding* dataBinding = &descriptorSetDesc->dataBindings[dataBindingIndex];
 			const FG::DataEntry* techniqueDataEntry = GetDataEntry( frameGraph, dataBinding->id );
+			uint32_t buffersCount = GetDataCount( inputData, dataBinding->id );
+			assert( buffersCount <= techniqueDataEntry->count );
+
 			if( IsBufferType( techniqueDataEntry->descriptorType ) )//Buffers
 			{
-				uint32_t bufferStart = descriptorBuffersInfosCount;
-				GpuBuffer* buffers = GetBuffer( inputData, dataBinding->id );
-				uint32_t buffersCount = GetDataCount( inputData, dataBinding->id );
-				assert( buffersCount <= techniqueDataEntry->count );
-				for( uint32_t descriptorIndex = 0; descriptorIndex < buffersCount; ++descriptorIndex )
-				{
-					assert( descriptorBuffersInfosCount < 16 );
-					descriptorBuffersInfos[descriptorBuffersInfosCount++] = { buffers[descriptorIndex].buffer, 0, VK_WHOLE_SIZE };
-				}
-				writeDescriptors[writeDescriptorsCount++] = { dataBinding->binding, buffersCount, DescriptorTypeToVkType( techniqueDataEntry->descriptorType, dataBinding->descriptorAccess ), &descriptorBuffersInfos[bufferStart], nullptr };
+				batchDescriptorsUpdater.AddBuffersBinding( GetBuffer( inputData, dataBinding->id ), buffersCount, dataBinding->binding, techniqueDataEntry->descriptorType, dataBinding->descriptorAccess );
 			}
 			else if( techniqueDataEntry->descriptorType == eDescriptorType::IMAGE_SAMPLER || techniqueDataEntry->descriptorType == eDescriptorType::IMAGE )
 			{
-				GfxImageSamplerCombined* images = GetImage( inputData, dataBinding->id );
-				uint32_t bufferStart = descriptorImagesInfosCount;
-				uint32_t buffersCount = GetDataCount( inputData, dataBinding->id );
-				assert( buffersCount <= techniqueDataEntry->count );
-				for( uint32_t descriptorIndex = 0; descriptorIndex < buffersCount; ++descriptorIndex )
-				{
-					assert( descriptorImagesInfosCount < 16 );
-					descriptorImagesInfos[descriptorImagesInfosCount++] = { images[descriptorIndex].sampler, images[descriptorIndex].image->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
-				}
-				writeDescriptors[writeDescriptorsCount++] = { dataBinding->binding, buffersCount, DescriptorTypeToVkType( techniqueDataEntry->descriptorType, dataBinding->descriptorAccess ), nullptr, &descriptorImagesInfos[bufferStart] };
+				batchDescriptorsUpdater.AddImagesBinding( GetImage( inputData, dataBinding->id ), buffersCount, dataBinding->binding, techniqueDataEntry->descriptorType, dataBinding->descriptorAccess );
 			}
 			else
 			{
@@ -242,7 +261,7 @@ namespace FG
 			}
 		}
 
-		UpdateDescriptorSets( 1, &writeDescriptorSet, descriptorSet );
+		batchDescriptorsUpdater.Submit( *descriptorSet );
 	}
 
 	static void FillWithDummyDescriptors( const FG::FrameGraph* frameGraph, const GpuInputData* inputData, const GfxDescriptorSetDesc& descriptorSetDesc, VkDescriptorSet* descriptorSet )
@@ -258,11 +277,14 @@ namespace FG
 		VkDescriptorImageInfo descriptorImagesInfos[16];
 		uint32_t descriptorImagesInfosCount = 0;
 
+		const GfxImage* dummyImage = GetDummyImage();
+
 		//Fill in buffer
 		for( uint32_t dataBindingIndex = 0; dataBindingIndex < descriptorSetDesc.dataBindings.size(); ++dataBindingIndex )
 		{
 			const GfxDataBinding* dataBinding = &descriptorSetDesc.dataBindings[dataBindingIndex];
 			const FG::DataEntry* techniqueDataEntry = GetDataEntry( frameGraph, dataBinding->id );
+			uint32_t buffersCount = GetDataCount( inputData, dataBinding->id );
 			if( IsBufferType( techniqueDataEntry->descriptorType ) )//Buffers
 			{
 			}
@@ -273,7 +295,7 @@ namespace FG
 				{
 					assert( descriptorImagesInfosCount < 16 );
 					//TODO: HACK shouldn't pass in this struct in the input buffer, should be some wrapper or something
-					descriptorImagesInfos[descriptorImagesInfosCount++] = { GetSampler(eSamplers::Trilinear), dummyImage.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+					descriptorImagesInfos[descriptorImagesInfosCount++] = { GetSampler(eSamplers::Trilinear), dummyImage->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
 				}
 				writeDescriptors[writeDescriptorsCount++] = { dataBinding->binding, techniqueDataEntry->count, DescriptorTypeToVkType( techniqueDataEntry->descriptorType, dataBinding->descriptorAccess ), nullptr, &descriptorImagesInfos[bufferStart] };
 			}
@@ -289,15 +311,6 @@ namespace FG
 
 	void UpdateTechniqueDescriptorSets( const FG::FrameGraph* frameGraph, const std::array< GpuInputData, SIMULTANEOUS_FRAMES>& inputBuffers )
 	{
-		//TODO: dsetroy this dummy image and find a better system to bind null or remove the warning for unbound descriptors
-		if( dummyImage.gfx_mem_alloc.memory == VK_NULL_HANDLE )
-		{
-			GfxHeaps_CommitedResourceAllocator allocator = {};
-			allocator.Prepare();
-			CreateSolidColorImage( glm::vec4( 0, 0, 0, 0 ), &dummyImage, &allocator );
-			allocator.Commit();
-		}
-
 		for( uint32_t i = 0; i < frameGraph->imp->_render_passes_count; ++i )
 		{
 			Technique& technique = frameGraph->imp->_techniques[i];
