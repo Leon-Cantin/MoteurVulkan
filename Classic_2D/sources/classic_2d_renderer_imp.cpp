@@ -12,7 +12,7 @@
 #include <glm/vec4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-VkDescriptorPool descriptorPool;
+VkDescriptorPool descriptorPool_scene;
 
 extern Swapchain g_swapchain;
 
@@ -77,7 +77,8 @@ static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cam
 
 	UpdateSceneUniformBuffer( world_view_matrix, viewportExtent, GetBuffer( &currentGpuInputData, eTechniqueDataEntryName::SCENE_DATA ) );
 
-	UpdateText( textZones.data(), textZones.size(), viewportExtent );
+	if( textZones.size() > 0 )
+		UpdateText( textZones.data(), textZones.size(), viewportExtent );
 }
 
 static void PrepareSceneFrameData( SceneFrameData* frameData, uint32_t currentFrame, const SceneInstance* cameraSceneInstance, const std::vector<GfxAssetInstance>& drawList, const std::vector<TextZone>& textZones )
@@ -88,9 +89,8 @@ static void PrepareSceneFrameData( SceneFrameData* frameData, uint32_t currentFr
 
 GfxImageSamplerCombined textTextures[1];
 
-static void CreateBuffers( BindlessTexturesState* bindlessTexturesState )
+static void FillInputBuffers( BindlessTexturesState* bindlessTexturesState )
 {
-	CreateTextVertexBuffer( 256 );
 
 	VkSampler sampler = GetSampler( eSamplers::Trilinear );
 
@@ -110,10 +110,8 @@ static bool NeedResize()
 	return value;
 }
 
-void InitRendererImp( VkSurfaceKHR swapchainSurface )
+static VkDescriptorPool CreateDescriptorPool_BAD()
 {
-	InitRenderer( swapchainSurface, NeedResize, WH::GetFramebufferSize );
-
 	const uint32_t geometryDescriptorSets = 2 * SIMULTANEOUS_FRAMES;
 	const uint32_t geometryBuffersCount = 2 * SIMULTANEOUS_FRAMES;
 	const uint32_t geometryImageCount = 64 * SIMULTANEOUS_FRAMES;
@@ -132,15 +130,33 @@ void InitRendererImp( VkSurfaceKHR swapchainSurface )
 
 	const uint32_t maxSets = geometryDescriptorSets + textDescriptorSetsCount + copyDescriptorSetsCount;
 
-	createDescriptorPool(uniformBuffersCount, uniformBuffersDynamicCount, imageSamplersCount, storageImageCount, sampledImageCount, maxSets, &descriptorPool);
+	VkDescriptorPool descriptorPool;
+	createDescriptorPool( uniformBuffersCount, uniformBuffersDynamicCount, imageSamplersCount, storageImageCount, sampledImageCount, maxSets, &descriptorPool );
+
+	return descriptorPool;
+}
+
+void InitRendererImp( VkSurfaceKHR swapchainSurface )
+{
+	InitRenderer( swapchainSurface, NeedResize, WH::GetFramebufferSize );
 
 	LoadFontTexture();
+	CreateTextVertexBuffer( 256 );
 }
 
 void CompileScene( BindlessTexturesState* bindlessTexturesState )
 {
-	CreateBuffers( bindlessTexturesState );
-	SetInputBuffers( &_inputBuffers, descriptorPool );
+	CleanupFrameGraph();
+
+	if( descriptorPool_scene )
+		vkDestroyDescriptorPool( g_vk.device, descriptorPool_scene, nullptr );
+	descriptorPool_scene = CreateDescriptorPool_BAD();
+
+	ZeroMemory( &_inputBuffers, sizeof( _inputBuffers ) );
+
+	FillInputBuffers( bindlessTexturesState );
+
+	FG_Script_SetInputBuffers( &_inputBuffers, descriptorPool_scene );
 	CompileFrameGraph( InitializeScript );
 }
 
@@ -148,7 +164,7 @@ void CleanupRendererImp()
 {
 	CleanupTextRenderPass();
 	CleanupRenderer();	
-	vkDestroyDescriptorPool(g_vk.device, descriptorPool, nullptr);
+	vkDestroyDescriptorPool( g_vk.device, descriptorPool_scene, nullptr );
 }
 
 void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, const std::vector<GfxAssetInstance>& drawList, const std::vector<TextZone>& textZones )

@@ -12,6 +12,7 @@
 
 void InitRenderer( VkSurfaceKHR swapchainSurface, bool( *needResize )(), void( *getFrameBufferSize )(uint64_t* width, uint64_t* height) );
 void CompileFrameGraph( FG::FrameGraph( *FGScriptInitialize )(const Swapchain* swapchain) );
+void CleanupFrameGraph();
 void CleanupRenderer();
 void WaitForFrame(uint32_t currentFrame);
 void draw_frame(uint32_t currentFrame, const SceneFrameData* frameData);

@@ -171,7 +171,7 @@ void InitRendererImp( VkSurfaceKHR swapchainSurface )
 void CompileScene( BindlessTexturesState* bindlessTexturesState, const GfxImage* skyboxImage )
 {
 	CreateBuffers( bindlessTexturesState, skyboxImage );
-	SetInputBuffers( &_inputBuffers, descriptorPool );
+	FG_Script_SetInputBuffers( &_inputBuffers, descriptorPool );
 	CompileFrameGraph( InitializeScript );
 }
 

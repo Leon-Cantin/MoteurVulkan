@@ -274,7 +274,7 @@ namespace FG
 		}
 	}
 
-	FrameGraph CreateGraph(const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<DataEntry> *inRtCreationData, uint32_t backbufferId, VkDescriptorPool descriptorPool )
+	FrameGraph CreateGraph(const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<DataEntry> *inRtCreationData, uint32_t backbufferId )
 	{
 		FrameGraphInternal* frameGraph = new FrameGraphInternal();
 		FrameGraph frameGraphExternal( frameGraph );

@@ -163,6 +163,11 @@ void recreate_swap_chain( VkSurfaceKHR swapchainSurface )
 	CreateTransferCommandBuffer();
 }
 
+void CleanupFrameGraph()
+{
+	FG::Cleanup( &_frameGraph );
+}
+
 void CompileFrameGraph( FG::FrameGraph( *FGScriptInitialize )( const Swapchain* ) )
 {
 	_fFGScriptInitialize = FGScriptInitialize;

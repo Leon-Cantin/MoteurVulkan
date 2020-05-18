@@ -13,7 +13,7 @@
 std::array< GpuInputData, SIMULTANEOUS_FRAMES>* _pInputBuffers;
 VkDescriptorPool _descriptorPool;
 
-void SetInputBuffers( std::array< GpuInputData, SIMULTANEOUS_FRAMES>* pInputBuffers, VkDescriptorPool descriptorPool )
+void FG_Script_SetInputBuffers( std::array< GpuInputData, SIMULTANEOUS_FRAMES>* pInputBuffers, VkDescriptorPool descriptorPool )
 {
 	_pInputBuffers = pInputBuffers;
 	_descriptorPool = descriptorPool;

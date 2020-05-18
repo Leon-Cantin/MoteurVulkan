@@ -12,7 +12,7 @@
 std::array< GpuInputData, SIMULTANEOUS_FRAMES>* _pInputBuffers;
 VkDescriptorPool _descriptorPool;
 
-void SetInputBuffers( std::array< GpuInputData, SIMULTANEOUS_FRAMES>* pInputBuffers, VkDescriptorPool descriptorPool )
+void FG_Script_SetInputBuffers( std::array< GpuInputData, SIMULTANEOUS_FRAMES>* pInputBuffers, VkDescriptorPool descriptorPool )
 {
 	_pInputBuffers = pInputBuffers;
 	_descriptorPool = descriptorPool;
@@ -248,7 +248,7 @@ FG::FrameGraph InitializeScript( const Swapchain* swapchain )
 	rpCreationData.push_back( FG_TextOverlay_CreateGraphNode( swapchain, eTechniqueDataEntryImageName::SCENE_COLOR ) );
 	rpCreationData.push_back( FG_Copy_CreateGraphNode( swapchain, eTechniqueDataEntryImageName::BACKBUFFER, eTechniqueDataEntryImageName::SCENE_COLOR ) );
 
-	FG::FrameGraph fg = FG::CreateGraph( swapchain, &rpCreationData, &dataEntries, backBufferId, _descriptorPool );
+	FG::FrameGraph fg = FG::CreateGraph( swapchain, &rpCreationData, &dataEntries, backBufferId );
 
 	FG::SetupInputBuffers( &fg, *_pInputBuffers );
 	FG::CreateTechniques( &fg, _descriptorPool );

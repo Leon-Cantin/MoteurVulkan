@@ -84,7 +84,7 @@ namespace FG
 	};
 
 	//Compilation
-	FrameGraph CreateGraph( const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<DataEntry> *inRtCreationData, uint32_t backbufferId, VkDescriptorPool descriptorPool );
+	FrameGraph CreateGraph( const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<DataEntry> *inRtCreationData, uint32_t backbufferId );
 	void Cleanup( FrameGraph* frameGraph );
 
 	//Graph creation

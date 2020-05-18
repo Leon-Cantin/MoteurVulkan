@@ -3,7 +3,7 @@
 int main() {
 
 	try {
-		Engine::Start( mainScene );
+		Engine::Start( mainMenuScene );
 	}
 	catch (const std::exception& e) {
 		std::cerr << e.what() << std::endl;

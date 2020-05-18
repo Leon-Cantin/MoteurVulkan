@@ -37,6 +37,7 @@ void destroy_gfx_memory( GfxMemAlloc* gfx_mem )
 void UpdateGpuMemory( const GfxMemAlloc* dstMemory, const void* src, VkDeviceSize size, VkDeviceSize offset )
 {
 	assert( offset + size <= dstMemory->size );
+	assert( size );//don't map memory with no size
 	void* dst;
 	vkMapMemory( g_vk.device, dstMemory->memory, dstMemory->offset + offset, size, 0, &dst );
 	memcpy( dst, src, size );
