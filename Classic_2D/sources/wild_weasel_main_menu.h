@@ -14,10 +14,12 @@ namespace WildWeasel_Menu
 	size_t frameDeltaTime = 0;
 
 	GfxAsset shipRenderable;
+	GfxAsset backgroundRenderable;
 	GfxHeap gfx_heap;
 	BindlessTexturesState bindlessTexturesState;
 	SceneInstance cameraSceneInstance;
 	SceneInstance shipSceneInstance;
+	SceneInstance backgroundSceneInstance;
 
 	constexpr float shipSize = 21.0f;
 
@@ -37,6 +39,7 @@ namespace WildWeasel_Menu
 
 		std::vector<GfxAssetInstance> drawList;
 		drawList.push_back( { &shipRenderable, shipSceneInstance, false } );
+		drawList.push_back( { &backgroundRenderable, backgroundSceneInstance, false } );
 
 		std::vector<TextZone> textZones;
 		DrawFrame( current_frame, &cameraSceneInstance, drawList, textZones );
@@ -92,18 +95,23 @@ namespace WildWeasel_Menu
 		gfx_mem_allocator.Prepare();
 
 		GfxImage* shipTexture = AL::LoadTexture( "shipTexture", "assets/F14.png", &gfx_mem_allocator );
+		GfxImage* mainMenuBackgroundTexture = AL::LoadTexture( "mainMenuBackground", "assets/main_menu_background.png", &gfx_mem_allocator );
 
 		GfxModel* quadModel = AL::CreateQuad( "Quad", quadSize, &gfx_mem_allocator );
+		GfxModel* backgroundQuadModel = AL::CreateQuad( "BackgroundQuad", VIEWPORT_WIDTH, VIEWPORT_HEIGHT, &gfx_mem_allocator );
 
 		uint32_t shipTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, shipTexture, eSamplers::Point );
+		uint32_t mainMenuBackgroundTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, mainMenuBackgroundTexture, eSamplers::Point );
 
 		gfx_mem_allocator.Commit();
 
 		shipRenderable = CreateGfxAsset( quadModel, shipTextureIndex );
+		backgroundRenderable = CreateGfxAsset( backgroundQuadModel, mainMenuBackgroundTextureIndex );
 
 		CompileScene( &bindlessTexturesState );
 
 		shipSceneInstance = { glm::vec3( 0.0f, 0.0f, 2.0f ), defaultRotation, shipSize };
+		backgroundSceneInstance = { glm::vec3( 0.0f, 0.0f, 3.0f ), defaultRotation, 1.0f };
 		cameraSceneInstance = { glm::vec3( 0.0f, 0.0f, -2.0f ), defaultRotation, 1.0f };
 	}
 

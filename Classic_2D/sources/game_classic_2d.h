@@ -23,9 +23,183 @@
 #include <algorithm>
 #include <assert.h>
 
+#include "entity.h"
+
 namespace WildWeasel_Game
 {
 	uint32_t current_frame = 0;
+
+	struct HealthComponent
+	{
+		float currentHealth;
+		float maxHealth;
+	};
+
+	struct LifeTimeComponent
+	{
+		float lifeTime;
+		float maxLifetime;
+	};
+
+	struct TransformationComponent
+	{
+		SceneInstance sceneInstance;
+	};
+
+	struct PhysicsComponent
+	{
+		glm::vec3 velocity;
+	};
+
+	struct TimeComponent
+	{
+		float deltaTime;
+	};
+
+	struct YKillComponent
+	{
+		float yKill;
+	};
+
+	struct CollisionComponent
+	{
+		float rayLenght;
+	};
+
+	struct RenderableComponent
+	{
+		GfxAsset* asset;
+		bool dithering;
+	};
+
+	struct DamageComponent
+	{
+		float damage;
+	};
+
+	struct DrawlistComponent
+	{
+		std::vector<GfxAssetInstance> drawlist;
+	};
+
+	auto t = ECS::RegisterComponentType<HealthComponent>::comp;
+	auto t1 = ECS::RegisterComponentType<LifeTimeComponent>::comp;
+	auto t2 = ECS::RegisterComponentType<TransformationComponent>::comp;
+	auto t4 = ECS::RegisterComponentType<PhysicsComponent>::comp;
+	auto t6 = ECS::RegisterComponentType<CollisionComponent>::comp;
+	auto t7 = ECS::RegisterComponentType<RenderableComponent>::comp;
+	auto t9 = ECS::RegisterComponentType<DamageComponent>::comp;
+
+	auto t3 = ECS::RegisterSingletonComponentType<TimeComponent>::comp;
+	auto t5 = ECS::RegisterSingletonComponentType<YKillComponent>::comp;
+	auto t8 = ECS::RegisterSingletonComponentType<DrawlistComponent>::comp;
+
+	ECS::EntityComponentSystem ecs;
+
+	void UpdateLifeTime( ECS::Entity* entities, uint32_t count, ECS::EntityComponentSystem* ecs )
+	{
+		for( uint32_t i = 0; i < count; ++i )
+		{
+			ECS::Entity& entity = entities[i];
+			LifeTimeComponent* lifeTimeComp = entity.GetComponent<LifeTimeComponent>();
+			const TimeComponent* timeComponent = ecs->GetSingletonComponent<TimeComponent>();
+			lifeTimeComp->lifeTime += (timeComponent->deltaTime / 1000.0f);
+			if( lifeTimeComp->lifeTime >= lifeTimeComp->maxLifetime )
+			{
+				ecs->Destroy( &entity );
+				continue;
+			}
+
+			const TransformationComponent* transformationComponent = entity.GetComponent<TransformationComponent>();
+			const YKillComponent* yKillComponent = ecs->GetSingletonComponent<YKillComponent>();
+			if( abs( transformationComponent->sceneInstance.location.y ) > yKillComponent->yKill )
+			{
+				ecs->Destroy( &entity );
+				continue;
+			}
+		}
+	}
+
+	void UpdatePhysics( ECS::Entity* entities, uint32_t count, ECS::EntityComponentSystem* ecs )
+	{
+		const TimeComponent* timeComponent = ecs->GetSingletonComponent<TimeComponent>();
+		for( uint32_t i = 0; i < count; ++i )
+		{
+			const ECS::Entity& entity = entities[i];
+			PhysicsComponent* physicsComponent = entity.GetComponent<PhysicsComponent>();
+			TransformationComponent* transformationComponent = entity.GetComponent<TransformationComponent>();
+
+			transformationComponent->sceneInstance.location += physicsComponent->velocity * (timeComponent->deltaTime / 1000.0f);
+		}
+	}
+
+	void UpdateCollisions( ECS::Entity* entities, uint32_t count, ECS::EntityComponentSystem* ecs )
+	{
+		for( uint32_t i = 0; i < count; ++i )
+		{
+			ECS::Entity& entity = entities[i];
+
+			if( !entity.IsValid() )//Entities could have already been destroyed by another collision
+				continue;
+
+			const CollisionComponent* collisionComponent = entity.GetComponent<CollisionComponent>();
+			const TransformationComponent* transformationComponent = entity.GetComponent<TransformationComponent>();
+
+			//TODO: use a collision filter ID and bitmask
+			for( uint32_t j = i+1; j < count; ++j )
+			{
+				ECS::Entity& otherEntity = entities[j];
+
+				if( !otherEntity.IsValid() )//Entities could have already been destroyed by another collision
+					continue;
+
+				const CollisionComponent* otherCollisionComponent = otherEntity.GetComponent<CollisionComponent>();
+				const TransformationComponent* otherTransformationComponent = otherEntity.GetComponent<TransformationComponent>();
+				
+				const float finalRay = collisionComponent->rayLenght + otherCollisionComponent->rayLenght;
+				const float dx = abs( otherTransformationComponent->sceneInstance.location.x - transformationComponent->sceneInstance.location.x );
+				const float dy = abs( otherTransformationComponent->sceneInstance.location.y - transformationComponent->sceneInstance.location.y );
+				if( sqrt( dx * dx + dy * dy ) < finalRay )
+				{
+					const DamageComponent* damageComponent = entity.GetComponent<DamageComponent>();
+					HealthComponent* healthComponent = entity.GetComponent<HealthComponent>();
+					const DamageComponent* otherDamageComponent = otherEntity.GetComponent<DamageComponent>();
+					HealthComponent* otherHealthComponent = otherEntity.GetComponent<HealthComponent>();
+
+					if( damageComponent && otherHealthComponent )
+						otherHealthComponent->currentHealth -= damageComponent->damage;
+
+					if( otherDamageComponent && healthComponent )
+						healthComponent->currentHealth -= otherDamageComponent->damage;
+
+					if( damageComponent || ( healthComponent && healthComponent->currentHealth <= 0 ) )
+						ecs->Destroy( &entity );
+
+					if( otherDamageComponent || (otherHealthComponent && otherHealthComponent->currentHealth <= 0 ) )
+						ecs->Destroy( &otherEntity );
+				}
+			}
+		}
+	}
+
+	void BuildDrawlistSystem( ECS::Entity* entities, uint32_t count, ECS::EntityComponentSystem* ecs )
+	{
+		for( uint32_t i = 0; i < count; ++i )
+		{
+			const ECS::Entity& entity = entities[i];
+			//TODO: ordering
+			RenderableComponent* renderableComponent = entity.GetComponent<RenderableComponent>();
+			TransformationComponent* transformationComponent = entity.GetComponent<TransformationComponent>();
+			DrawlistComponent* drawlistComponent = ecs->GetSingletonComponent<DrawlistComponent>();
+
+			drawlistComponent->drawlist.push_back( { renderableComponent->asset, transformationComponent->sceneInstance, renderableComponent->dithering } );
+		}
+	}
+
+	ECS::System lifeTimeSystem = ECS::System::Create<LifeTimeComponent, TransformationComponent>( UpdateLifeTime );
+	ECS::System physicsSystem = ECS::System::Create<PhysicsComponent, TransformationComponent>( UpdatePhysics );
+	ECS::System collisionsSystem = ECS::System::Create<CollisionComponent, TransformationComponent>( UpdateCollisions );
+	ECS::System buildDrawlistSystem = ECS::System::Create < RenderableComponent, TransformationComponent >( BuildDrawlistSystem );
 
 	struct EnemyShipInstance
 	{
@@ -41,10 +215,7 @@ namespace WildWeasel_Game
 		SceneInstance sceneInstance;
 	};
 
-	std::vector<BulletInstance> bulletInstances;
-	std::vector<EnemyShipInstance> enemyShipSceneInstances;
 	BackgroundInstance backgroundInstance;
-	std::vector<SceneInstance> cloudInstances;
 	SceneInstance shipSceneInstance;
 	SceneInstance cameraSceneInstance;
 
@@ -62,135 +233,56 @@ namespace WildWeasel_Game
 
 	GfxHeap gfx_heap;
 
-	bool UpdateInstance( size_t deltaTime, EnemyShipInstance* enemyShipInstance )
-	{
-		constexpr float movementSpeedPerSecond = 100.0f;
-		constexpr float yKill = -200.0f;
-		if( enemyShipInstance->currentHealth <= 0 )
-		{
-			++_score;
-			return false;
-		}
-		enemyShipInstance->sceneInstance.location.y -= movementSpeedPerSecond * (deltaTime / 1000.0f);
-		if( enemyShipInstance->sceneInstance.location.y < yKill )
-			return false;
-		return true;
-	}
-
 	constexpr float shipSize = 21.0f;
 
 	void CreateEnemyShip()
 	{
 		const float x = ((float)std::rand()/ RAND_MAX) * 150.0f -75.0f;
-		constexpr float y = 200.0f;
-		EnemyShipInstance enemyShip = { 5.0f, 5.0f, { glm::vec3( x, y, 2.0f ), defaultRotation, -shipSize } };
-		enemyShipSceneInstances.push_back( enemyShip );
+		constexpr float y = 190.0f;
+
+		auto hLifetimeComp = ecs.CreateComponent<LifeTimeComponent>( 0.0f, 5.0f );
+		auto hHealthComp = ecs.CreateComponent<HealthComponent>( 5.0f, 5.0f );
+		auto hRenderableComp = ecs.CreateComponent<RenderableComponent>( &shipRenderable, false );
+		auto hTransformationComp = ecs.CreateComponent<TransformationComponent>( glm::vec3( x, y, 2.0f ), defaultRotation, -shipSize );
+		auto hPhysicsComp = ecs.CreateComponent<PhysicsComponent>( glm::vec3( 0.0f, -100.0f, 0.0f ) );
+		auto hCollisionComp = ecs.CreateComponent<CollisionComponent>( 7.0f );
+
+		ecs.CreateEntity( hLifetimeComp, hHealthComp, hRenderableComp, hTransformationComp, hPhysicsComp, hCollisionComp );
 	}
 
 	void CreateCloud()
 	{
-		//TODO: reuse variables
 		const float x = (( float )std::rand() / RAND_MAX) * 150.0f - 75.0f;
 		const float size = (( float )std::rand() / RAND_MAX) * 10.0f + 10.0f;
-		constexpr float y = 200.0f;
-		SceneInstance instance = { glm::vec3( x, y, 7.0f ), defaultRotation, size };
-		cloudInstances.push_back( instance );
+		constexpr float y = 190.0f;
+
+		auto hLifetimeComp = ecs.CreateComponent<LifeTimeComponent>( 0.0f, 5.0f );
+		auto hRenderableComp = ecs.CreateComponent<RenderableComponent>( &cloudAsset, true );
+		auto hTransformationComp = ecs.CreateComponent<TransformationComponent>( glm::vec3( x, y, 7.0f ), defaultRotation, size );
+		auto hPhysicsComp = ecs.CreateComponent<PhysicsComponent>( glm::vec3( 0.0f, -100.0f, 0.0f ) );
+
+		ecs.CreateEntity( hLifetimeComp, hRenderableComp, hTransformationComp, hPhysicsComp );
 	}
 
 	void createBullet()
 	{
+		constexpr float bulletSpeedPerSecond = 150.0f;
+		constexpr float collisionSphereRayLenght = 10.0f;
 		constexpr float bulletSize = 7.0f;
 		static bool left = false;
 		left ^= true;
 		const float bullet_offset = 2.0f;
 		const float xoffset = left ? -bullet_offset : bullet_offset;
 		const glm::vec3 offset( xoffset, 0.0f, 0.0f );
-		BulletInstance bulletInstance = { 0.0f, 2000.0f, { shipSceneInstance.location + offset, shipSceneInstance.orientation, bulletSize } };
-		bulletInstances.push_back( bulletInstance );
-	}
 
-	bool UpdateInstance( size_t deltaTime, BulletInstance* instance )
-	{
-		constexpr float bulletSpeedPerSecond = 150.0f;
-		constexpr float collisionSphereRayLenght = 10.0f;
-		instance->lifeTime += deltaTime;
-		if( instance->lifeTime > instance->maxLifetime )
-			return false;
-		instance->sceneInstance.location.y += bulletSpeedPerSecond * (deltaTime / 1000.0f);
-		for( auto& enemyShipSceneInstance : enemyShipSceneInstances )
-		{
-			float dx = abs( enemyShipSceneInstance.sceneInstance.location.x - instance->sceneInstance.location.x );
-			float dy = abs( enemyShipSceneInstance.sceneInstance.location.y - instance->sceneInstance.location.y );
-			if( sqrt( dx*dx + dy * dy ) < collisionSphereRayLenght )
-			{
-				enemyShipSceneInstance.currentHealth -= 1.0f;
-				return false;
-			}
-		}
-		return true;
-	}
+		auto hLifetimeComp = ecs.CreateComponent<LifeTimeComponent>( 0.0f, 5.0f );
+		auto hRenderableComp = ecs.CreateComponent<RenderableComponent>( &bulletRenderable, false );
+		auto hTransformationComp = ecs.CreateComponent<TransformationComponent>( shipSceneInstance.location + offset, shipSceneInstance.orientation, bulletSize );
+		auto hPhysicsComp = ecs.CreateComponent<PhysicsComponent>( glm::vec3( 0.0f, 150.0f, 0.0f ) );
+		auto hCollisionComp = ecs.CreateComponent<CollisionComponent>( 3.0f );
+		auto hDamageComp = ecs.CreateComponent<DamageComponent>( 1.0f );
 
-	//For clouds
-	bool UpdateInstance( size_t deltaTime, SceneInstance* instance )
-	{
-		constexpr float movementSpeedPerSecond = 100.0f;
-		constexpr float yKill = -200.0f;
-		instance->location.y -= movementSpeedPerSecond * (deltaTime / 1000.0f);
-		if( instance->location.y < yKill )
-			return false;
-		return true;
-	}
-
-	//Keeps the order when deletinga
-	template< typename T >
-	void UpdateInstanceList( std::vector<T>& instances, size_t deltaTime )
-	{
-		uint32_t deadRangesCounts = 0;
-		uint32_t aliveCount = 0;
-		std::pair< std::vector<T>::iterator, std::vector<T>::iterator > deadRanges [16];
-		bool isDeleting = false;
-
-		for( auto i = instances.begin(); i != instances.end(); ++i )
-		{
-			const bool isAlive = UpdateInstance( deltaTime, i._Ptr );
-			if( !isAlive )
-			{
-				if( !isDeleting )
-				{
-					isDeleting = true;
-					deadRanges[deadRangesCounts].first = i;
-				}
-			}
-			else
-			{
-				aliveCount++;
-				if( isDeleting )
-				{
-					isDeleting = false;
-					deadRanges[deadRangesCounts].second = i;
-					deadRangesCounts++;
-				}
-			}
-		}
-		if( isDeleting )
-		{
-			isDeleting = false;
-			deadRanges[deadRangesCounts].second = instances.end();
-			deadRangesCounts++;
-		}
-
-		for( uint32_t i = 0; i < deadRangesCounts; ++i )
-		{
-			T* freeRangeStart = deadRanges[i].first._Ptr;
-			T* copyRangeStart = deadRanges[i].second._Ptr;
-			T* copyRangeEnd = i+1< deadRangesCounts ? deadRanges[i + 1].first._Ptr : instances.end()._Ptr;
-
-			size_t sizeToCopy = (copyRangeEnd - copyRangeStart) * sizeof(T);
-
-			memcpy( freeRangeStart, copyRangeStart, sizeToCopy );
-		}
-
-		instances.resize( aliveCount );
+		ecs.CreateEntity( hLifetimeComp, hRenderableComp, hTransformationComp, hPhysicsComp, hCollisionComp, hDamageComp );
 	}
 
 	const float movementSpeedPerSecond = 100.0f;
@@ -265,44 +357,30 @@ namespace WildWeasel_Game
 
 		UpdateBackgroundScrolling( &backgroundInstance, frameDeltaTime );
 
-		//Update objects
-		//TickUpdate( frameDeltaTime );
+		TimeComponent* timeComponent = ecs.GetSingletonComponent<TimeComponent>();
+		timeComponent->deltaTime = frameDeltaTime;
+		YKillComponent* ykillComponent = ecs.GetSingletonComponent<YKillComponent>();
+		ykillComponent->yKill = 200.0f;
 
-		UpdateInstanceList( bulletInstances, frameDeltaTime );
-		UpdateInstanceList( enemyShipSceneInstances, frameDeltaTime );
-		UpdateInstanceList( cloudInstances, frameDeltaTime );
+		ecs.RunSystem( lifeTimeSystem );
+		ecs.RunSystem( physicsSystem );
+		ecs.RunSystem( collisionsSystem );
 
-		std::vector<GfxAssetInstance> drawList = { { &shipRenderable, shipSceneInstance, false } };
-		drawList.push_back( { &backgroundInstance.asset, backgroundInstance.instance, false } );
-		for( SceneInstance& i : cloudInstances )
-			drawList.push_back( { &cloudAsset, i, true } );
-		for( BulletInstance& bi : bulletInstances )
-			drawList.push_back( { &bulletRenderable, bi.sceneInstance, false } );
-		for( EnemyShipInstance& enemyShipInstance : enemyShipSceneInstances )
-			drawList.push_back( { &shipRenderable, enemyShipInstance.sceneInstance, false } );
+		DrawlistComponent* drawlistComponent = ecs.GetSingletonComponent<DrawlistComponent>();
+		drawlistComponent->drawlist.clear();
+		drawlistComponent->drawlist.push_back( { &shipRenderable, shipSceneInstance, false } );
+		drawlistComponent->drawlist.push_back( { &backgroundInstance.asset, backgroundInstance.instance, false } );
+		ecs.RunSystem( buildDrawlistSystem );
 
 		std::vector<TextZone> textZones = UpdateText();
 
-		DrawFrame( current_frame, &cameraSceneInstance, drawList, textZones );
+		DrawFrame( current_frame, &cameraSceneInstance, drawlistComponent->drawlist, textZones );
 
 		current_frame = (++current_frame) % SIMULTANEOUS_FRAMES;
 	}
 
-	std::vector<SceneInstance> CreateClouds()
-	{
-		std::vector<SceneInstance> clouds;
-		const float depth = 7.0f;
-
-		clouds.push_back( { glm::vec3( 100.0f, 200.0f, depth ), defaultRotation, 20.0f } );
-		clouds.push_back( { glm::vec3( 100.0f, 40.0f, depth ), defaultRotation, 20.0f } );
-		clouds.push_back( { glm::vec3( 50.0f, 50.0f, depth ), defaultRotation, 20.0f } );
-		clouds.push_back( { glm::vec3( -50.0f, -100.0f, depth ), defaultRotation, 20.0f } );
-
-		return clouds;
-	}
-
 	void Init()
-	{
+	{		
 		//Input callbacks
 		IH::InitInputs();
 		IH::RegisterAction( "console", IH::Pressed, &ConCom::OpenConsole );
@@ -363,7 +441,10 @@ namespace WildWeasel_Game
 
 		shipSceneInstance = { glm::vec3( 0.0f, 0.0f, 2.0f ), defaultRotation, shipSize };
 		cameraSceneInstance = { glm::vec3( 0.0f, 0.0f, -2.0f ), defaultRotation, 1.0f };
-		cloudInstances = CreateClouds();
+
+		ecs.CreateSingletonComponent<TimeComponent>();
+		ecs.CreateSingletonComponent<YKillComponent>( 200.0f );
+		ecs.CreateSingletonComponent<DrawlistComponent>();
 	}
 
 	void Destroy() 

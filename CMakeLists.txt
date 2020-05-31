@@ -8,6 +8,7 @@ add_definitions( -DUNICODE -D_UNICODE )
 set( CMAKE_CXX_STANDARD 20 )
 
 #Components
+add_subdirectory( Engine )
 add_subdirectory( VulkanLayer )
 add_subdirectory( Renderer )
 add_subdirectory( Utils )

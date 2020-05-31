@@ -86,6 +86,14 @@ namespace AL
 		return modelAsset;
 	}
 
+	GfxModel* CreateQuad( const char* assetName, float width, float height, I_BufferAllocator* allocator )
+	{
+		GfxModel* modelAsset = AL_GetModelSlot( assetName );
+		*modelAsset = GenerateQuad( width, height, allocator );
+
+		return modelAsset;
+	}
+
 	GfxModel* RegisterGfxModel( const char* asset_name, GfxModel&& model )
 	{
 		GfxModel* modelAsset = AL_GetModelSlot( asset_name );

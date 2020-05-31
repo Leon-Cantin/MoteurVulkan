@@ -1,0 +1,13 @@
+set( TARGET_NAME Engine )
+				  
+file( GLOB SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} source/* )
+file( GLOB INCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} includes/* )
+
+add_library( ${TARGET_NAME} STATIC ${SRCS} ${INCS} ${SHADERS} )
+
+source_group( " " REGULAR_EXPRESSION .* )
+
+target_include_directories( ${TARGET_NAME} PUBLIC includes )
+
+target_link_libraries( ${TARGET_NAME} PUBLIC Renderer )
+target_link_libraries( ${TARGET_NAME} PUBLIC Utils )
