@@ -29,6 +29,22 @@ namespace WildWeasel_Game
 {
 	uint32_t current_frame = 0;
 
+	SceneInstance shipSceneInstance;
+	SceneInstance cameraSceneInstance;
+
+	GfxAsset shipRenderable;
+	GfxAsset bulletRenderable;
+	GfxAsset cloudAsset;
+
+	BindlessTexturesState bindlessTexturesState;
+
+	size_t frameDeltaTime = 0;
+	uint32_t _score = 0;
+
+	GfxHeap gfx_heap;
+
+	constexpr float shipSize = 21.0f;
+
 	struct HealthComponent
 	{
 		float currentHealth;
@@ -54,6 +70,7 @@ namespace WildWeasel_Game
 	struct TimeComponent
 	{
 		float deltaTime;
+		float currentTime;
 	};
 
 	struct YKillComponent
@@ -82,19 +99,80 @@ namespace WildWeasel_Game
 		std::vector<GfxAssetInstance> drawlist;
 	};
 
-	auto t = ECS::RegisterComponentType<HealthComponent>::comp;
-	auto t1 = ECS::RegisterComponentType<LifeTimeComponent>::comp;
-	auto t2 = ECS::RegisterComponentType<TransformationComponent>::comp;
-	auto t4 = ECS::RegisterComponentType<PhysicsComponent>::comp;
-	auto t6 = ECS::RegisterComponentType<CollisionComponent>::comp;
-	auto t7 = ECS::RegisterComponentType<RenderableComponent>::comp;
-	auto t9 = ECS::RegisterComponentType<DamageComponent>::comp;
+	struct EnemyShipSpawnerComponent
+	{
+		int timeUntilNextSpawn = 0;
+	};
 
-	auto t3 = ECS::RegisterSingletonComponentType<TimeComponent>::comp;
-	auto t5 = ECS::RegisterSingletonComponentType<YKillComponent>::comp;
-	auto t8 = ECS::RegisterSingletonComponentType<DrawlistComponent>::comp;
+	struct EnvironmentComponent
+	{
+		int timeUntilNextCloudSpawn = 0;
+	};
+
+	struct BackgroundInstanceComponent
+	{
+		BackgroundInstance instance;
+	};
+
+	using ScriptCallback_t = void( *)( ECS::Entity* entity, ECS::EntityComponentSystem* ecs );
+	struct ScriptComponent
+	{
+		ScriptCallback_t scriptCallback;
+	};
+
+#define LITTERALLY( type ) type
+#define REGISTER_COMPONENT_TYPE( type ) auto LITTERALLY(type)_comp_t = ECS::RegisterComponentType<type>::comp
+#define REGISTER_SINGLETON_COMPONENT_TYPE( type ) auto LITTERALLY(type)_singleton_comp_t = ECS::RegisterSingletonComponentType<type>::comp;
+
+	REGISTER_COMPONENT_TYPE( HealthComponent );
+	REGISTER_COMPONENT_TYPE( LifeTimeComponent );
+	REGISTER_COMPONENT_TYPE( TransformationComponent );
+	REGISTER_COMPONENT_TYPE( PhysicsComponent );
+	REGISTER_COMPONENT_TYPE( CollisionComponent );
+	REGISTER_COMPONENT_TYPE( RenderableComponent );
+	REGISTER_COMPONENT_TYPE( DamageComponent );
+	REGISTER_COMPONENT_TYPE( BackgroundInstanceComponent );
+	REGISTER_COMPONENT_TYPE( ScriptComponent );
+	REGISTER_COMPONENT_TYPE( EnemyShipSpawnerComponent );
+	REGISTER_COMPONENT_TYPE( EnvironmentComponent );
+
+	REGISTER_SINGLETON_COMPONENT_TYPE( TimeComponent );
+	REGISTER_SINGLETON_COMPONENT_TYPE( YKillComponent );
+	REGISTER_SINGLETON_COMPONENT_TYPE( DrawlistComponent );
 
 	ECS::EntityComponentSystem ecs;
+
+	void UpdateBackgroundScript( ECS::Entity* entity, ECS::EntityComponentSystem* ecs )
+	{
+		BackgroundInstanceComponent* backgroundComp = entity->GetComponent<BackgroundInstanceComponent>();
+		const TimeComponent* timeComp = ecs->GetSingletonComponent< TimeComponent>();
+		UpdateBackgroundScrolling( &backgroundComp->instance, timeComp->deltaTime );
+
+		//TODO don't call it like this ...
+		RenderableComponent* renderableComp = entity->GetComponent<RenderableComponent>();
+		renderableComp->asset = &backgroundComp->instance.asset;
+
+		//TODO don't call it like this ...
+		TransformationComponent* transformationComp = entity->GetComponent<TransformationComponent>();
+		transformationComp->sceneInstance = backgroundComp->instance.instance;
+	}
+
+	void UpdateShipScript( ECS::Entity* entity, ECS::EntityComponentSystem* ecs )
+	{
+		//TODO: can I instead read the inputs and update the component directly?
+		TransformationComponent* transformationComp = entity->GetComponent<TransformationComponent>();
+		transformationComp->sceneInstance = shipSceneInstance;
+	}
+
+	void RunEntityScripts( ECS::Entity* entities, uint32_t count, ECS::EntityComponentSystem* ecs )
+	{
+		for( uint32_t i = 0; i < count; ++i )
+		{
+			ECS::Entity& entity = entities[i];
+			const ScriptComponent* scriptComp = entity.GetComponent<ScriptComponent>();
+			scriptComp->scriptCallback( &entity, ecs );
+		}
+	}
 
 	void UpdateLifeTime( ECS::Entity* entities, uint32_t count, ECS::EntityComponentSystem* ecs )
 	{
@@ -145,7 +223,7 @@ namespace WildWeasel_Game
 			const CollisionComponent* collisionComponent = entity.GetComponent<CollisionComponent>();
 			const TransformationComponent* transformationComponent = entity.GetComponent<TransformationComponent>();
 
-			//TODO: use a collision filter ID and bitmask
+			//TODO: use a collision filter ID and bitmask kinda like UE4
 			for( uint32_t j = i+1; j < count; ++j )
 			{
 				ECS::Entity& otherEntity = entities[j];
@@ -184,15 +262,62 @@ namespace WildWeasel_Game
 
 	void BuildDrawlistSystem( ECS::Entity* entities, uint32_t count, ECS::EntityComponentSystem* ecs )
 	{
+		DrawlistComponent* drawlistComponent = ecs->GetSingletonComponent<DrawlistComponent>();
+		drawlistComponent->drawlist.clear();
+
 		for( uint32_t i = 0; i < count; ++i )
 		{
 			const ECS::Entity& entity = entities[i];
 			//TODO: ordering
 			RenderableComponent* renderableComponent = entity.GetComponent<RenderableComponent>();
-			TransformationComponent* transformationComponent = entity.GetComponent<TransformationComponent>();
-			DrawlistComponent* drawlistComponent = ecs->GetSingletonComponent<DrawlistComponent>();
+			TransformationComponent* transformationComponent = entity.GetComponent<TransformationComponent>();			
 
 			drawlistComponent->drawlist.push_back( { renderableComponent->asset, transformationComponent->sceneInstance, renderableComponent->dithering } );
+		}
+	}
+
+	void CreateEnemyShipScript( ECS::Entity* entity, ECS::EntityComponentSystem* ecs )
+	{
+		const TimeComponent* timeComponent = ecs->GetSingletonComponent<TimeComponent>();
+		EnemyShipSpawnerComponent* spawnerComponent = entity->GetComponent<EnemyShipSpawnerComponent>();
+
+		if( ( spawnerComponent->timeUntilNextSpawn -= static_cast<int>(timeComponent->deltaTime) ) < 0 )
+		{
+			const float x = (( float )std::rand() / RAND_MAX) * 150.0f - 75.0f;
+			constexpr float y = 190.0f;
+
+			auto hLifetimeComp = ecs->CreateComponent<LifeTimeComponent>( 0.0f, 5.0f );
+			auto hHealthComp = ecs->CreateComponent<HealthComponent>( 5.0f, 5.0f );
+			auto hRenderableComp = ecs->CreateComponent<RenderableComponent>( &shipRenderable, false );
+			auto hTransformationComp = ecs->CreateComponent<TransformationComponent>( glm::vec3( x, y, 2.0f ), defaultRotation, -shipSize );
+			auto hPhysicsComp = ecs->CreateComponent<PhysicsComponent>( glm::vec3( 0.0f, -100.0f, 0.0f ) );
+			auto hCollisionComp = ecs->CreateComponent<CollisionComponent>( 7.0f );
+
+			ecs->CreateEntity( hLifetimeComp, hHealthComp, hRenderableComp, hTransformationComp, hPhysicsComp, hCollisionComp );
+
+			spawnerComponent->timeUntilNextSpawn = 1000;
+		}
+	}
+
+	void CreateCloudScript( ECS::Entity* entity, ECS::EntityComponentSystem* ecs )
+	{
+		const TimeComponent* timeComponent = ecs->GetSingletonComponent<TimeComponent>();
+		EnvironmentComponent* spawnerComponent = entity->GetComponent<EnvironmentComponent>();
+
+		if( (spawnerComponent->timeUntilNextCloudSpawn -= static_cast< int >(timeComponent->deltaTime)) < 0 )
+		{
+			const float x = (( float )std::rand() / RAND_MAX) * 150.0f - 75.0f;
+			const float size = (( float )std::rand() / RAND_MAX) * 10.0f + 10.0f;
+			constexpr float y = 190.0f;
+
+			auto hLifetimeComp = ecs->CreateComponent<LifeTimeComponent>( 0.0f, 5.0f );
+			auto hRenderableComp = ecs->CreateComponent<RenderableComponent>( &cloudAsset, true );
+			auto hTransformationComp = ecs->CreateComponent<TransformationComponent>( glm::vec3( x, y, 7.0f ), defaultRotation, size );
+			auto hPhysicsComp = ecs->CreateComponent<PhysicsComponent>( glm::vec3( 0.0f, -100.0f, 0.0f ) );
+
+			ecs->CreateEntity( hLifetimeComp, hRenderableComp, hTransformationComp, hPhysicsComp );
+
+			spawnerComponent->timeUntilNextCloudSpawn = 1500;
 		}
 	}
 
@@ -200,69 +325,7 @@ namespace WildWeasel_Game
 	ECS::System physicsSystem = ECS::System::Create<PhysicsComponent, TransformationComponent>( UpdatePhysics );
 	ECS::System collisionsSystem = ECS::System::Create<CollisionComponent, TransformationComponent>( UpdateCollisions );
 	ECS::System buildDrawlistSystem = ECS::System::Create < RenderableComponent, TransformationComponent >( BuildDrawlistSystem );
-
-	struct EnemyShipInstance
-	{
-		float currentHealth;
-		float maxHealth;
-		SceneInstance sceneInstance;
-	};
-
-	struct BulletInstance
-	{
-		float lifeTime;
-		float maxLifetime;
-		SceneInstance sceneInstance;
-	};
-
-	BackgroundInstance backgroundInstance;
-	SceneInstance shipSceneInstance;
-	SceneInstance cameraSceneInstance;
-
-	GfxAsset shipRenderable;
-	GfxAsset bulletRenderable;
-	GfxAsset treeAsset;
-	GfxAsset riverBankAsset;
-	GfxAsset riverAsset;
-	GfxAsset cloudAsset;
-
-	BindlessTexturesState bindlessTexturesState;
-
-	size_t frameDeltaTime = 0;
-	uint32_t _score = 0;
-
-	GfxHeap gfx_heap;
-
-	constexpr float shipSize = 21.0f;
-
-	void CreateEnemyShip()
-	{
-		const float x = ((float)std::rand()/ RAND_MAX) * 150.0f -75.0f;
-		constexpr float y = 190.0f;
-
-		auto hLifetimeComp = ecs.CreateComponent<LifeTimeComponent>( 0.0f, 5.0f );
-		auto hHealthComp = ecs.CreateComponent<HealthComponent>( 5.0f, 5.0f );
-		auto hRenderableComp = ecs.CreateComponent<RenderableComponent>( &shipRenderable, false );
-		auto hTransformationComp = ecs.CreateComponent<TransformationComponent>( glm::vec3( x, y, 2.0f ), defaultRotation, -shipSize );
-		auto hPhysicsComp = ecs.CreateComponent<PhysicsComponent>( glm::vec3( 0.0f, -100.0f, 0.0f ) );
-		auto hCollisionComp = ecs.CreateComponent<CollisionComponent>( 7.0f );
-
-		ecs.CreateEntity( hLifetimeComp, hHealthComp, hRenderableComp, hTransformationComp, hPhysicsComp, hCollisionComp );
-	}
-
-	void CreateCloud()
-	{
-		const float x = (( float )std::rand() / RAND_MAX) * 150.0f - 75.0f;
-		const float size = (( float )std::rand() / RAND_MAX) * 10.0f + 10.0f;
-		constexpr float y = 190.0f;
-
-		auto hLifetimeComp = ecs.CreateComponent<LifeTimeComponent>( 0.0f, 5.0f );
-		auto hRenderableComp = ecs.CreateComponent<RenderableComponent>( &cloudAsset, true );
-		auto hTransformationComp = ecs.CreateComponent<TransformationComponent>( glm::vec3( x, y, 7.0f ), defaultRotation, size );
-		auto hPhysicsComp = ecs.CreateComponent<PhysicsComponent>( glm::vec3( 0.0f, -100.0f, 0.0f ) );
-
-		ecs.CreateEntity( hLifetimeComp, hRenderableComp, hTransformationComp, hPhysicsComp );
-	}
+	ECS::System runEntityScriptsSystem = ECS::System::Create< ScriptComponent >( RunEntityScripts );
 
 	void createBullet()
 	{
@@ -347,16 +410,7 @@ namespace WildWeasel_Game
 		//Input
 		IH::DoCommands();
 
-		static size_t lastSpawn = 0;
-		if( lastSpawn == 0 || currentTime - lastSpawn > 1000 )
-		{
-			CreateEnemyShip();
-			CreateCloud();
-			lastSpawn = currentTime;
-		}
-
-		UpdateBackgroundScrolling( &backgroundInstance, frameDeltaTime );
-
+		//Run Ecs
 		TimeComponent* timeComponent = ecs.GetSingletonComponent<TimeComponent>();
 		timeComponent->deltaTime = frameDeltaTime;
 		YKillComponent* ykillComponent = ecs.GetSingletonComponent<YKillComponent>();
@@ -366,41 +420,49 @@ namespace WildWeasel_Game
 		ecs.RunSystem( physicsSystem );
 		ecs.RunSystem( collisionsSystem );
 
-		DrawlistComponent* drawlistComponent = ecs.GetSingletonComponent<DrawlistComponent>();
-		drawlistComponent->drawlist.clear();
-		drawlistComponent->drawlist.push_back( { &shipRenderable, shipSceneInstance, false } );
-		drawlistComponent->drawlist.push_back( { &backgroundInstance.asset, backgroundInstance.instance, false } );
+		ecs.RunSystem( runEntityScriptsSystem );
+
 		ecs.RunSystem( buildDrawlistSystem );
 
+		//Draw
 		std::vector<TextZone> textZones = UpdateText();
 
+		DrawlistComponent* drawlistComponent = ecs.GetSingletonComponent<DrawlistComponent>();
 		DrawFrame( current_frame, &cameraSceneInstance, drawlistComponent->drawlist, textZones );
 
 		current_frame = (++current_frame) % SIMULTANEOUS_FRAMES;
+	}
+
+	void CreateBackgroundEntity( uint32_t background_sprite_sheet_index, GfxHeaps_BatchedAllocator& gfx_mem_allocator )
+	{
+		auto hBackgroundComp = ecs.CreateComponent<BackgroundInstanceComponent>( CreateBackgroundGfxModel( VIEWPORT_WIDTH, VIEWPORT_HEIGHT, background_sprite_sheet_index, &gfx_mem_allocator ) );
+		auto hTransormationComp = ecs.CreateComponent<TransformationComponent>();
+		auto hRenderableComp = ecs.CreateComponent<RenderableComponent>();
+		auto hScriptComp = ecs.CreateComponent<ScriptComponent>( UpdateBackgroundScript );
+		ecs.CreateEntity( hBackgroundComp, hTransormationComp, hRenderableComp, hScriptComp );
 	}
 
 	void Init()
 	{		
 		//Input callbacks
 		IH::InitInputs();
-		IH::RegisterAction( "console", IH::Pressed, &ConCom::OpenConsole );
-		IH::BindInputToAction( "console", IH::TILD );
-		IH::RegisterAction( "forward", IH::Pressed, &ForwardCallback );
-		IH::BindInputToAction( "forward", IH::W );
-		IH::RegisterAction( "backward", IH::Pressed, &BackwardCallback );
-		IH::BindInputToAction( "backward", IH::S );
-		IH::RegisterAction( "left", IH::Pressed, &MoveLeftCallback );
-		IH::BindInputToAction( "left", IH::A );
-		IH::RegisterAction( "right", IH::Pressed, &MoveRightCallback );
-		IH::BindInputToAction( "right", IH::D );
-		IH::RegisterAction( "fire", IH::Pressed, &FireCallback );
-		IH::BindInputToAction( "fire", IH::SPACE );
+		IH::RegisterAction( "Forward", IH::W );
+		IH::BindAction( "Forward", IH::Pressed, &ForwardCallback );
+		IH::RegisterAction( "backward", IH::S );
+		IH::BindAction( "backward", IH::Pressed, &BackwardCallback );
+		IH::RegisterAction( "left", IH::A );
+		IH::BindAction( "left", IH::Pressed, &MoveLeftCallback );
+		IH::RegisterAction( "right", IH::D );
+		IH::BindAction( "right", IH::Pressed, &MoveRightCallback );
+		IH::RegisterAction( "fire", IH::SPACE );
+		IH::BindAction( "fire", IH::Pressed, &FireCallback );
+
+		IH::RegisterAction( "console", IH::TILD );
+		IH::BindAction( "console", IH::Pressed, &ConCom::OpenConsole );
+
 
 		//Console commands callback (need IH)
 		ConCom::Init();
-
-		//Objects update callbacks
-		//RegisterTickFunction( &TickObjectCallback );
 
 		//LoadAssets
 		uint32_t memoryTypeMask = 15;/*TODO this works for now for textures, comes from asking VK for a textures*/
@@ -426,25 +488,35 @@ namespace WildWeasel_Game
 		uint32_t cloudTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, cloudTexture, eSamplers::Point );
 		uint32_t background_sprite_sheet_index = RegisterBindlessTexture( &bindlessTexturesState, background_sprite_sheet, eSamplers::Point );
 
-		backgroundInstance = CreateBackgroundGfxModel( VIEWPORT_WIDTH, VIEWPORT_HEIGHT, background_sprite_sheet_index, &gfx_mem_allocator );
+		CreateBackgroundEntity( background_sprite_sheet_index, gfx_mem_allocator );
 
 		gfx_mem_allocator.Commit();
 
 		shipRenderable = CreateGfxAsset( quadModel, shipTextureIndex );
 		bulletRenderable = CreateGfxAsset( quadModel, bulletTextureIndex );
-		treeAsset = CreateGfxAsset( quadModel, treeTextureIndex );
-		riverBankAsset = CreateGfxAsset( quadModel, riverBankTextureIndex );
-		riverAsset = CreateGfxAsset( quadModel, riverTextureIndex );
 		cloudAsset = CreateGfxAsset( quadModel, cloudTextureIndex );	
 
 		CompileScene( &bindlessTexturesState );
 
 		shipSceneInstance = { glm::vec3( 0.0f, 0.0f, 2.0f ), defaultRotation, shipSize };
+		auto hShipTranformationComponent = ecs.CreateComponent<TransformationComponent>( shipSceneInstance );
+		auto hShipRenderableComp = ecs.CreateComponent<RenderableComponent>( &shipRenderable, false );
+		auto hShipUpdateScriptComp = ecs.CreateComponent<ScriptComponent>( UpdateShipScript );
+		ecs.CreateEntity( hShipTranformationComponent, hShipRenderableComp, hShipUpdateScriptComp );
+		
 		cameraSceneInstance = { glm::vec3( 0.0f, 0.0f, -2.0f ), defaultRotation, 1.0f };
 
 		ecs.CreateSingletonComponent<TimeComponent>();
 		ecs.CreateSingletonComponent<YKillComponent>( 200.0f );
 		ecs.CreateSingletonComponent<DrawlistComponent>();
+
+		auto hEnemyShipSpawnerComponent = ecs.CreateComponent<EnemyShipSpawnerComponent>();
+		auto hCreateEnemyShipScript = ecs.CreateComponent<ScriptComponent>( CreateEnemyShipScript );
+		ecs.CreateEntity( hCreateEnemyShipScript, hEnemyShipSpawnerComponent );
+
+		auto hEnvironmentComponent = ecs.CreateComponent<EnvironmentComponent>();
+		auto hCreateCloudsScript = ecs.CreateComponent<ScriptComponent>( CreateCloudScript );
+		ecs.CreateEntity( hCreateCloudsScript, hEnvironmentComponent );
 	}
 
 	void Destroy() 

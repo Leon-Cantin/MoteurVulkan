@@ -373,6 +373,7 @@ namespace ECS
 			{
 				//Create new componentType
 				data[typeId] = malloc( sizeof( C ) * MaxComponents );
+				ZeroMemory( data[typeId], sizeof( C ) * MaxComponents );//We must zero mem for the assignation below.
 				data_sizes[typeId] = sizeof( C );
 				data_used[typeId].resize( MaxComponents );
 			}

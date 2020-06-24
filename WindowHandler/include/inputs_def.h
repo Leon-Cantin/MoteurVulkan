@@ -6,8 +6,9 @@ namespace IH
 {
 	enum eKeyState
 	{
-		Pressed = 0,
-		Released = 1
+		Released = 0,
+		Pressed,
+		Count,
 	};
 	//Same as Windows Virtual keys
 	enum eKeys : uint32_t

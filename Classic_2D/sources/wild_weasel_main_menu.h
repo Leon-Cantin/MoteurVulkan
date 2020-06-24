@@ -73,14 +73,15 @@ namespace WildWeasel_Menu
 	{
 		//Input callbacks
 		IH::InitInputs();
-		IH::RegisterAction( "console", IH::Pressed, &ConCom::OpenConsole );
-		IH::BindInputToAction( "console", IH::TILD );
-		IH::RegisterAction( "forward", IH::Pressed, &ForwardCallback );
-		IH::BindInputToAction( "forward", IH::W );
-		IH::RegisterAction( "backward", IH::Pressed, &BackwardCallback );
-		IH::BindInputToAction( "backward", IH::S );
-		IH::RegisterAction( "fire", IH::Pressed, &FireCallback );
-		IH::BindInputToAction( "fire", IH::SPACE );
+		IH::RegisterAction( "Forward", IH::W );
+		IH::BindAction( "Forward", IH::Pressed, &ForwardCallback );
+		IH::RegisterAction( "backward", IH::S );
+		IH::BindAction( "backward", IH::Pressed, &BackwardCallback );
+		IH::RegisterAction( "fire", IH::SPACE );
+		IH::BindAction( "fire", IH::Pressed, &FireCallback );
+
+		IH::RegisterAction( "console", IH::TILD );
+		IH::BindAction( "console", IH::Pressed, &ConCom::OpenConsole );
 
 		//Console commands callback (need IH)
 		ConCom::Init();

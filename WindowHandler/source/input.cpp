@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <vector>
+#include <array>
 #include <assert.h>
 
 #include "window_handler.h"
@@ -11,11 +12,12 @@ namespace IH
 	typedef void(*ActionCallback)(void);
 
 	struct Action {
-		std::vector<ActionCallback> callbacks[2];
+		std::array< std::vector<ActionCallback>, eKeyState::Count > callbacks;
+		eKeyState state;
 	};
 
 	std::unordered_map<std::string, Action> name_action_map;
-	std::unordered_map<uint32_t, Action*> input_action_map;
+	std::unordered_map<uint32_t, std::string> input_action_map;
 	std::vector<CharacterCallback> character_callbacks;
 
 	const uint32_t HELD_KEYS_MAX_SIZE = 256;
@@ -37,17 +39,27 @@ namespace IH
 		auto it = input_action_map.find(input);
 		if (it != input_action_map.end())
 		{
-			Action* action = it->second;
-			for (size_t i = 0; i < action->callbacks[keyStatus].size(); ++i)
-				action->callbacks[keyStatus][i]();
+			std::string actionName = it->second;
+			auto action_it = name_action_map.find( actionName );
+			if( action_it != name_action_map.end() )
+			{
+				action_it->second.state = keyStatus;
+				const auto& callbacks = action_it->second.callbacks[keyStatus];
+				for( size_t i = 0; i < callbacks.size(); ++i )
+					callbacks[i]();
+			}
 		}
 	}
 
-	void RegisterAction(const std::string& name, eKeyState status, ActionCallback callback)
+	void RegisterAction( const std::string& name, uint32_t input )
 	{
-		assert(status == Pressed || status == Released);
-		Action &action = name_action_map[name];
-		action.callbacks[status].push_back(callback);
+		name_action_map.insert( { name, Action() } );
+		input_action_map.insert( { input, name } );
+	}
+
+	void BindAction( const std::string& actionName, eKeyState actionState, ActionCallback input )
+	{
+		name_action_map[actionName].callbacks[actionState].push_back( input );
 	}
 
 	void RegisterCharacterCallback(CharacterCallback callback)
@@ -57,12 +69,28 @@ namespace IH
 
 	void BindInputToAction(const std::string& actionName, uint32_t input)
 	{
-		Action &action = name_action_map[actionName];
-		input_action_map[input] = &action;
+		auto it = name_action_map.find( actionName );
+		input_action_map.insert( { input, actionName } );
 	}
+
+	eKeyState GetActionState( const std::string& actionName )
+	{
+		return name_action_map[actionName].state;
+	}
+
+	/*static void ResetReleasedKeys()
+	{
+		for( auto it : name_action_map )
+		{
+			if( it.second.state == eKeyState::Released )
+				it.second.state = eKeyState::None;
+		}
+	}*/
 
 	static void PollEvents()
 	{
+		//ResetReleasedKeys();
+
 		constexpr uint32_t kbStateSize = 256;
 		byte kbState[kbStateSize];
 		GetKeyboardState(kbState);
