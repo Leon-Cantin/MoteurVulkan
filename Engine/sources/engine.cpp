@@ -29,7 +29,7 @@ namespace Engine
 			engineState->_currentSceneScript.destroyCallback();
 
 		engineState->_currentSceneScript = engineState->_nextSceneScript;
-		ZeroMemory( &engineState->_nextSceneScript, sizeof( engineState->_nextSceneScript ) );
+		MEM::zero( &engineState->_nextSceneScript );
 		engineState->_currentSceneScript.initCallback();
 	}
 

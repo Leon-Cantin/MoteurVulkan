@@ -3,6 +3,7 @@
 
 #include <limits>
 #include <algorithm>
+#include <stdexcept>
 
 VkSurfaceFormatKHR choose_swap_surface_format(const std::vector<VkSurfaceFormatKHR>& available_formats)
 {

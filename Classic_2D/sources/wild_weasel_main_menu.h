@@ -7,6 +7,7 @@
 #include "asset_library.h"
 #include "classic_2d_gfx_asset.h"
 #include "window_handler.h"
+#include "engine.h"
 
 namespace WildWeasel_Menu
 {
@@ -65,7 +66,6 @@ namespace WildWeasel_Menu
 
 	void FireCallback()
 	{
-		void Engine::SetNextScript( const char * scriptName );
 		Engine::SetNextScript( "Game" );
 	}
 

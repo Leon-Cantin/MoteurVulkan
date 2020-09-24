@@ -23,7 +23,7 @@ struct KTX_Header
 };
 
 enum class TextureType {
-	None,
+	_None,
 	T_1D,
 	T_2D,
 	T_1D_A,
@@ -61,9 +61,9 @@ bool load_ktx(const char * filename, std::vector<char>& o_data, KTX_Header& o_he
 {
 	FILE * fp;
 	size_t data_start, data_end;
-	o_texture_type = TextureType::None;
+	o_texture_type = TextureType::_None;
 
-	fopen_s(&fp, filename, "rb");
+	fp = fopen( filename, "rb");
 
 	if (!fp)
 		return 0;
@@ -131,7 +131,7 @@ bool load_ktx(const char * filename, std::vector<char>& o_data, KTX_Header& o_he
 	}
 
 	// Check for insanity...
-	if (o_texture_type == TextureType::None ||                  // Couldn't figure out target
+	if (o_texture_type == TextureType::_None ||                  // Couldn't figure out target
 		(o_header.pixelwidth == 0) ||                                  // Texture has no width???
 		(o_header.pixelheight == 0 && o_header.pixeldepth != 0))              // Texture has depth but no height???
 	{
@@ -157,5 +157,5 @@ fail_header:;
 fail_read:;
 	fclose(fp);
 
-	return o_texture_type != TextureType::None;
+	return o_texture_type != TextureType::_None;
 }

@@ -3,6 +3,7 @@
 #include "vk_buffer.h"
 
 #include <unordered_map>
+#include <stdexcept>
 
 void DestroyGfxModel(GfxModel& gfxModel)
 {

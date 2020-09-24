@@ -1,5 +1,5 @@
 #include "geometry_renderpass.h"
-#include "..\shaders\shadersCommon.h"
+#include "../shaders/shadersCommon.h"
 
 #include "file_system.h"
 #include "renderer.h"

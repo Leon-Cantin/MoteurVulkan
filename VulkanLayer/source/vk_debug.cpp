@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 #include <iostream>
+#include <stdio.h>
 
 PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugMarkerSetObjectName_func = VK_NULL_HANDLE;
 
@@ -22,7 +23,7 @@ void AcquireDebugUtilsFunc(T* pFn, const char * funcName)
 	if (*pFn == VK_NULL_HANDLE)
 	{
 		char buffer[256];
-		sprintf_s(buffer, 256, "Couldn't acquire %s", funcName);
+		snprintf(buffer, 256, "Couldn't acquire %s", funcName);
 		throw std::runtime_error(buffer);
 	}
 }

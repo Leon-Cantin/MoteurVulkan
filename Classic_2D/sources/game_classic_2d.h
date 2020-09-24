@@ -120,9 +120,8 @@ namespace WildWeasel_Game
 		ScriptCallback_t scriptCallback;
 	};
 
-#define LITTERALLY( type ) type
-#define REGISTER_COMPONENT_TYPE( type ) auto LITTERALLY(type)_comp_t = ECS::RegisterComponentType<type>::comp
-#define REGISTER_SINGLETON_COMPONENT_TYPE( type ) auto LITTERALLY(type)_singleton_comp_t = ECS::RegisterSingletonComponentType<type>::comp;
+#define REGISTER_COMPONENT_TYPE( type__ ) static const auto type__ ## _comp_t = ECS::Component<type__>::GetTypeId()
+#define REGISTER_SINGLETON_COMPONENT_TYPE( type__ ) static const auto type__ ## _singleton_comp_t = ECS::SingletonComponent<type__>::GetTypeId()
 
 	REGISTER_COMPONENT_TYPE( HealthComponent );
 	REGISTER_COMPONENT_TYPE( LifeTimeComponent );
@@ -390,7 +389,7 @@ namespace WildWeasel_Game
 	{
 		std::vector<TextZone> textZones;
 		char textBuffer[16];
-		int charCount = sprintf_s( textBuffer, 16, "Score: %i", _score );
+		int charCount = snprintf( textBuffer, 16, "Score: %i", _score );
 		textZones.push_back( { -1.0f, -1.0f, std::string( textBuffer ) } );
 
 		if( ConCom::isOpen() )

@@ -1,6 +1,6 @@
 set( TARGET_NAME Engine )
 				  
-file( GLOB SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} source/* )
+file( GLOB SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} sources/* )
 file( GLOB INCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} includes/* )
 
 add_library( ${TARGET_NAME} STATIC ${SRCS} ${INCS} ${SHADERS} )

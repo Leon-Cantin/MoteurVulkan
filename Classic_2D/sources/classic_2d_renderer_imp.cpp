@@ -7,6 +7,7 @@
 #include "console_command.h"
 #include "window_handler.h"
 #include "allocators.h"
+#include "memory.h"
 
 #include <glm/glm.hpp>
 #include <glm/vec4.hpp>
@@ -152,7 +153,7 @@ void CompileScene( BindlessTexturesState* bindlessTexturesState )
 		vkDestroyDescriptorPool( g_vk.device, descriptorPool_scene, nullptr );
 	descriptorPool_scene = CreateDescriptorPool_BAD();
 
-	ZeroMemory( &_inputBuffers, sizeof( _inputBuffers ) );
+	MEM::zero( &_inputBuffers );
 
 	FillInputBuffers( bindlessTexturesState );
 

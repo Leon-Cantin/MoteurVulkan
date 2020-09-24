@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <array>
+#include "memory.h"
 
 namespace ECS
 {
@@ -43,14 +44,10 @@ namespace ECS
 	template<class C>
 	class Component : public ComponentBase
 	{
-	private:
-
-		static inline const ComponentTypeID m_typeId = ComponentTypeIDGenerator_t::GetID<C>();
-
 	public:
-
 		static ComponentTypeID GetTypeId()
 		{
+			static const ComponentTypeID m_typeId = ComponentTypeIDGenerator_t::GetID<C>();
 			return m_typeId;
 		}
 	};
@@ -63,12 +60,6 @@ namespace ECS
 		return comp;
 	}*/
 
-	template< typename T >
-	struct RegisterComponentType
-	{
-		static const Component<T> comp;
-	};
-
 	//TODO Singleton copies too much from component
 	class SingletonComponentBase
 	{};
@@ -78,22 +69,12 @@ namespace ECS
 	template<class C>
 	class SingletonComponent : public SingletonComponentBase
 	{
-	private:
-
-		static inline const SingletonComponentTypeID m_typeId = SingletonComponentTypeIDGenerator_t::GetID<C>();
-
 	public:
-
 		static SingletonComponentTypeID GetTypeId()
 		{
+			static const SingletonComponentTypeID m_typeId = SingletonComponentTypeIDGenerator_t::GetID<C>();
 			return m_typeId;
 		}
-	};
-
-	template< typename T >
-	struct RegisterSingletonComponentType
-	{
-		static const SingletonComponent<T> comp;
 	};
 
 	class ArchetypeKey
@@ -204,44 +185,6 @@ namespace ECS
 		}
 	};
 
-	class Entity
-	{
-	private:
-		EntityID m_entityId;
-		class EntityComponentSystem* m_parent_ecs;
-		static constexpr EntityID INVALID_ENTITY_ID = std::numeric_limits<EntityID>::max();
-
-	public:
-		Entity()
-			: m_entityId( INVALID_ENTITY_ID ), m_parent_ecs( nullptr )
-		{
-
-		}
-
-		Entity( EntityID entityId, class EntityComponentSystem* parent_ecs )
-			: m_entityId( entityId ), m_parent_ecs( parent_ecs )
-		{
-
-		}
-
-		EntityID GetId() const
-		{
-			return m_entityId;
-		}
-
-		template< class C >
-		C* GetComponent() const
-		{
-			assert( IsValid() );
-			return m_parent_ecs->GetComponentForEntity<C>( m_entityId );
-		}
-
-		bool IsValid() const
-		{
-			return m_entityId != INVALID_ENTITY_ID;
-		}
-	};
-
 	class EntityContainer
 	{
 	private:
@@ -266,7 +209,7 @@ namespace ECS
 		}
 
 		template< typename ... ComponentTypes, typename ... ComponentIDs >
-		Entity CreateEntity( class EntityComponentSystem* ecs, ComponentIDs ... componentIds )
+		EntityID CreateEntity( ComponentIDs ... componentIds )
 		{
 			EntityID freeSlotIndex = 0;
 			while( freeSlotIndex < data_used.size() && data_used[freeSlotIndex] )
@@ -280,7 +223,7 @@ namespace ECS
 
 			++entities_count;
 
-			return Entity { entityId, ecs };
+			return entityId;
 		}
 
 		void RemoveEntity( EntityID entityId )
@@ -303,12 +246,11 @@ namespace ECS
 			return entry.GetAllComponentIDsAndTypes( o_componentIds );
 		}
 
-		void ForEachEntityWithKey( const ArchetypeKey& reference_key, class EntityComponentSystem* ecs, void( *func )( Entity*, uint32_t, EntityComponentSystem* ) )
+		uint32_t GetEntitiesWithKey( const ArchetypeKey& reference_key, EntityID* o_ids, uint32_t ids_max )
 		{
-			Entity entities [MAX_ENTITIES];
 			uint32_t used_entities_count = 0;
 			uint32_t candidates_count = 0;
-			for( uint32_t i = 0 ; i < data_used.size() && used_entities_count < entities_count; ++i )
+			for( uint32_t i = 0 ; i < data_used.size() && used_entities_count < entities_count && candidates_count < ids_max; ++i )
 			{
 				if( data_used[i] )
 				{
@@ -317,13 +259,12 @@ namespace ECS
 					{
 						assert( candidates_count < MAX_ENTITIES );
 						const EntityID entityId = i;
-						entities[candidates_count++] = Entity( entityId, ecs );
+						o_ids[candidates_count++] = entityId;
 					}
 				}
 			}
 
-
-			func( entities, candidates_count, ecs );
+			return candidates_count;
 		}
 	};
 
@@ -344,11 +285,11 @@ namespace ECS
 			assert( componentTypesCount > 0 );
 
 			data.resize( componentTypesCount );
-			ZeroMemory( data.data(), data.size() * sizeof( void* ) );
+			MEM::zero( data.data(), data.size() * sizeof( void* ) );
 			data_sizes.resize( componentTypesCount );
-			ZeroMemory( data_sizes.data(), data_sizes.size() * sizeof( size_t ) );
+			MEM::zero( data_sizes.data(), data_sizes.size() * sizeof( size_t ) );
 			data_counts.resize( componentTypesCount );
-			ZeroMemory( data_counts.data(), data_counts.size() * sizeof( ComponentID ) );
+			MEM::zero( data_counts.data(), data_counts.size() * sizeof( ComponentID ) );
 
 			data_used.resize( componentTypesCount );
 		}
@@ -373,7 +314,7 @@ namespace ECS
 			{
 				//Create new componentType
 				data[typeId] = malloc( sizeof( C ) * MaxComponents );
-				ZeroMemory( data[typeId], sizeof( C ) * MaxComponents );//We must zero mem for the assignation below.
+				MEM::zero( data[typeId], sizeof( C ) * MaxComponents );//We must zero mem for the assignation below.
 				data_sizes[typeId] = sizeof( C );
 				data_used[typeId].resize( MaxComponents );
 			}
@@ -441,9 +382,9 @@ namespace ECS
 			assert( componentTypesCount > 0 );
 
 			data.resize( componentTypesCount );
-			ZeroMemory( data.data(), data.size() * sizeof( void* ) );
+			MEM::zero( data.data(), data.size() * sizeof( void* ) );
 			data_sizes.resize( componentTypesCount );
-			ZeroMemory( data_sizes.data(), data_sizes.size() * sizeof( size_t ) );
+			MEM::zero( data_sizes.data(), data_sizes.size() * sizeof( size_t ) );
 		}
 
 		~SingletonComponentContainer()
@@ -466,7 +407,7 @@ namespace ECS
 			data[typeId] = malloc( sizeof( C ) );
 			data_sizes[typeId] = sizeof( C );
 
-			ZeroMemory( data[typeId], sizeof( C ) );
+			MEM::zero( data[typeId], sizeof( C ) );
 
 			C* c_data = reinterpret_cast< C* >(data[typeId]);
 			*c_data = { componentArgs ... };
@@ -510,7 +451,7 @@ namespace ECS
 
 		const C* GetComponent() const
 		{
-			return GetComponent<C>();
+			return const_cast<ComponentHandle*>(this)->GetComponent();
 		}
 
 		ComponentID GetComponentId() const
@@ -537,12 +478,7 @@ namespace ECS
 
 		const C* GetComponent() const
 		{
-			return GetComponent<C>();
-		}
-
-		ComponentID GetComponentId() const
-		{
-			return m_componentId;
+			return const_cast<SingletonComponentHandle*>(this)->GetComponent();
 		}
 	};
 
@@ -574,6 +510,101 @@ namespace ECS
 		}
 	};
 
+	class EntityComponentContainer
+	{
+	private:
+		ComponentContainer componentContainer;
+		EntityContainer entityContainer;
+		
+	public:
+		template<class C, class ... Args>
+		ComponentHandle<C> CreateComponent( Args ... componentArgs )
+		{
+			const ComponentID componentId = componentContainer.CreateComponent<C>( componentArgs ... );
+			return ComponentHandle<C>( &componentContainer, componentId );
+		}
+
+		template< template< typename > typename ComponentHandles, typename ... ComponentTypes >
+		EntityID CreateEntity( ComponentHandles<ComponentTypes>& ... componentHandles )
+		{
+			return entityContainer.CreateEntity< ComponentTypes ... >( componentHandles.GetComponentId() ... );
+		}
+
+		template< class C >
+		C* GetComponent( ComponentID componentId ) const
+		{
+			return componentContainer.GetComponent< C >( componentId );
+		}
+
+		void* GetComponent( ComponentID componentId, ComponentTypeID componentTypeId ) const
+		{
+			return componentContainer.GetComponent( componentId, componentTypeId );
+		}
+
+		template< class C >
+		C* GetComponentForEntity( EntityID entityId ) const
+		{
+			const ComponentID componentId = entityContainer.GetComponentId< C >( entityId );
+			return componentId != INVALID_COMPONENT_ID ? componentContainer.GetComponent< C >( componentId ) : nullptr;
+		}
+
+		void Destroy( EntityID entityId )
+		{
+			const std::pair< ComponentID, ComponentTypeID >* componentIds;
+
+			const size_t count = entityContainer.GetAllComponentIDsAndTypes( entityId, &componentIds );
+			for( size_t i = 0; i < count; ++i )
+			{
+				componentContainer.DestroyComponent( componentIds[i].second, componentIds[i].first );
+			}
+			entityContainer.RemoveEntity( entityId );
+		}
+
+		uint32_t GetEntitiesWithKey( const ArchetypeKey& reference_key, EntityID* o_ids, uint32_t ids_max )
+		{
+			return entityContainer.GetEntitiesWithKey( reference_key, o_ids, ids_max);
+		}
+	};
+
+	class Entity
+	{
+	private:
+		EntityID m_entityId;
+		EntityComponentContainer* m_parent_ecc;
+		static constexpr EntityID INVALID_ENTITY_ID = std::numeric_limits<EntityID>::max();
+
+	public:
+		Entity()
+			: m_entityId( INVALID_ENTITY_ID ), m_parent_ecc( nullptr )
+		{
+
+		}
+
+		Entity( EntityID entityId, class EntityComponentContainer* parent_ecc )
+			: m_entityId( entityId ), m_parent_ecc( parent_ecc )
+		{
+
+		}
+
+		EntityID GetId() const
+		{
+			return m_entityId;
+		}
+
+		template< class C >
+		C* GetComponent() const
+		{
+			assert( IsValid() );
+			return m_parent_ecc->GetComponentForEntity<C>( m_entityId );
+		}
+
+		bool IsValid() const
+		{
+			return m_entityId != INVALID_ENTITY_ID;
+		}
+	};
+
+
 	class System
 	{
 	private:
@@ -583,15 +614,15 @@ namespace ECS
 		EntityContainer* m_entityContainer;
 
 	public:
-		void( *m_update ) ( Entity*, uint32_t, EntityComponentSystem* );
+		void( *m_update ) ( Entity*, uint32_t, class EntityComponentSystem* );
 
-		System( ArchetypeKey key, void( *update ) ( Entity*, uint32_t, EntityComponentSystem* ) )
+		System( ArchetypeKey key, void( *update ) ( Entity*, uint32_t, class EntityComponentSystem* ) )
 			: m_key( key ), m_update( update )
 		{
 		}
 
 		template< typename ... ComponentTypes >
-		static System Create( void( *func_update ) ( Entity*, uint32_t, EntityComponentSystem* ) )
+		static System Create( void( *func_update ) ( Entity*, uint32_t, class EntityComponentSystem* ) )
 		{
 			return System( ArchetypeKey::Create< ComponentTypes ... >(), func_update );
 		}
@@ -604,7 +635,7 @@ namespace ECS
 
 		bool CanRun( const ArchetypeKey& key ) const
 		{
-			key.Contains( m_key );
+			return key.Contains( m_key );
 		}
 
 		const ArchetypeKey& GetKey() const
@@ -617,15 +648,13 @@ namespace ECS
 	{
 	private:
 		SingletonComponentContainer singletonComponentContainer;
-		ComponentContainer componentContainer;
-		EntityContainer entityContainer;
+		EntityComponentContainer entityComponentContainer;
 
 	public:
 		template<class C, class ... Args>
 		ComponentHandle<C> CreateComponent( Args ... componentArgs )
 		{
-			const ComponentID componentId = componentContainer.CreateComponent<C>( componentArgs ... );
-			return ComponentHandle<C>( &componentContainer, componentId );
+			return entityComponentContainer.CreateComponent<C>( componentArgs ... );
 		}
 
 		template<class C, class ... Args>
@@ -645,18 +674,18 @@ namespace ECS
 		template< template< typename > typename ComponentHandles, typename ... ComponentTypes >
 		Entity CreateEntity( ComponentHandles<ComponentTypes>& ... componentHandles )
 		{
-			return entityContainer.CreateEntity< ComponentTypes ... >( this, componentHandles.GetComponentId() ... );
+			return Entity { entityComponentContainer.CreateEntity( componentHandles ... ), &entityComponentContainer };
 		}
 
 		template< class C >
 		C* GetComponent( ComponentID componentId ) const
 		{
-			return componentContainer.GetComponent< C >( componentId );
+			return entityComponentContainer.GetComponent< C >( componentId );
 		}
 
 		void* GetComponent( ComponentID componentId, ComponentTypeID componentTypeId ) const
 		{
-			return componentContainer.GetComponent( componentId, componentTypeId );
+			return entityComponentContainer.GetComponent( componentId, componentTypeId );
 		}
 
 		template< class C >
@@ -668,30 +697,28 @@ namespace ECS
 		template< class C >
 		C* GetComponentForEntity( EntityID entityId ) const
 		{
-			const ComponentID componentId = entityContainer.GetComponentId< C >( entityId );
-			return componentId != INVALID_COMPONENT_ID ? componentContainer.GetComponent< C >( componentId ) : nullptr;
+			return entityComponentContainer.GetComponentForEntity<C>( entityId );
 		}
 
 		void Destroy( Entity* entity )
 		{
 			if( entity->IsValid() )
 			{
-				const std::pair< ComponentID, ComponentTypeID >* componentIds;
-
-				const size_t count = entityContainer.GetAllComponentIDsAndTypes( entity->GetId(), &componentIds );
-				for( size_t i = 0; i < count; ++i )
-				{
-					componentContainer.DestroyComponent( componentIds[i].second, componentIds[i].first );
-				}
-				entityContainer.RemoveEntity( entity->GetId() );
-
+				entityComponentContainer.Destroy( entity->GetId() );
 				*entity = Entity();
 			}
 		}
 
 		void RunSystem( const System& system )
 		{
-			entityContainer.ForEachEntityWithKey( system.GetKey(), this, system.m_update );
+			EntityID entitiesIds[256];
+			uint32_t entities_count = entityComponentContainer.GetEntitiesWithKey(system.GetKey(), entitiesIds, 256);
+
+			Entity entities [256];
+			for( uint32_t i = 0; i < entities_count; ++i )
+				entities[i] = Entity( entitiesIds[i], &entityComponentContainer );
+
+			system.m_update( entities, entities_count, this );
 		}
 	};
 }

@@ -4,6 +4,7 @@
 
 #include "descriptors.h"
 #include "material.h"
+#include <stdexcept>
 
 namespace FG
 {	

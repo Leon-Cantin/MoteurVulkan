@@ -1,10 +1,17 @@
 #pragma once
+#include <cstring>
 
 namespace MEM
 {
 	template< class T >
-	void ZeroMem( T* ptr )
+	void zero( T* ptr )
 	{
-		ZeroMemory( ptr, sizeof( T ) );
+		memset( ptr, 0, sizeof( T ) );
+	}
+
+	template< class T >
+	void zero( T* ptr, size_t size )
+	{
+	 	memset( ptr, 0, size );
 	}
 }
