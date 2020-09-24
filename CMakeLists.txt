@@ -15,11 +15,9 @@ add_subdirectory( Utils )
 add_subdirectory( WindowHandler )
 
 #Exec
-add_subdirectory( PBR_3D_Renderer )
 add_subdirectory( Classic_2D )
 
 set_property( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Classic_2D )
 
 #Packaging
-set_target_properties( PBR_3D_Renderer PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/output/$<0:> )
 set_target_properties( Classic_2D PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Classic_2D_output/$<0:> )

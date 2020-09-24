@@ -1,7 +1,13 @@
 #include "vk_loader.h"
 
+#ifdef _WIN32
 #define VK_USE_PLATFORM_WIN32_KHR
 #include <Windows.h>
+#elif defined __linux__
+#define VK_USE_PLATFORM_XLIB_KHR
+#include <dlfcn.h>
+#endif 
+
 #undef max
 #undef min
 #include <vulkan/vulkan.h>
@@ -40,7 +46,11 @@ namespace VKL
 
 	void truc()
 	{
+#ifdef _WIN32
 		HMODULE vulkanLibrary = LoadLibrary(L"vulkan-1.dll");
+#elif defined __linux__
+		void* vulkanLibrary = dlopen("libvulkan.so.1.dll", RTLD_LAZY);
+#endif
 		if (!vulkanLibrary)
 			throw std::runtime_error("Failed to load Vulkan library");
 
