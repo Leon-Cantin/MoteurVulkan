@@ -8,3 +8,8 @@ add_library( ${TARGET_NAME} STATIC ${SRCS} ${INCS} )
 source_group( " " REGULAR_EXPRESSION .* )
 
 target_include_directories( ${TARGET_NAME} PUBLIC include )
+
+if( UNIX )
+    find_package( X11 REQUIRED )
+    target_link_libraries( ${TARGET_NAME} PUBLIC X11::xcb )
+endif()

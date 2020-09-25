@@ -8,7 +8,7 @@
 #include "gfx_heaps_batched_allocator.h"
 #include "gfx_model.h"
 #include "stb_font_consolas_24_latin1.inl"
-#include "..\shaders\shadersCommon.h"
+#include "../shaders/shadersCommon.h"
 
 GfxModel textModel;
 uint32_t maxTextCharCount = 0;

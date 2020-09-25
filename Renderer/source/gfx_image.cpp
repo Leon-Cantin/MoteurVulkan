@@ -8,6 +8,8 @@
 #include <stb_image.h>
 #include "ktx_loader.h"
 
+#include <stdexcept>
+
 void Load3DTexture( const char* filename, GfxImage* o_image, I_ImageAlloctor* allocator )
 {
 	std::vector<char> pixels;

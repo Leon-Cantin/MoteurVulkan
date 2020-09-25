@@ -9,7 +9,6 @@
 
 namespace VK
 {
-
 #ifdef NDEBUG
 	const bool enableValidationLayers = false;
 	const bool enableVkObjectMarking = true;
@@ -32,7 +31,11 @@ namespace VK
 
 		if( enableValidationLayers || enableVkObjectMarking )
 			extensions.push_back( VK_EXT_DEBUG_UTILS_EXTENSION_NAME );
+#ifdef _WIN32
 		extensions.push_back( VK_KHR_WIN32_SURFACE_EXTENSION_NAME );
+#elif __linux__
+		extensions.push_back( VK_KHR_XCB_SURFACE_EXTENSION_NAME );
+#endif // #ifdef WINDOWS_PROGRAM
 		extensions.push_back( VK_KHR_SURFACE_EXTENSION_NAME );
 
 		std::cout << "required extensions :" << std::endl;

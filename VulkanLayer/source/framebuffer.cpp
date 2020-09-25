@@ -1,4 +1,5 @@
 #include "framebuffer.h"
+#include <stdexcept>
 
 void createFrameBuffer( VkImageView* colors, uint32_t colorCount, VkImageView* opt_depth, VkExtent2D extent, VkRenderPass renderPass, FrameBuffer* o_frameBuffer)
 {

@@ -4,7 +4,7 @@
 #include "vk_debug.h"
 #include "vk_buffer.h"
 #include "vk_commands.h"
-#include "..\shaders\shadersCommon.h"
+#include "../shaders/shadersCommon.h"
 
 #include <array>
 

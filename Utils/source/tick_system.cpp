@@ -2,6 +2,7 @@
 
 #include <array>
 #include <assert.h>
+#include <cstdint>
 
 #define MAX_TICK_CALLBACK 256
 

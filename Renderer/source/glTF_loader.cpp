@@ -1,5 +1,5 @@
 #include "glTF_loader.h"
-#include "nlohmann\json.h"
+#include "nlohmann/json.h"
 
 #include <fstream>
 #include <cstdint>

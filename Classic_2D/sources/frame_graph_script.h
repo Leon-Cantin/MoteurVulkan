@@ -5,7 +5,7 @@
 #include "geometry_renderpass.h"
 #include "text_overlay.h"
 #include "descriptors.h"
-#include "..\shaders\shadersCommon.h"
+#include "../shaders/shadersCommon.h"
 
 #include <unordered_map>
 

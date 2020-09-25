@@ -1,0 +1,22 @@
+set( VULKAN_SDK_PATH "" CACHE PATH "Path to your pre-installed vulkan sdk" )
+
+set( TARGET_NAME Vulkan_Layer )
+				  
+file( GLOB SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} source/* )
+file( GLOB INCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} includes/* )
+
+add_library( ${TARGET_NAME} STATIC ${SRCS} ${INCS} )
+
+source_group( " " REGULAR_EXPRESSION .* )
+
+target_include_directories( ${TARGET_NAME} PUBLIC includes )
+target_include_directories( ${TARGET_NAME} PUBLIC ../ThirdParties/glm-0.9.9-a2 )
+if( UNIX )
+    target_include_directories( ${TARGET_NAME} PUBLIC ${VULKAN_SDK_PATH}/include )
+    target_link_libraries( ${TARGET_NAME} PUBLIC ${VULKAN_SDK_PATH}/lib/libvulkan.so.1 )
+elseif( WIN32 )
+    target_include_directories( ${TARGET_NAME} PUBLIC ${VULKAN_SDK_PATH}/Include )
+    target_link_libraries( ${TARGET_NAME} PUBLIC ${VULKAN_SDK_PATH}/Lib/vulkan-1.lib )
+endif()
+
+target_compile_definitions( ${TARGET_NAME} PUBLIC GLM_FORCE_RADIANS GLM_FORCE_DEPTH_ZERO_TO_ONE GLM_ENABLE_EXPERIMENTAL GLM_FORCE_LEFT_HANDED )

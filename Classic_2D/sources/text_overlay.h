@@ -6,6 +6,7 @@
 #include "scene_frame_data.h"
 #include "material.h"
 #include "gfx_image.h"
+#include <string>
 
 struct TextZone {
 	float x;

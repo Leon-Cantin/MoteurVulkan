@@ -6,6 +6,7 @@
 #include <sstream>
 #include <iostream>
 #include <stdlib.h>
+#include <cstring>
 
 //TODO: Could be cool to not have a reference to input handler
 

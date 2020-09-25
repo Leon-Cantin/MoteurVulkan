@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 #include <assert.h>
+#include <cstring>
 
 GfxMemAlloc allocate_gfx_memory( VkDeviceSize size, uint32_t type )
 {

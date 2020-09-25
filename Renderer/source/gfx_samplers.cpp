@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <stdexcept>
 
 std::array<VkSampler, ( size_t )(eSamplers::Count)> samplers;
 

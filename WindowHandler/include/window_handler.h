@@ -1,6 +1,11 @@
 #pragma once
 
+#ifdef _WIN32
 #include<Windows.h>
+#elif defined __linux__
+#include <xcb/xcb.h>
+#endif // #ifdef _WIN32
+
 #undef max
 #undef min
 
@@ -9,8 +14,15 @@
 namespace WH
 {
 	extern bool framebuffer_resized;
+
+#ifdef _WIN32
 	extern HWND g_window;
 	extern HINSTANCE g_instance;
+#elif defined __linux__
+	extern xcb_connection_t *xcb_connection;
+	extern xcb_screen_t		*screen;
+	extern xcb_window_t		window;
+#endif // _WIN32
 
 	using FrameBufferResizeCallback_T = void(*)(int width, int height);
 	using CharCallback_T = void(*)(uint32_t character);
