@@ -41,41 +41,14 @@ namespace ECS
 
 	typedef TypeIdGenerator<ComponentBase, ComponentTypeID> ComponentTypeIDGenerator_t;
 
-	template<class C>
-	class Component : public ComponentBase
-	{
-	public:
-		static ComponentTypeID GetTypeId()
-		{
-			static const ComponentTypeID m_typeId = ComponentTypeIDGenerator_t::GetID<C>();
-			return m_typeId;
-		}
-	};
-
-	//Force Component type IDs to be generated
-	/*template< typename T >
-	Component<T> RegisterComponentType()
-	{
-		static const Component<T> comp;
-		return comp;
-	}*/
-
-	//TODO Singleton copies too much from component
 	class SingletonComponentBase
 	{};
 
 	typedef TypeIdGenerator<SingletonComponentBase, SingletonComponentTypeID> SingletonComponentTypeIDGenerator_t;
 
-	template<class C>
-	class SingletonComponent : public SingletonComponentBase
-	{
-	public:
-		static SingletonComponentTypeID GetTypeId()
-		{
-			static const SingletonComponentTypeID m_typeId = SingletonComponentTypeIDGenerator_t::GetID<C>();
-			return m_typeId;
-		}
-	};
+	#define REGISTER_COMPONENT_TYPE( type__ ) static const auto type__ ## _comp_t = ECS::ComponentTypeIDGenerator_t::GetID<type__>()
+	#define REGISTER_SINGLETON_COMPONENT_TYPE( type__ ) static const auto type__ ## _singleton_comp_t = ECS::SingletonComponentTypeIDGenerator_t::GetID<type__>()
+
 
 	class ArchetypeKey
 	{

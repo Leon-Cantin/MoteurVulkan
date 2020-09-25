@@ -120,9 +120,6 @@ namespace WildWeasel_Game
 		ScriptCallback_t scriptCallback;
 	};
 
-#define REGISTER_COMPONENT_TYPE( type__ ) static const auto type__ ## _comp_t = ECS::Component<type__>::GetTypeId()
-#define REGISTER_SINGLETON_COMPONENT_TYPE( type__ ) static const auto type__ ## _singleton_comp_t = ECS::SingletonComponent<type__>::GetTypeId()
-
 	REGISTER_COMPONENT_TYPE( HealthComponent );
 	REGISTER_COMPONENT_TYPE( LifeTimeComponent );
 	REGISTER_COMPONENT_TYPE( TransformationComponent );
