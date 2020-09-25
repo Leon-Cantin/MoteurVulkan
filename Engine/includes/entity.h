@@ -383,6 +383,7 @@ namespace ECS
 			MEM::zero( data[typeId], sizeof( C ) );
 
 			C* c_data = reinterpret_cast< C* >(data[typeId]);
+			//TODO: there might be some memory leaks around here when not destroying something, but I think "=" should call destructors
 			*c_data = { componentArgs ... };
 
 			return typeId;
@@ -583,9 +584,6 @@ namespace ECS
 	private:
 		ArchetypeKey m_key;
 
-		ComponentContainer* m_componentContainer;
-		EntityContainer* m_entityContainer;
-
 	public:
 		void( *m_update ) ( Entity*, uint32_t, class EntityComponentSystem* );
 
@@ -598,12 +596,6 @@ namespace ECS
 		static System Create( void( *func_update ) ( Entity*, uint32_t, class EntityComponentSystem* ) )
 		{
 			return System( ArchetypeKey::Create< ComponentTypes ... >(), func_update );
-		}
-
-		void SetContainers( ComponentContainer* componentContainer, EntityContainer* entityContainer )
-		{
-			m_componentContainer = componentContainer;
-			m_entityContainer = entityContainer;
 		}
 
 		bool CanRun( const ArchetypeKey& key ) const

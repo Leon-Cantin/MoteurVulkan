@@ -35,6 +35,7 @@ namespace WildWeasel_Game
 	GfxAsset shipRenderable;
 	GfxAsset bulletRenderable;
 	GfxAsset cloudAsset;
+	GfxAsset mig19Asset;
 
 	BindlessTexturesState bindlessTexturesState;
 
@@ -284,7 +285,7 @@ namespace WildWeasel_Game
 
 			auto hLifetimeComp = ecs->CreateComponent<LifeTimeComponent>( 0.0f, 5.0f );
 			auto hHealthComp = ecs->CreateComponent<HealthComponent>( 5.0f, 5.0f );
-			auto hRenderableComp = ecs->CreateComponent<RenderableComponent>( &shipRenderable, false );
+			auto hRenderableComp = ecs->CreateComponent<RenderableComponent>( &mig19Asset, false );
 			auto hTransformationComp = ecs->CreateComponent<TransformationComponent>( glm::vec3( x, y, 2.0f ), defaultRotation, -shipSize );
 			auto hPhysicsComp = ecs->CreateComponent<PhysicsComponent>( glm::vec3( 0.0f, -100.0f, 0.0f ) );
 			auto hCollisionComp = ecs->CreateComponent<CollisionComponent>( 7.0f );
@@ -467,20 +468,16 @@ namespace WildWeasel_Game
 		gfx_mem_allocator.Prepare();
 
 		GfxImage* shipTexture = AL::LoadTexture( "shipTexture", "assets/F14.png", &gfx_mem_allocator );
+		GfxImage* mig19Texture = AL::LoadTexture( "mig_21_texture", "assets/Mig21.png", &gfx_mem_allocator );
 		GfxImage* bulletTexture = AL::LoadTexture( "bullet_texture", "assets/bullet_small.png", &gfx_mem_allocator );
-		GfxImage* treeTexture = AL::LoadTexture( "tree_texture", "assets/tree.png", &gfx_mem_allocator );
-		GfxImage* riverBankTexture = AL::LoadTexture( "river_bank_texture", "assets/river_bank.png", &gfx_mem_allocator );
-		GfxImage* riverTexture = AL::LoadTexture( "river_texture", "assets/river.png", &gfx_mem_allocator );
 		GfxImage* cloudTexture = AL::LoadTexture( "cloud_texture", "assets/cloud.png", &gfx_mem_allocator );
 		GfxImage* background_sprite_sheet = AL::LoadTexture( "background_sprite_sheet", "assets/ground_spritesheet.png", &gfx_mem_allocator );		
 
 		GfxModel* quadModel = AL::CreateQuad( "Quad", quadSize, &gfx_mem_allocator );
 
 		uint32_t shipTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, shipTexture, eSamplers::Point );
+		uint32_t mig19TextureIndex = RegisterBindlessTexture( &bindlessTexturesState, mig19Texture, eSamplers::Point );
 		uint32_t bulletTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, bulletTexture, eSamplers::Point );
-		uint32_t treeTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, treeTexture, eSamplers::Point );
-		uint32_t riverBankTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, riverBankTexture, eSamplers::Point );
-		uint32_t riverTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, riverTexture, eSamplers::Point );
 		uint32_t cloudTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, cloudTexture, eSamplers::Point );
 		uint32_t background_sprite_sheet_index = RegisterBindlessTexture( &bindlessTexturesState, background_sprite_sheet, eSamplers::Point );
 
@@ -489,6 +486,7 @@ namespace WildWeasel_Game
 		gfx_mem_allocator.Commit();
 
 		shipRenderable = CreateGfxAsset( quadModel, shipTextureIndex );
+		mig19Asset = CreateGfxAsset( quadModel, mig19TextureIndex );
 		bulletRenderable = CreateGfxAsset( quadModel, bulletTextureIndex );
 		cloudAsset = CreateGfxAsset( quadModel, cloudTextureIndex );	
 
