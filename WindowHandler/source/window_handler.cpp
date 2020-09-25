@@ -15,8 +15,6 @@ namespace WH
 	HWND g_window = nullptr;
 	HINSTANCE g_instance = nullptr;
 
-	static std::chrono::system_clock::time_point startTime;
-
 	LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
 		switch (message) {
 		case WM_SIZE:
