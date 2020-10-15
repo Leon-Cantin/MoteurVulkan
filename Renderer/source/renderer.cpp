@@ -41,7 +41,7 @@ static void CreateCommandBuffer()
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = static_cast<uint32_t>(g_graphicsCommandBuffers.size());
 
-	if (vkAllocateCommandBuffers(g_vk.device, &allocInfo, g_graphicsCommandBuffers.data()) != VK_SUCCESS) {
+	if (vkAllocateCommandBuffers(g_vk.device.device, &allocInfo, g_graphicsCommandBuffers.data()) != VK_SUCCESS) {
 		throw std::runtime_error("failed to allocate command buffers!");
 	}
 }
@@ -54,7 +54,7 @@ static void CreateTransferCommandBuffer()
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = static_cast<uint32_t>(g_transferCommandBuffers.size());
 
-	if (vkAllocateCommandBuffers(g_vk.device, &allocInfo, g_transferCommandBuffers.data()) != VK_SUCCESS) {
+	if (vkAllocateCommandBuffers(g_vk.device.device, &allocInfo, g_transferCommandBuffers.data()) != VK_SUCCESS) {
 		throw std::runtime_error("failed to allocate command buffers!");
 	}
 }
@@ -70,10 +70,10 @@ static void create_sync_objects()
 
 	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
 	{
-		if (vkCreateSemaphore(g_vk.device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-			vkCreateSemaphore(g_vk.device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
-			vkCreateSemaphore(g_vk.device, &semaphoreInfo, nullptr, &graphicPassFinishedSemaphores[i]) != VK_SUCCESS ||
-			vkCreateFence(g_vk.device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS)
+		if (vkCreateSemaphore(g_vk.device.device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
+			vkCreateSemaphore(g_vk.device.device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
+			vkCreateSemaphore(g_vk.device.device, &semaphoreInfo, nullptr, &graphicPassFinishedSemaphores[i]) != VK_SUCCESS ||
+			vkCreateFence(g_vk.device.device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS)
 		{
 			throw std::runtime_error("failed to create semaphores!");
 		}
@@ -87,16 +87,16 @@ static void create_sync_objects()
 
 static void cleanup_swap_chain()
 {
-	vkFreeCommandBuffers(g_vk.device, g_vk.graphicsCommandPool, static_cast<uint32_t>(g_graphicsCommandBuffers.size()), g_graphicsCommandBuffers.data());
-	vkFreeCommandBuffers(g_vk.device, g_vk.transferCommandPool, static_cast<uint32_t>(g_transferCommandBuffers.size()), g_transferCommandBuffers.data());
-	vkFreeCommandBuffers(g_vk.device, g_vk.computeCommandPool, static_cast<uint32_t>(g_computeCommandBuffers.size()), g_computeCommandBuffers.data());
+	vkFreeCommandBuffers(g_vk.device.device, g_vk.graphicsCommandPool, static_cast<uint32_t>(g_graphicsCommandBuffers.size()), g_graphicsCommandBuffers.data());
+	vkFreeCommandBuffers(g_vk.device.device, g_vk.transferCommandPool, static_cast<uint32_t>(g_transferCommandBuffers.size()), g_transferCommandBuffers.data());
+	vkFreeCommandBuffers(g_vk.device.device, g_vk.computeCommandPool, static_cast<uint32_t>(g_computeCommandBuffers.size()), g_computeCommandBuffers.data());
 
 	FG::Cleanup( &_frameGraph );
 
 	for (auto image : g_swapchain.images)
-		vkDestroyImageView(g_vk.device, image.imageView, nullptr);
+		vkDestroyImageView(g_vk.device.device, image.imageView, nullptr);
 
-	vkDestroySwapchainKHR(g_vk.device, g_swapchain.vkSwapchain, nullptr);
+	vkDestroySwapchainKHR(g_vk.device.device, g_swapchain.vkSwapchain, nullptr);
 }
 
 static void CreateDummyImage()
@@ -118,11 +118,10 @@ void InitRenderer( VkSurfaceKHR swapchainSurface, bool( *needResize )(), void( *
 	_swapchainSurface = swapchainSurface;
 	createSwapChain( swapchainSurface, width, height, g_swapchain );
 
-	VK::QueueFamilyIndices queue_family_indices = VK::find_queue_families( g_vk.physicalDevice, swapchainSurface );
-	CreateCommandPool( queue_family_indices.graphics_family.value(), &g_vk.graphicsCommandPool );
-	CreateCommandPool( queue_family_indices.transfer_family.value(), &g_vk.transferCommandPool );
-	CreateSingleUseCommandPool( queue_family_indices.graphics_family.value(), &g_vk.graphicsSingleUseCommandPool );
-	CreateSingleUseCommandPool( queue_family_indices.compute_family.value(), &g_vk.computeCommandPool );
+	CreateCommandPool( g_vk.device.graphics_queue.queueFamilyIndex, &g_vk.graphicsCommandPool );
+	CreateCommandPool( g_vk.device.transfer_queue.queueFamilyIndex, &g_vk.transferCommandPool );
+	CreateSingleUseCommandPool( g_vk.device.graphics_queue.queueFamilyIndex, &g_vk.graphicsSingleUseCommandPool );
+	CreateSingleUseCommandPool( g_vk.device.compute_queue.queueFamilyIndex, &g_vk.computeCommandPool );
 
 	InitSamplers();
 
@@ -149,7 +148,7 @@ void recreate_swap_chain( VkSurfaceKHR swapchainSurface )
 		//glfwWaitEvents();
 	}
 
-	vkDeviceWaitIdle(g_vk.device);
+	vkDeviceWaitIdle(g_vk.device.device );
 
 	cleanup_swap_chain();
 
@@ -200,7 +199,7 @@ void RecordCommandBuffer(uint32_t currentFrame, const SceneFrameData* frameData)
 
 void WaitForFrame(uint32_t currentFrame)
 {
-	vkWaitForFences(g_vk.device, 1, &inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+	vkWaitForFences(g_vk.device.device, 1, &inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
 }
 
 void draw_frame(uint32_t currentFrame, const SceneFrameData* frameData)
@@ -208,7 +207,7 @@ void draw_frame(uint32_t currentFrame, const SceneFrameData* frameData)
 	RecordCommandBuffer(currentFrame, frameData);
 
 	uint32_t imageIndex;
-	VkResult result = vkAcquireNextImageKHR(g_vk.device, g_swapchain.vkSwapchain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+	VkResult result = vkAcquireNextImageKHR(g_vk.device.device, g_swapchain.vkSwapchain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 	//TODO: Do I really need 2 check for recreate swap chain in this function?
 	if (!verify_swap_chain(result)) {
 		unsignalSemaphore(imageAvailableSemaphores[currentFrame]);
@@ -232,8 +231,8 @@ void draw_frame(uint32_t currentFrame, const SceneFrameData* frameData)
 	graphicsSubmitInfo.signalSemaphoreCount = 1;
 	graphicsSubmitInfo.pSignalSemaphores = signalSemaphores;
 
-	vkResetFences(g_vk.device, 1, &inFlightFences[currentFrame]);
-	if (vkQueueSubmit(g_vk.graphics_queue, 1, &graphicsSubmitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
+	vkResetFences(g_vk.device.device, 1, &inFlightFences[currentFrame]);
+	if (vkQueueSubmit(g_vk.device.graphics_queue.queue, 1, &graphicsSubmitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
 		throw std::runtime_error("failed to submit draw command buffer!");
 	}
 
@@ -251,7 +250,7 @@ void draw_frame(uint32_t currentFrame, const SceneFrameData* frameData)
 	presentInfo.pImageIndices = &imageIndex;
 	presentInfo.pResults = nullptr; // Optional, for multiple swapchains
 
-	result = vkQueuePresentKHR(g_vk.present_queue, &presentInfo);
+	result = vkQueuePresentKHR(g_vk.device.present_queue.queue, &presentInfo);
 	if (!verify_swap_chain(result))
 	{
 		std::cout << "recreating swap chain " << imageIndex << currentFrame << std::endl;
@@ -270,16 +269,16 @@ void CleanupRenderer() {
 
 	for (size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
 	{
-		vkDestroySemaphore(g_vk.device, renderFinishedSemaphores[i], nullptr);
-		vkDestroySemaphore(g_vk.device, imageAvailableSemaphores[i], nullptr);
-		vkDestroySemaphore(g_vk.device, graphicPassFinishedSemaphores[i], nullptr);
-		vkDestroyFence(g_vk.device, inFlightFences[i], nullptr);
+		vkDestroySemaphore(g_vk.device.device, renderFinishedSemaphores[i], nullptr);
+		vkDestroySemaphore(g_vk.device.device, imageAvailableSemaphores[i], nullptr);
+		vkDestroySemaphore(g_vk.device.device, graphicPassFinishedSemaphores[i], nullptr);
+		vkDestroyFence(g_vk.device.device, inFlightFences[i], nullptr);
 	}
 
-	vkDestroyCommandPool(g_vk.device, g_vk.graphicsCommandPool, nullptr);
-	vkDestroyCommandPool(g_vk.device, g_vk.graphicsSingleUseCommandPool, nullptr);
-	vkDestroyCommandPool(g_vk.device, g_vk.computeCommandPool, nullptr);
-	vkDestroyCommandPool(g_vk.device, g_vk.transferCommandPool, nullptr);
+	vkDestroyCommandPool(g_vk.device.device, g_vk.graphicsCommandPool, nullptr);
+	vkDestroyCommandPool(g_vk.device.device, g_vk.graphicsSingleUseCommandPool, nullptr);
+	vkDestroyCommandPool(g_vk.device.device, g_vk.computeCommandPool, nullptr);
+	vkDestroyCommandPool(g_vk.device.device, g_vk.transferCommandPool, nullptr);
 
 	DestroyTimeStampsPool();
 }

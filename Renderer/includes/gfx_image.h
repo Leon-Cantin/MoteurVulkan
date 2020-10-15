@@ -4,21 +4,6 @@
 
 #include <glm/vec4.hpp>
 
-struct GfxImage {
-	VkImage image = VK_NULL_HANDLE;
-	VkImageView imageView = VK_NULL_HANDLE;
-	VkFormat format;
-	VkExtent2D extent;
-	uint32_t mipLevels;
-	GfxMemAlloc gfx_mem_alloc;
-};
-
-struct GfxImageSamplerCombined
-{
-	GfxImage* image;
-	VkSampler sampler = VK_NULL_HANDLE;
-};
-
 class I_ImageAlloctor
 {
 public:
@@ -35,8 +20,3 @@ void generateMipmaps( VkCommandBuffer commandBuffer, VkImage image, VkFormat ima
 void DestroyImage( GfxImage* image );
 
 void create_image_simple( uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageUsageFlags usage, VkImageAspectFlagBits aspect_flags, VkMemoryPropertyFlags properties, GfxImage* o_gfx_image );
-
-inline bool IsValid( const GfxImage& image )
-{
-	return IsValid( image.gfx_mem_alloc );
-}

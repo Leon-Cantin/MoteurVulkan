@@ -19,7 +19,7 @@ VkDebugUtilsMessengerEXT debug_callback_messenger;
 template<class T>
 void AcquireDebugUtilsFunc(T* pFn, const char * funcName)
 {
-	*pFn = (T)vkGetInstanceProcAddr(g_vk.vk_instance, funcName);
+	*pFn = (T)vkGetInstanceProcAddr(g_vk.instance.instance, funcName);
 	if (*pFn == VK_NULL_HANDLE)
 	{
 		char buffer[256];
@@ -38,7 +38,7 @@ void MarkVkObject(uint64_t objectHandle, VkObjectType objetType, const char * na
 	info.objectHandle = objectHandle;
 	info.objectType = objetType;
 	info.pObjectName = name;
-	vkSetDebugMarkerSetObjectName_func(g_vk.device, &info);
+	vkSetDebugMarkerSetObjectName_func(g_vk.device.device, &info);
 }
 
 void CmdBeginVkLabel(VkCommandBuffer commandBuffer, const char * name, const glm::vec4& color)
@@ -129,9 +129,9 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 }
 
 VkResult CreateDebugUtilsMessengerEXT( const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pCallback) {
-	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr( g_vk.vk_instance, "vkCreateDebugUtilsMessengerEXT");
+	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr( g_vk.instance.instance, "vkCreateDebugUtilsMessengerEXT");
 	if (func != nullptr) {
-		return func(g_vk.vk_instance, pCreateInfo, pAllocator, pCallback);
+		return func( g_vk.instance.instance, pCreateInfo, pAllocator, pCallback);
 	}
 	else {
 		return VK_ERROR_EXTENSION_NOT_PRESENT;
@@ -139,9 +139,9 @@ VkResult CreateDebugUtilsMessengerEXT( const VkDebugUtilsMessengerCreateInfoEXT*
 }
 
 void DestroyDebugUtilsMessengerEXT( VkDebugUtilsMessengerEXT callback, const VkAllocationCallbacks* pAllocator) {
-	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(g_vk.vk_instance, "vkDestroyDebugUtilsMessengerEXT");
+	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(g_vk.instance.instance, "vkDestroyDebugUtilsMessengerEXT");
 	if (func != nullptr) {
-		func(g_vk.vk_instance, callback, pAllocator);
+		func(g_vk.instance.instance, callback, pAllocator);
 	}
 }
 

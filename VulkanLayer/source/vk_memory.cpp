@@ -12,7 +12,7 @@ GfxMemAlloc allocate_gfx_memory( VkDeviceSize size, uint32_t type )
 	allocInfo.memoryTypeIndex = type;
 
 	VkDeviceMemory memory;
-	if( vkAllocateMemory( g_vk.device, &allocInfo, nullptr, &memory ) != VK_SUCCESS )
+	if( vkAllocateMemory( g_vk.device.device, &allocInfo, nullptr, &memory ) != VK_SUCCESS )
 		throw std::runtime_error( "failed to allocate buffer memory!" );
 
 	const VkDeviceSize offset = 0;
@@ -32,7 +32,7 @@ GfxMemAlloc suballocate_gfx_memory( const GfxMemAlloc& gfx_mem, VkDeviceSize siz
 void destroy_gfx_memory( GfxMemAlloc* gfx_mem )
 {
 	if( gfx_mem->is_parent_pool )
-		vkFreeMemory( g_vk.device, gfx_mem->memory, nullptr );
+		vkFreeMemory( g_vk.device.device, gfx_mem->memory, nullptr );
 }
 
 void UpdateGpuMemory( const GfxMemAlloc* dstMemory, const void* src, VkDeviceSize size, VkDeviceSize offset )
@@ -40,9 +40,9 @@ void UpdateGpuMemory( const GfxMemAlloc* dstMemory, const void* src, VkDeviceSiz
 	assert( offset + size <= dstMemory->size );
 	assert( size );//don't map memory with no size
 	void* dst;
-	vkMapMemory( g_vk.device, dstMemory->memory, dstMemory->offset + offset, size, 0, &dst );
+	vkMapMemory( g_vk.device.device, dstMemory->memory, dstMemory->offset + offset, size, 0, &dst );
 	memcpy( dst, src, size );
-	vkUnmapMemory( g_vk.device, dstMemory->memory );
+	vkUnmapMemory( g_vk.device.device, dstMemory->memory );
 }
 
 bool IsRequiredMemoryType( uint32_t typeFilter, uint32_t memoryType )

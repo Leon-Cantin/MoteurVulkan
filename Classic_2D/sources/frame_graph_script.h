@@ -108,11 +108,11 @@ static FG::RenderPassCreationData FG_Geometry_CreateGraphNode( const Swapchain* 
 	FG::RenderPassCreationData renderPassCreationData;
 	renderPassCreationData.name = "geometry_pass";
 
-	VkFormat swapchainFormat = swapchain->surfaceFormat.format;
+	GfxFormat swapchainFormat = static_cast<GfxFormat>(swapchain->surfaceFormat.format);
 
 	FG::RenderColor( renderPassCreationData, swapchainFormat, ( uint32_t )sceneColor );
 	FG::ClearLast( renderPassCreationData );
-	FG::RenderDepth( renderPassCreationData, VK_FORMAT_D32_SFLOAT, ( uint32_t )sceneDepth );
+	FG::RenderDepth( renderPassCreationData, GfxFormat::D32_SFLOAT, ( uint32_t )sceneDepth );
 	FG::ClearLast( renderPassCreationData );
 
 	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData.frame_graph_node;
@@ -139,7 +139,7 @@ static FG::RenderPassCreationData FG_TextOverlay_CreateGraphNode( const Swapchai
 	FG::RenderPassCreationData renderPassCreationData;
 	renderPassCreationData.name = "text_pass";
 
-	VkFormat swapchainFormat = swapchain->surfaceFormat.format;
+	GfxFormat swapchainFormat = static_cast< GfxFormat >(swapchain->surfaceFormat.format);
 
 	FG::RenderColor( renderPassCreationData, swapchainFormat, ( uint32_t )sceneColor );
 
@@ -211,7 +211,7 @@ static FG::RenderPassCreationData FG_Copy_CreateGraphNode( const Swapchain* swap
 	FG::RenderPassCreationData renderPassCreationData;
 	renderPassCreationData.name = "copy_pass";
 
-	VkFormat swapchainFormat = swapchain->surfaceFormat.format;
+	GfxFormat swapchainFormat = static_cast< GfxFormat >(swapchain->surfaceFormat.format);
 
 	FG::RenderColor( renderPassCreationData, swapchainFormat, ( uint32_t )dst );
 	FG::ReadResource( renderPassCreationData, ( uint32_t )src );

@@ -17,3 +17,23 @@ bool hasStencilComponent(VkFormat format);
 void transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount);
 VkFormat findDepthFormat();
 VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+
+struct GfxImage {
+	VkImage image = VK_NULL_HANDLE;
+	VkImageView imageView = VK_NULL_HANDLE;
+	VkFormat format;
+	VkExtent2D extent;
+	uint32_t mipLevels;
+	GfxMemAlloc gfx_mem_alloc;
+};
+
+struct GfxImageSamplerCombined
+{
+	GfxImage* image;
+	VkSampler sampler = VK_NULL_HANDLE;
+};
+
+inline bool IsValid( const GfxImage& image )
+{
+	return IsValid( image.gfx_mem_alloc );
+}

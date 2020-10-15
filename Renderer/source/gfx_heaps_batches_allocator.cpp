@@ -32,7 +32,7 @@ void GfxHeaps_BatchedAllocator::Commit()
 bool GfxHeaps_BatchedAllocator::Allocate( VkImage image, GfxMemAlloc* o_gfx_mem_alloc )
 {
 	VkMemoryRequirements memRequirements;
-	vkGetImageMemoryRequirements( g_vk.device, image, &memRequirements );
+	vkGetImageMemoryRequirements( g_vk.device.device, image, &memRequirements );
 
 	assert( IsRequiredMemoryType( memRequirements.memoryTypeBits, _heap->memoryTypeIndex ) );
 
@@ -75,7 +75,7 @@ bool GfxHeaps_BatchedAllocator::UploadData( const GfxImage& gfxImage, const void
 bool GfxHeaps_BatchedAllocator::Allocate( VkBuffer buffer, GfxMemAlloc* o_gfx_mem_alloc )
 {
 	VkMemoryRequirements memRequirements;
-	vkGetBufferMemoryRequirements( g_vk.device, buffer, &memRequirements );
+	vkGetBufferMemoryRequirements( g_vk.device.device, buffer, &memRequirements );
 
 	assert( IsRequiredMemoryType( memRequirements.memoryTypeBits, _heap->memoryTypeIndex ) );
 
@@ -120,7 +120,7 @@ void GfxHeaps_CommitedResourceAllocator::Commit()
 bool GfxHeaps_CommitedResourceAllocator::Allocate( VkImage image, GfxMemAlloc* o_gfx_mem_alloc )
 {
 	VkMemoryRequirements mem_requirements;
-	vkGetImageMemoryRequirements( g_vk.device, image, &mem_requirements );
+	vkGetImageMemoryRequirements( g_vk.device.device, image, &mem_requirements );
 	uint32_t memoryType = findMemoryType( mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
 
 	*o_gfx_mem_alloc = allocate_gfx_memory( mem_requirements.size, memoryType );

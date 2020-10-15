@@ -7,28 +7,10 @@
 
 namespace VK
 {
-	struct QueueFamilyIndices {
-		std::optional<uint32_t> graphics_family;
-		std::optional<uint32_t> present_family;
-		std::optional<uint32_t> compute_family;
-		std::optional<uint32_t> transfer_family;
+	GpuInstance CreateInstance( bool useValidationLayer );
+	PhysicalDevice PickSuitablePhysicalDevice( DisplaySurface swapchainSurface, GpuInstance& instance );
+	Device create_logical_device( DisplaySurface swapchainSurface, PhysicalDevice physicalDevice, bool enableValidationLayers );
 
-		bool is_complete() {
-			return graphics_family.has_value() && present_family.has_value() && compute_family.has_value() && transfer_family.has_value();
-		}
-	};
-
-	struct SwapChainSupportDetails {
-		VkSurfaceCapabilitiesKHR capabilities;
-		std::vector<VkSurfaceFormatKHR> formats;
-		std::vector<VkPresentModeKHR> present_modes;
-	};
-
-	void Initialize();
-	void PickSuitablePhysicalDevice( VkSurfaceKHR swapchainSurface );
-	void Shutdown();
-
-	//TODO try to get rid of this
-	QueueFamilyIndices find_queue_families( const VkPhysicalDevice device, VkSurfaceKHR swapchainSurface );
-	SwapChainSupportDetails query_swap_chain_support( VkPhysicalDevice device, VkSurfaceKHR surface );
+	void Destroy( Device* device );
+	void Destroy( GpuInstance* gpuInstance );
 }

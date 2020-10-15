@@ -156,7 +156,7 @@ namespace FG
 		pipeline_layout_info.pushConstantRangeCount = passCreationData->frame_graph_node.gpuPipelineLayout.pushConstantRanges.size();
 		pipeline_layout_info.pPushConstantRanges = passCreationData->frame_graph_node.gpuPipelineLayout.pushConstantRanges.data();
 
-		if( vkCreatePipelineLayout( g_vk.device, &pipeline_layout_info, nullptr, &technique.pipelineLayout ) != VK_SUCCESS ) {
+		if( vkCreatePipelineLayout( g_vk.device.device, &pipeline_layout_info, nullptr, &technique.pipelineLayout ) != VK_SUCCESS ) {
 			throw std::runtime_error( "failed to create pipeline layout!" );
 		}
 				

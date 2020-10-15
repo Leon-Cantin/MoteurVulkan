@@ -23,7 +23,7 @@ namespace Engine
 
 	static void SwapScripts( EngineState* engineState )
 	{
-		vkDeviceWaitIdle( g_vk.device );
+		vkDeviceWaitIdle( g_vk.device.device );
 
 		if( engineState->_currentSceneScript.name != nullptr )
 			engineState->_currentSceneScript.destroyCallback();
@@ -39,9 +39,15 @@ namespace Engine
 		SetNextScript( start_script_name );
 
 		WH::InitializeWindow( _engineState._window_width, _engineState._window_height, _engineState._name );
-		VK::Initialize();
+#ifdef NDEBUG
+		const bool useValidationLayer = false;
+#else
+		const bool useValidationLayer = true;
+#endif
+		g_vk.instance = VK::CreateInstance( useValidationLayer );
 		WH::VK::InitializeWindow();
-		VK::PickSuitablePhysicalDevice( WH::VK::_windowSurface );
+		g_vk.physicalDevice = VK::PickSuitablePhysicalDevice( WH::VK::_windowSurface, g_vk.instance );
+		g_vk.device = VK::create_logical_device( WH::VK::_windowSurface, g_vk.physicalDevice, useValidationLayer );
 
 		//Init renderer stuff
 		_engineState._initRendererImp( WH::VK::_windowSurface );
@@ -56,12 +62,13 @@ namespace Engine
 			_engineState._currentSceneScript.updateCallback();
 		}
 
-		vkDeviceWaitIdle( g_vk.device );
+		vkDeviceWaitIdle( g_vk.device.device );
 		_engineState._currentSceneScript.destroyCallback();
 		_engineState._destroyRendererImp();
 
 		WH::VK::ShutdownWindow();
-		VK::Shutdown();
+		VK::Destroy( &g_vk.device );
+		VK::Destroy( &g_vk.instance );
 		WH::ShutdownWindow();
 	}
 }

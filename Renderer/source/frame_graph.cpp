@@ -43,53 +43,40 @@ namespace FG
 		return image;
 	}
 
-	static void CreateRTCommon(RenderPassCreationData& resource, VkFormat format, uint32_t render_target, VkImageLayout optimalLayout)
+	static void CreateRTCommon(RenderPassCreationData& resource, GfxFormat format, uint32_t render_target, GfxLayout optimalLayout)
 	{
 		assert(resource.attachmentCount < MAX_ATTACHMENTS_COUNT);
 
 		const uint32_t attachement_id = resource.attachmentCount;
-		VkAttachmentDescription& description = resource.descriptions[attachement_id];
+		AttachementDescription& description = resource.descriptions[attachement_id];
 		description.format = format;
-		description.flags = 0;
-		description.samples = VK_SAMPLE_COUNT_1_BIT;
-		description.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		description.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		description.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		description.access = GfxAccess::WRITE;
+		description.layout = optimalLayout;
+		description.finalAccess = GfxAccess::WRITE;
 		description.finalLayout = optimalLayout;
-
-		VkAttachmentReference& reference = resource.references[attachement_id];
-		reference.attachment = attachement_id;
-		reference.layout = optimalLayout;
+		description.loadOp = GfxLoadOp::DONT_CARE;
+		description.oldLayout = GfxLayout::UNDEFINED;
 
 		resource.e_render_targets[attachement_id] = render_target;
 
 		++resource.attachmentCount;
 	}
 
-	void RenderColor(RenderPassCreationData& resource, VkFormat format, uint32_t render_target)
+	void RenderColor(RenderPassCreationData& resource, GfxFormat format, uint32_t render_target)
 	{
-		CreateRTCommon(resource, format, render_target, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+		CreateRTCommon(resource, format, render_target, GfxLayout::COLOR );
 	}
 
-	void RenderDepth(RenderPassCreationData& resource, VkFormat format, uint32_t render_target)
+	void RenderDepth(RenderPassCreationData& resource, GfxFormat format, uint32_t render_target)
 	{
-		CreateRTCommon(resource, format, render_target, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+		CreateRTCommon(resource, format, render_target, GfxLayout::DEPTH_STENCIL );
 	}
 
 	void ClearLast(RenderPassCreationData& resource)
 	{
 		assert(resource.attachmentCount > 0);
 
-		resource.descriptions[resource.attachmentCount - 1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	}
-
-	static void TransitionToReadOnly(RenderPassCreationData& resource)
-	{
-		assert(resource.attachmentCount > 0);
-
-		resource.descriptions[resource.attachmentCount - 1].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		resource.descriptions[resource.attachmentCount - 1].loadOp = GfxLoadOp::CLEAR;
 	}
 
 	void ReadResource(RenderPassCreationData& resource, uint32_t render_target)
@@ -126,8 +113,7 @@ namespace FG
 			for (uint32_t resource_index = 0; resource_index < pass.attachmentCount; ++resource_index)
 			{
 				uint32_t renderTargetId = pass.e_render_targets[resource_index];
-				VkAttachmentDescription& description = pass.descriptions[resource_index];
-				VkAttachmentReference& reference = pass.references[resource_index];
+				AttachementDescription& description = pass.descriptions[resource_index];
 
 				auto it_found = lastPass.find(renderTargetId);
 				if (it_found == lastPass.end())
@@ -146,11 +132,11 @@ namespace FG
 					RenderPassCreationData* lastPassWithResource = it_found->second;
 					int32_t otherPassReferenceIndex = FindResourceIndex(*lastPassWithResource, renderTargetId);
 					//The last pass will have to transition into this pass' layout
-					lastPassWithResource->descriptions[otherPassReferenceIndex].finalLayout = reference.layout;
+					lastPassWithResource->descriptions[otherPassReferenceIndex].finalLayout = description.layout;
 					//This pass' initial layout should be this one's layout
-					description.initialLayout = reference.layout;
+					description.oldLayout = description.layout;
 					//We should load since the other pass wrote into this
-					description.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+					description.loadOp = GfxLoadOp::LOAD;//TODO: Maybe we shouldn't load if we specified a CLEAR
 
 					lastPass[renderTargetId] = &pass;
 				}
@@ -172,7 +158,8 @@ namespace FG
 					if (otherPassReferenceIndex >= 0)
 					{
 						//Last pass should transition to read resource at the end
-						lastPassWithResource->descriptions[otherPassReferenceIndex].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+						lastPassWithResource->descriptions[otherPassReferenceIndex].finalLayout = GfxLayout::COLOR;
+						lastPassWithResource->descriptions[otherPassReferenceIndex].finalAccess = GfxAccess::READ;
 					}
 					else
 					{
@@ -193,7 +180,7 @@ namespace FG
 		auto it_found = lastPass.find( creationData.RT_OUTPUT_TARGET );
 		RenderPassCreationData* lastPassWithResource = it_found->second;
 		int32_t otherPassReferenceIndex = FindResourceIndex(*lastPassWithResource, creationData.RT_OUTPUT_TARGET );
-		lastPassWithResource->descriptions[otherPassReferenceIndex].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		lastPassWithResource->descriptions[otherPassReferenceIndex].finalLayout = GfxLayout::PRESENT;
 	}
 
 	//TODO: probably doesn't need the frame graph
@@ -217,45 +204,11 @@ namespace FG
 	static void CreateRenderPass(const RenderPassCreationData& passCreationData, uint32_t outputBufferIndex, const char* name, RenderPass* o_renderPass, FrameGraphInternal* frameGraph)
 	{
 		assert(passCreationData.attachmentCount > 0);
-		bool containsDepth = passCreationData.references[passCreationData.attachmentCount - 1].layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		bool containsDepth = passCreationData.descriptions[passCreationData.attachmentCount - 1].layout == GfxLayout::DEPTH_STENCIL;
 		uint32_t colorCount = passCreationData.attachmentCount - (containsDepth ? 1 : 0);
+		const AttachementDescription* ptrDepthStencilAttachement = (containsDepth ? &passCreationData.descriptions[colorCount] : nullptr );
 
-		VkSubpassDescription subpass = {};
-		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.colorAttachmentCount = colorCount;
-		subpass.pColorAttachments = passCreationData.references;
-		subpass.pDepthStencilAttachment = containsDepth ? &passCreationData.references[colorCount] : VK_NULL_HANDLE;
-
-		//TODO: have less agressive dst external dependency (maybe src too)
-		VkSubpassDependency dependency = {};
-		dependency.srcSubpass = 0;
-		dependency.dstSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
-		dependency.srcAccessMask = VK_ACCESS_INPUT_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-		dependency.dstAccessMask = 0;
-		dependency.dependencyFlags = 0;
-
-		VkRenderPassCreateInfo render_pass_info = {};
-		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		render_pass_info.attachmentCount = passCreationData.attachmentCount;
-		render_pass_info.pAttachments = passCreationData.descriptions;
-		render_pass_info.subpassCount = 1;
-		render_pass_info.pSubpasses = &subpass;
-		render_pass_info.dependencyCount = 1; //implicit dependency to VK_SUBPASS_EXTERNAL
-		render_pass_info.pDependencies = &dependency;
-
-		/*A render pass represents a collection of attachments, subpasses, and dependencies between the subpasses,
-		and describes how the attachments are used over the course of the subpasses.*/
-		if (vkCreateRenderPass(g_vk.device, &render_pass_info, nullptr, &o_renderPass->vk_renderpass) != VK_SUCCESS)
-			throw std::runtime_error("failed to create render pass!");
-
-		o_renderPass->colorFormats.resize(colorCount);
-		for (uint32_t i = 0; i < colorCount; ++i)
-			o_renderPass->colorFormats[i] = passCreationData.descriptions[i].format;
-		o_renderPass->depthFormat = containsDepth ? passCreationData.descriptions[colorCount].format : VK_FORMAT_UNDEFINED;
-
-		MarkVkObject((uint64_t)o_renderPass->vk_renderpass, VK_OBJECT_TYPE_RENDER_PASS, name);
+		*o_renderPass = CreateRenderPass( name, passCreationData.descriptions, colorCount, ptrDepthStencilAttachement );
 
 		//Create the frame buffer of the render pass
 		CreateFrameBuffer( o_renderPass, passCreationData, outputBufferIndex, colorCount, containsDepth, frameGraph );
@@ -320,10 +273,10 @@ namespace FG
 			RenderPass& renderpass = frameGraph->_render_passes[i];
 			for (uint32_t fb_index = 0; fb_index < SIMULTANEOUS_FRAMES; ++fb_index)
 			{
-				vkDestroyFramebuffer(g_vk.device, renderpass.outputFrameBuffer[fb_index].frameBuffer, nullptr);
+				vkDestroyFramebuffer(g_vk.device.device, renderpass.outputFrameBuffer[fb_index].frameBuffer, nullptr);
 				renderpass.outputFrameBuffer[fb_index].frameBuffer = VK_NULL_HANDLE;
 			}
-			vkDestroyRenderPass(g_vk.device, renderpass.vk_renderpass, nullptr);
+			vkDestroyRenderPass(g_vk.device.device, renderpass.vk_renderpass, nullptr);
 			renderpass.vk_renderpass = VK_NULL_HANDLE;
 		}
 		frameGraph->_render_passes_count = 0;

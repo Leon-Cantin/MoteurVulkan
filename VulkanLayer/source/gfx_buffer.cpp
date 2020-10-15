@@ -15,7 +15,7 @@ void CreateCommitedGpuBuffer( VkDeviceSize size, VkBufferUsageFlags bufferUsageF
 	const VkBuffer buffer = create_buffer( size, bufferUsageFlags );
 
 	VkMemoryRequirements memRequirements;
-	vkGetBufferMemoryRequirements( g_vk.device, buffer, &memRequirements );
+	vkGetBufferMemoryRequirements( g_vk.device.device, buffer, &memRequirements );
 
 	const uint32_t mem_type = findMemoryType( memRequirements.memoryTypeBits, memoryProperties );
 	const GfxMemAlloc gfx_mem = allocate_gfx_memory( memRequirements.size, mem_type );
@@ -31,7 +31,7 @@ void CreatePerFrameBuffer( VkDeviceSize size, VkBufferUsageFlags bufferUsageFlag
 	VkMemoryRequirements memRequirements;
 	//Call it on all just so the validation layer doesn't complain
 	for( uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
-		vkGetBufferMemoryRequirements( g_vk.device, o_buffer->buffers[i].buffer, &memRequirements );
+		vkGetBufferMemoryRequirements( g_vk.device.device, o_buffer->buffers[i].buffer, &memRequirements );
 
 	const VkDeviceSize alignement_extra_size = memRequirements.size % memRequirements.alignment;
 	const VkDeviceSize memory_stride = memRequirements.size + alignement_extra_size;
@@ -65,14 +65,14 @@ void UpdatePerFrameBuffer( const PerFrameBuffer * buffer, const void* src, VkDev
 void DestroyPerFrameBuffer( PerFrameBuffer * o_buffer )
 {
 	for( uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
-		vkDestroyBuffer( g_vk.device, o_buffer->buffers[i].buffer, nullptr );
+		vkDestroyBuffer( g_vk.device.device, o_buffer->buffers[i].buffer, nullptr );
 	destroy_gfx_memory( &o_buffer->gfx_mem_alloc );
 	*o_buffer = {};
 }
 
 void DestroyCommitedGpuBuffer( GpuBuffer* buffer )
 {
-	vkDestroyBuffer( g_vk.device, buffer->buffer, nullptr );
+	vkDestroyBuffer( g_vk.device.device, buffer->buffer, nullptr );
 	destroy_gfx_memory( &buffer->gpuMemory );
 	*buffer = {};
 }

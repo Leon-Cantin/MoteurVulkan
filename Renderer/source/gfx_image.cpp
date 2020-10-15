@@ -83,8 +83,8 @@ void Load2DTextureFromFile( const char* filename, GfxImage* o_image, I_ImageAllo
 
 void DestroyImage( GfxImage* image )
 {
-	vkDestroyImageView( g_vk.device, image->imageView, nullptr );
-	vkDestroyImage( g_vk.device, image->image, nullptr );
+	vkDestroyImageView( g_vk.device.device, image->imageView, nullptr );
+	vkDestroyImage( g_vk.device.device, image->image, nullptr );
 	destroy_gfx_memory( &image->gfx_mem_alloc );
 	image = {};
 }
@@ -212,7 +212,7 @@ void create_image_simple( uint32_t width, uint32_t height, uint32_t mipLevels, V
 	create_image( width, height, mipLevels, format, usage, &o_gfx_image->image );
 
 	VkMemoryRequirements mem_requirements;
-	vkGetImageMemoryRequirements( g_vk.device, o_gfx_image->image, &mem_requirements );
+	vkGetImageMemoryRequirements( g_vk.device.device, o_gfx_image->image, &mem_requirements );
 	uint32_t memoryType = findMemoryType( mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
 	o_gfx_image->gfx_mem_alloc = allocate_gfx_memory( mem_requirements.size, memoryType );
 	BindMemory( o_gfx_image->image, o_gfx_image->gfx_mem_alloc );

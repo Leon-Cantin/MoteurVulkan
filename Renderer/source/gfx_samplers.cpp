@@ -33,7 +33,7 @@ static void createPointSampler( VkSampler* o_sampler )
 	samplerInfo.minLod = 0.0f;
 	samplerInfo.maxLod = std::numeric_limits<float>::max();
 
-	if( vkCreateSampler( g_vk.device, &samplerInfo, nullptr, o_sampler ) != VK_SUCCESS )
+	if( vkCreateSampler( g_vk.device.device, &samplerInfo, nullptr, o_sampler ) != VK_SUCCESS )
 		throw std::runtime_error( "failed to create texture sampler!" );
 
 	MarkVkObject( ( uint64_t )*o_sampler, VK_OBJECT_TYPE_SAMPLER, "point sampler" );
@@ -65,7 +65,7 @@ static void createTriLinearSampler( VkSampler* o_sampler )
 	samplerInfo.minLod = 0.0f;
 	samplerInfo.maxLod = std::numeric_limits<float>::max();
 
-	if( vkCreateSampler( g_vk.device, &samplerInfo, nullptr, o_sampler ) != VK_SUCCESS )
+	if( vkCreateSampler( g_vk.device.device, &samplerInfo, nullptr, o_sampler ) != VK_SUCCESS )
 		throw std::runtime_error( "failed to create texture sampler!" );
 
 	MarkVkObject( ( uint64_t )*o_sampler, VK_OBJECT_TYPE_SAMPLER, "trilinear sampler" );
@@ -97,7 +97,7 @@ static void createShadowSampler( VkSampler* o_sampler )
 	samplerInfo.minLod = 0.0f;
 	samplerInfo.maxLod = std::numeric_limits<float>::max();
 
-	if( vkCreateSampler( g_vk.device, &samplerInfo, nullptr, o_sampler ) != VK_SUCCESS )
+	if( vkCreateSampler( g_vk.device.device, &samplerInfo, nullptr, o_sampler ) != VK_SUCCESS )
 		throw std::runtime_error( "failed to create texture sampler!" );
 
 	MarkVkObject( ( uint64_t )*o_sampler, VK_OBJECT_TYPE_SAMPLER, "shadow sampler" );
@@ -113,7 +113,7 @@ void InitSamplers()
 void DestroySamplers()
 {
 	for( size_t i = 0; i < samplers.size(); ++i )
-		vkDestroySampler( g_vk.device, samplers[i], nullptr );
+		vkDestroySampler( g_vk.device.device, samplers[i], nullptr );
 }
 
 VkSampler GetSampler( eSamplers samplerId )

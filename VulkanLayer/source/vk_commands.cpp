@@ -11,7 +11,7 @@ VkCommandBuffer beginSingleTimeCommands()
 	allocInfo.commandBufferCount = 1;
 
 	VkCommandBuffer commandBuffer;
-	vkAllocateCommandBuffers(g_vk.device, &allocInfo, &commandBuffer);
+	vkAllocateCommandBuffers(g_vk.device.device, &allocInfo, &commandBuffer);
 
 	VkCommandBufferBeginInfo beginInfo = {};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -31,10 +31,10 @@ void endSingleTimeCommands(VkCommandBuffer commandBuffer)
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffer;
 
-	vkQueueSubmit( g_vk.graphics_queue, 1, &submitInfo, VK_NULL_HANDLE);
-	vkQueueWaitIdle( g_vk.graphics_queue);
+	vkQueueSubmit( g_vk.device.graphics_queue.queue, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle( g_vk.device.graphics_queue.queue);
 
-	vkFreeCommandBuffers(g_vk.device, g_vk.graphicsSingleUseCommandPool, 1, &commandBuffer);
+	vkFreeCommandBuffers( g_vk.device.device, g_vk.graphicsSingleUseCommandPool, 1, &commandBuffer);
 }
 
 void CreateCommandPool(uint32_t queueFamilyIndex, VkCommandPool* o_commandPool)
@@ -44,7 +44,7 @@ void CreateCommandPool(uint32_t queueFamilyIndex, VkCommandPool* o_commandPool)
 	pool_info.queueFamilyIndex = queueFamilyIndex;
 	pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; //Optional
 
-	if (vkCreateCommandPool(g_vk.device, &pool_info, nullptr, o_commandPool) != VK_SUCCESS)
+	if (vkCreateCommandPool(g_vk.device.device, &pool_info, nullptr, o_commandPool) != VK_SUCCESS)
 		throw std::runtime_error("failed to create command pool!");
 }
 
@@ -55,7 +55,7 @@ void CreateSingleUseCommandPool(uint32_t queueFamilyIndex, VkCommandPool* o_comm
 	pool_info.queueFamilyIndex = queueFamilyIndex;
 	pool_info.flags = 0; //Optional
 
-	if (vkCreateCommandPool(g_vk.device, &pool_info, nullptr, o_commandPool) != VK_SUCCESS)
+	if (vkCreateCommandPool(g_vk.device.device, &pool_info, nullptr, o_commandPool) != VK_SUCCESS)
 		throw std::runtime_error("failed to create command pool!");
 }
 

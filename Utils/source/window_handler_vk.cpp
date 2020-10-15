@@ -19,7 +19,7 @@ namespace WH
 
 		void InitializeWindow()
 		{
-			create_surface( g_vk.vk_instance, WH::g_window, WH::g_instance, &_windowSurface );
+			create_surface( g_vk.instance.instance, WH::g_window, WH::g_instance, &_windowSurface );
 		}
 
 #elif defined __linux__
@@ -39,7 +39,7 @@ namespace WH
 
 		void ShutdownWindow()
 		{
-			vkDestroySurfaceKHR( g_vk.vk_instance, _windowSurface, nullptr );
+			vkDestroySurfaceKHR( g_vk.instance.instance, _windowSurface, nullptr );
 		}
 	}
 }

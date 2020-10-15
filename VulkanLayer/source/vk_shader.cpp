@@ -9,7 +9,7 @@ VkShaderModule create_shader_module(const uint32_t* byte_code, size_t size)
 	create_info.pCode = byte_code;
 
 	VkShaderModule shader_module;
-	if (vkCreateShaderModule(g_vk.device, &create_info, nullptr, &shader_module) != VK_SUCCESS)
+	if (vkCreateShaderModule(g_vk.device.device, &create_info, nullptr, &shader_module) != VK_SUCCESS)
 		throw std::runtime_error("failed to create shader module!");
 
 	return shader_module;

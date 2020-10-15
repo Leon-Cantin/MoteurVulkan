@@ -139,7 +139,7 @@ static VkImageView CreateImageView( VkImage image, VkFormat format, VkImageViewT
 	create_info.subresourceRange.layerCount = 1;
 
 	VkImageView imageView;
-	if( vkCreateImageView( g_vk.device, &create_info, nullptr, &imageView ) != VK_SUCCESS )
+	if( vkCreateImageView( g_vk.device.device, &create_info, nullptr, &imageView ) != VK_SUCCESS )
 		throw std::runtime_error( "failed to create image views!" );
 
 	return imageView;
@@ -152,19 +152,19 @@ VkImageView create_image_view( VkImage image, VkImageViewType type, VkFormat for
 
 void BindMemory( VkImage image, VkDeviceMemory memory )
 {
-	vkBindImageMemory( g_vk.device, image, memory, 0 );
+	vkBindImageMemory( g_vk.device.device, image, memory, 0 );
 }
 
 void BindMemory( VkImage image, const GfxMemAlloc& gfx_mem_alloc )
 {
-	vkBindImageMemory( g_vk.device, image, gfx_mem_alloc.memory, gfx_mem_alloc.offset );
+	vkBindImageMemory( g_vk.device.device, image, gfx_mem_alloc.memory, gfx_mem_alloc.offset );
 }
 
 static VkImage CreateImage( const VkImageCreateInfo& imageInfo )
 {
 	VkImage image;
 
-	if( vkCreateImage( g_vk.device, &imageInfo, nullptr, &image ) != VK_SUCCESS )
+	if( vkCreateImage( g_vk.device.device, &imageInfo, nullptr, &image ) != VK_SUCCESS )
 		throw std::runtime_error( "failed to create image!" );
 
 	return image;

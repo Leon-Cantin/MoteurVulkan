@@ -42,8 +42,7 @@ namespace FG
 	struct RenderPassCreationData
 	{
 		uint32_t e_render_targets[MAX_ATTACHMENTS_COUNT];
-		VkAttachmentDescription descriptions[MAX_ATTACHMENTS_COUNT];
-		VkAttachmentReference references[MAX_ATTACHMENTS_COUNT];
+		AttachementDescription descriptions[MAX_ATTACHMENTS_COUNT];
 		uint32_t attachmentCount = 0;
 
 		uint32_t read_targets[MAX_READ_TARGETS];
@@ -88,8 +87,8 @@ namespace FG
 	void Cleanup( FrameGraph* frameGraph );
 
 	//Graph creation
-	void RenderColor(RenderPassCreationData& resource, VkFormat format, uint32_t render_target);
-	void RenderDepth(RenderPassCreationData& resource, VkFormat format, uint32_t render_target);
+	void RenderColor( RenderPassCreationData& resource, GfxFormat format, uint32_t render_target );
+	void RenderDepth( RenderPassCreationData& resource, GfxFormat format, uint32_t render_target );
 	void ReadResource(RenderPassCreationData& resource, uint32_t render_target);
 	void ClearLast(RenderPassCreationData& resource);
 

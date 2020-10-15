@@ -17,14 +17,14 @@ void BeginTechnique( VkCommandBuffer commandBuffer, const Technique* technique, 
 
 void Destroy( Technique* technique )
 {
-	vkDestroyPipeline( g_vk.device, technique->pipeline, nullptr );
-	vkDestroyPipelineLayout( g_vk.device, technique->pipelineLayout, nullptr );
+	vkDestroyPipeline( g_vk.device.device, technique->pipeline, nullptr );
+	vkDestroyPipelineLayout( g_vk.device.device, technique->pipelineLayout, nullptr );
 	for( GfxDescriptorSetBinding& setBinding : technique->descriptor_sets )
 	{
 		if( setBinding.isValid )
 		{
-			vkDestroyDescriptorSetLayout( g_vk.device, setBinding.hw_layout, nullptr );
-			vkFreeDescriptorSets( g_vk.device, technique->parentDescriptorPool, setBinding.hw_descriptorSets.size(), setBinding.hw_descriptorSets.data() );
+			vkDestroyDescriptorSetLayout( g_vk.device.device, setBinding.hw_layout, nullptr );
+			vkFreeDescriptorSets( g_vk.device.device, technique->parentDescriptorPool, setBinding.hw_descriptorSets.size(), setBinding.hw_descriptorSets.data() );
 		}
 	}
 }

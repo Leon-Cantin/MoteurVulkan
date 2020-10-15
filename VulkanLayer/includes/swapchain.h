@@ -1,6 +1,6 @@
 #pragma once
 
-#include "gfx_image.h"
+#include "vk_image.h"
 
 struct Swapchain {
 	std::vector<GfxImage> images;
@@ -12,4 +12,12 @@ struct Swapchain {
 };
 
 void createSwapChain(VkSurfaceKHR vkSurface, uint32_t maxWidth, uint32_t maxHeight, Swapchain& o_swapchain);
+
+struct SwapChainSupportDetails {
+	VkSurfaceCapabilitiesKHR capabilities;
+	std::vector<VkSurfaceFormatKHR> formats;
+	std::vector<VkPresentModeKHR> present_modes;
+};
+
+SwapChainSupportDetails query_swap_chain_support( VkPhysicalDevice device, VkSurfaceKHR surface );
 

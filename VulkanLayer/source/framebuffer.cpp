@@ -26,6 +26,6 @@ void createFrameBuffer( VkImageView* colors, uint32_t colorCount, VkImageView* o
 	o_frameBuffer->depthCount = opt_depth ? 1 : 0;
 	o_frameBuffer->layerCount = 1;
 
-	if (vkCreateFramebuffer(g_vk.device, &framebuffer_info, nullptr, &o_frameBuffer->frameBuffer))
+	if (vkCreateFramebuffer(g_vk.device.device, &framebuffer_info, nullptr, &o_frameBuffer->frameBuffer))
 		throw std::runtime_error("failed to create framebuffer!");
 }

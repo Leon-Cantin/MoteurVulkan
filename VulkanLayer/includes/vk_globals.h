@@ -11,14 +11,35 @@
 #undef max
 #undef min
 
-struct Vk_Globals {
-	VkInstance vk_instance = VK_NULL_HANDLE;
-	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+struct GpuInstance
+{
+	VkInstance instance;
+	bool validationLayerEnabled;
+};
+
+typedef VkSurfaceKHR DisplaySurface;
+
+typedef VkPhysicalDevice PhysicalDevice;
+
+struct Queue
+{
+	VkQueue queue = VK_NULL_HANDLE;
+	uint32_t queueFamilyIndex;
+};
+
+struct Device
+{
 	VkDevice device = VK_NULL_HANDLE;
-	VkQueue graphics_queue = VK_NULL_HANDLE;
-	VkQueue present_queue = VK_NULL_HANDLE;
-	VkQueue compute_queue = VK_NULL_HANDLE;
-	VkQueue transfer_queue = VK_NULL_HANDLE;
+	Queue graphics_queue;
+	Queue present_queue;
+	Queue compute_queue;
+	Queue transfer_queue;
+};
+
+struct Vk_Globals {
+	GpuInstance instance = {};
+	PhysicalDevice physicalDevice = VK_NULL_HANDLE;
+	Device device = {};
 	VkCommandPool graphicsSingleUseCommandPool = VK_NULL_HANDLE;
 	VkCommandPool graphicsCommandPool = VK_NULL_HANDLE;
 	VkCommandPool computeCommandPool = VK_NULL_HANDLE;

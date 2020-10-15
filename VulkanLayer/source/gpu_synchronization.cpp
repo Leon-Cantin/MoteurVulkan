@@ -18,7 +18,7 @@ void unsignalSemaphore(VkSemaphore semaphore)
 	submitInfo.signalSemaphoreCount = 0;
 	submitInfo.pSignalSemaphores = VK_NULL_HANDLE;
 
-	if (vkQueueSubmit(g_vk.graphics_queue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
+	if (vkQueueSubmit(g_vk.device.graphics_queue.queue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
 		throw std::runtime_error("failed to submit draw command buffer!");
 	}
 }

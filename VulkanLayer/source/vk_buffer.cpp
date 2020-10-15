@@ -12,7 +12,7 @@ VkBuffer create_buffer( VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags )
 	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 	VkBuffer buffer;
-	if( vkCreateBuffer( g_vk.device, &bufferInfo, nullptr, &buffer ) != VK_SUCCESS )
+	if( vkCreateBuffer( g_vk.device.device, &bufferInfo, nullptr, &buffer ) != VK_SUCCESS )
 		throw std::runtime_error( "failed to create buffer!" );
 
 	return buffer;
@@ -20,7 +20,7 @@ VkBuffer create_buffer( VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags )
 
 void BindMemory( VkBuffer buffer, const GfxMemAlloc& gfx_mem_alloc )
 {
-	vkBindBufferMemory( g_vk.device, buffer, gfx_mem_alloc.memory, gfx_mem_alloc.offset );
+	vkBindBufferMemory( g_vk.device.device, buffer, gfx_mem_alloc.memory, gfx_mem_alloc.offset );
 }
 
 void copy_buffer( VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkBuffer srcBuffer, VkDeviceSize dst_offset, VkDeviceSize src_offset, VkDeviceSize size )

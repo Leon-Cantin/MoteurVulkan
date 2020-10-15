@@ -165,10 +165,10 @@ void CreatePipeline( const GpuPipelineState& gpuPipeline, const VkExtent2D& view
 	pipeline_info.basePipelineHandle = VK_NULL_HANDLE; // Optional
 	pipeline_info.basePipelineIndex = -1; // Optional
 
-	if( vkCreateGraphicsPipelines( g_vk.device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, o_pipeline ) != VK_SUCCESS )
+	if( vkCreateGraphicsPipelines( g_vk.device.device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, o_pipeline ) != VK_SUCCESS )
 		throw std::runtime_error( "failed to create graphics pipeline!" );
 
 
 	for( uint8_t i = 0; i < shadersCount; ++i )
-		vkDestroyShaderModule( g_vk.device, shader_stages[i].module, nullptr );
+		vkDestroyShaderModule( g_vk.device.device, shader_stages[i].module, nullptr );
 }

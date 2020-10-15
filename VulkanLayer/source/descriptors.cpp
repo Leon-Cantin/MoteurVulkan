@@ -25,7 +25,7 @@ void createDescriptorPool(uint32_t uniformBuffersCount, uint32_t uniformBufferDy
 	poolInfo.maxSets = maxSets;
 	poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
-	if (vkCreateDescriptorPool(g_vk.device, &poolInfo, nullptr, o_descriptorPool) != VK_SUCCESS)
+	if (vkCreateDescriptorPool(g_vk.device.device, &poolInfo, nullptr, o_descriptorPool) != VK_SUCCESS)
 		throw std::runtime_error("failed to create descriptor pool!");
 }
 
@@ -37,7 +37,7 @@ void CreateDescriptorSets( VkDescriptorPool descriptorPool, size_t count, VkDesc
 	allocInfo.descriptorSetCount = static_cast< uint32_t >(count);
 	allocInfo.pSetLayouts = descriptorSetLayouts;
 
-	if( vkAllocateDescriptorSets( g_vk.device, &allocInfo, o_descriptorSets ) != VK_SUCCESS )
+	if( vkAllocateDescriptorSets( g_vk.device.device, &allocInfo, o_descriptorSets ) != VK_SUCCESS )
 		throw std::runtime_error( "failed to allocate descriptor sets!" );
 }
 
@@ -66,7 +66,7 @@ void UpdateDescriptorSets( size_t writeDescriptorSetsCount, const WriteDescripto
 		}
 	}
 
-	vkUpdateDescriptorSets( g_vk.device, static_cast< uint32_t >(vkWriteDescriptorSets.size()), vkWriteDescriptorSets.data(), 0, nullptr );
+	vkUpdateDescriptorSets( g_vk.device.device, static_cast< uint32_t >(vkWriteDescriptorSets.size()), vkWriteDescriptorSets.data(), 0, nullptr );
 }
 
 void CreateDesciptorSetLayout( const VkDescriptorSetLayoutBinding* bindings, uint32_t count, VkDescriptorSetLayout* o_layout )
@@ -77,6 +77,6 @@ void CreateDesciptorSetLayout( const VkDescriptorSetLayoutBinding* bindings, uin
 	layoutInfo.pBindings = bindings;
 
 	//Describe complete set of resources available (image, sampler, ubo, constants, ...)
-	if (vkCreateDescriptorSetLayout(g_vk.device, &layoutInfo, nullptr, o_layout) != VK_SUCCESS)
+	if (vkCreateDescriptorSetLayout(g_vk.device.device, &layoutInfo, nullptr, o_layout) != VK_SUCCESS)
 		throw std::runtime_error("failed to create descriptor set layout!");
 }
