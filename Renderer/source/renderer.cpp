@@ -188,11 +188,11 @@ void RecordCommandBuffer(uint32_t currentFrame, const SceneFrameData* frameData)
 
 	CmdResetTimeStampSet(graphicsCommandBuffer, currentFrame);
 
-	CmdWriteTimestamp(graphicsCommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, Timestamp::COMMAND_BUFFER_START, currentFrame);
+	CmdWriteTimestamp(graphicsCommandBuffer, GfxPipelineStageFlagBits::TOP_OF_PIPE, Timestamp::COMMAND_BUFFER_START, currentFrame);
 
 	FG::RecordDrawCommands(currentFrame, frameData, graphicsCommandBuffer, g_swapchain.extent, &_frameGraph );
 
-	CmdWriteTimestamp(graphicsCommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, Timestamp::COMMAND_BUFFER_END, currentFrame);
+	CmdWriteTimestamp(graphicsCommandBuffer, GfxPipelineStageFlagBits::BOTTOM_OF_PIPE, Timestamp::COMMAND_BUFFER_END, currentFrame);
 
 	EndCommandBufferRecording(graphicsCommandBuffer);
 }

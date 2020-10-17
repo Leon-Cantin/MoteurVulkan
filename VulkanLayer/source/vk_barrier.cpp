@@ -36,17 +36,10 @@ VkPipelineStageFlags ToPipelineStage( GfxLayout layout )
 
 void GfxImageBarrier( VkCommandBuffer commandBuffer, GfxApiImage image, GfxLayout oldLayout, GfxAccess oldAccess, GfxLayout newLayout, GfxAccess newAccess, uint32_t baseMipLevel, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount )
 {
-	//TODO: use something like this to get the aspectMask
-	/*if( newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ) {
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-
-		if( hasStencilComponent( format ) ) { I can know if the stencil is changing with some layouts having stencil read only only
-			barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-		}
-	}
-	else {
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	}*/
+	//TODO: should use the format to set aspect according to VK's documentation
+	VkImageAspectFlags aspectFlag = VK_IMAGE_ASPECT_COLOR_BIT;
+	if( oldLayout == GfxLayout::DEPTH_STENCIL || newLayout == GfxLayout::DEPTH_STENCIL )
+		aspectFlag = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
 
 	VkImageMemoryBarrier barrier = {};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -54,7 +47,7 @@ void GfxImageBarrier( VkCommandBuffer commandBuffer, GfxApiImage image, GfxLayou
 
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT; // TODO: Not always going to be color
+	barrier.subresourceRange.aspectMask = aspectFlag;
 
 	barrier.subresourceRange.baseArrayLayer = baseLayer;
 	barrier.subresourceRange.layerCount = layerCount;
