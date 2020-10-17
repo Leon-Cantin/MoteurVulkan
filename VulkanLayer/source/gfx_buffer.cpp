@@ -10,7 +10,7 @@ static GpuBuffer bind_gfx_buffer_mem( VkBuffer buffer, const GfxMemAlloc& gfx_me
 	return gfx_buffer;
 }
 
-void CreateCommitedGpuBuffer( VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags, VkMemoryPropertyFlags memoryProperties, GpuBuffer* o_buffer )
+void CreateCommitedGpuBuffer( GfxDeviceSize size, GfxBufferUsageFlags bufferUsageFlags, GfxMemoryPropertyFlags memoryProperties, GpuBuffer* o_buffer )
 {
 	const VkBuffer buffer = create_buffer( size, bufferUsageFlags );
 
@@ -23,7 +23,7 @@ void CreateCommitedGpuBuffer( VkDeviceSize size, VkBufferUsageFlags bufferUsageF
 	*o_buffer = bind_gfx_buffer_mem( buffer, gfx_mem );
 }
 
-void CreatePerFrameBuffer( VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags, VkMemoryPropertyFlags memoryProperties, PerFrameBuffer * o_buffer )
+void CreatePerFrameBuffer( GfxDeviceSize size, GfxBufferUsageFlags bufferUsageFlags, GfxMemoryPropertyFlags memoryProperties, PerFrameBuffer * o_buffer )
 {
 	for( uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 		o_buffer->buffers[i].buffer = create_buffer( size, bufferUsageFlags );
@@ -49,16 +49,11 @@ void CreatePerFrameBuffer( VkDeviceSize size, VkBufferUsageFlags bufferUsageFlag
 	o_buffer->gfx_mem_alloc = gfx_mem;
 }
 
-void UpdateGpuBuffer( const GpuBuffer* buffer, const void* src, VkDeviceSize size, VkDeviceSize offset )
-{
-	UpdateGpuMemory( &buffer->gpuMemory, src, size, offset );
-}
-
-void UpdatePerFrameBuffer( const PerFrameBuffer * buffer, const void* src, VkDeviceSize size, uint32_t frame )
+void UpdatePerFrameBuffer( const PerFrameBuffer * buffer, const void* src, GfxDeviceSize size, uint32_t frame )
 {
 	assert( frame < SIMULTANEOUS_FRAMES );
 
-	const VkDeviceSize frameMemoryOffset = buffer->buffers[frame].gpuMemory.offset;
+	const GfxDeviceSize frameMemoryOffset = buffer->buffers[frame].gpuMemory.offset;
 	UpdateGpuBuffer( &buffer->buffers[frame], src, size, frameMemoryOffset );
 }
 
@@ -68,6 +63,11 @@ void DestroyPerFrameBuffer( PerFrameBuffer * o_buffer )
 		vkDestroyBuffer( g_vk.device.device, o_buffer->buffers[i].buffer, nullptr );
 	destroy_gfx_memory( &o_buffer->gfx_mem_alloc );
 	*o_buffer = {};
+}
+
+void UpdateGpuBuffer( const GpuBuffer* buffer, const void* src, GfxDeviceSize size, GfxDeviceSize offset )
+{
+	UpdateGpuMemory( &buffer->gpuMemory, src, size, offset );
 }
 
 void DestroyCommitedGpuBuffer( GpuBuffer* buffer )

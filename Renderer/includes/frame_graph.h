@@ -17,14 +17,14 @@ namespace FG
 	};
 
 	constexpr VkExtent2D SWAPCHAIN_SIZED = { 0, 0 };
-	#define EXTERNAL_IMAGE {(VkFormat)0,{0,0},( VkImageUsageFlagBits )0, (VkImageAspectFlagBits)0,(VkImageLayout)0,false}
-	#define CREATE_IMAGE_COLOR_SAMPLER( id, format, extent, usage, swapchainSized, sampler ) { (uint32_t)id, eDescriptorType::IMAGE_SAMPLER, 1,  FG::eDataEntryFlags::NONE, { format , extent, ( VkImageUsageFlagBits )( VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | usage ), VK_IMAGE_ASPECT_COLOR_BIT,  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, swapchainSized }, sampler }
-	#define CREATE_IMAGE_COLOR( id, format, extent, usage, swapchainSized ) { (uint32_t)id, eDescriptorType::IMAGE, 1,  FG::eDataEntryFlags::NONE, { format , extent, ( VkImageUsageFlagBits )( VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | usage ), VK_IMAGE_ASPECT_COLOR_BIT,  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, swapchainSized }, eSamplers::Count }
-	#define CREATE_IMAGE_DEPTH( id, format, extent, usage, swapchainSized ) { (uint32_t)id, eDescriptorType::IMAGE, 1,  FG::eDataEntryFlags::NONE, { format , extent, ( VkImageUsageFlagBits )( VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | usage ), VK_IMAGE_ASPECT_DEPTH_BIT,  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, swapchainSized },  eSamplers::Count }
-	#define CREATE_IMAGE_DEPTH_SAMPLER( id, format, extent, usage, swapchainSized, sampler ) { static_cast< uint32_t >( id ), eDescriptorType::IMAGE_SAMPLER, 1,  FG::eDataEntryFlags::NONE, { format , extent, ( VkImageUsageFlagBits )( VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | usage ), VK_IMAGE_ASPECT_DEPTH_BIT,  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, swapchainSized }, sampler }
+	#define EXTERNAL_IMAGE {GfxFormat::UNDEFINED,{0,0}, ( GfxImageUsageFlags )0, false}
+	#define CREATE_IMAGE_COLOR_SAMPLER( id, format, extent, usage, swapchainSized, sampler ) { (uint32_t)id, eDescriptorType::IMAGE_SAMPLER, 1,  FG::eDataEntryFlags::NONE, { format , extent, ( GfxImageUsageFlags )( GfxImageUsageFlagBits::COLOR_ATTACHMENT | usage ), swapchainSized }, sampler }
+	#define CREATE_IMAGE_COLOR( id, format, extent, usage, swapchainSized ) { (uint32_t)id, eDescriptorType::IMAGE, 1,  FG::eDataEntryFlags::NONE, { format , extent, ( GfxImageUsageFlags )( GfxImageUsageFlagBits::COLOR_ATTACHMENT | usage ), swapchainSized }, eSamplers::Count }
+	#define CREATE_IMAGE_DEPTH( id, format, extent, usage, swapchainSized ) { (uint32_t)id, eDescriptorType::IMAGE, 1,  FG::eDataEntryFlags::NONE, { format , extent, ( GfxImageUsageFlags )( GfxImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT | usage ), swapchainSized },  eSamplers::Count }
+	#define CREATE_IMAGE_DEPTH_SAMPLER( id, format, extent, usage, swapchainSized, sampler ) { static_cast< uint32_t >( id ), eDescriptorType::IMAGE_SAMPLER, 1,  FG::eDataEntryFlags::NONE, { format , extent, ( GfxImageUsageFlags )( GfxImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT | usage ), swapchainSized }, sampler }
 	#define CREATE_IMAGE_SAMPLER_EXTERNAL( id, count ){ static_cast< uint32_t >(id), eDescriptorType::IMAGE_SAMPLER, count, FG::eDataEntryFlags::EXTERNAL,	EXTERNAL_IMAGE }
 
-	#define CREATE_BUFFER_IMAGE_INTERNAL( objectSize, objectCount ) { (VkFormat)0, {objectSize, objectCount}, ( VkImageUsageFlagBits )0, (VkImageAspectFlagBits)0, (VkImageLayout)0, false }
+	#define CREATE_BUFFER_IMAGE_INTERNAL( objectSize, objectCount ) { GfxFormat::UNDEFINED, {objectSize, objectCount}, ( GfxImageUsageFlags )0, false }
 	#define CREATE_BUFFER( id, size ) { (uint32_t)id, eDescriptorType::BUFFER, 1,  FG::eDataEntryFlags::NONE, CREATE_BUFFER_IMAGE_INTERNAL( size, 0 ), eSamplers::Count }
 	#define CREATE_BUFFER_DYNAMIC( id, objectSize, objectCount ) { (uint32_t)id, eDescriptorType::BUFFER_DYNAMIC, 1,  FG::eDataEntryFlags::NONE, CREATE_BUFFER_IMAGE_INTERNAL( objectSize, objectCount ), eSamplers::Count }
 
@@ -54,11 +54,9 @@ namespace FG
 
 	struct ResourceDesc
 	{
-		VkFormat format;
+		GfxFormat format;
 		VkExtent2D extent;
-		VkImageUsageFlagBits usage_flags;
-		VkImageAspectFlagBits aspect_flags;
-		VkImageLayout image_layout;
+		GfxImageUsageFlags usage_flags;
 		bool swapChainSized = false;
 	};
 

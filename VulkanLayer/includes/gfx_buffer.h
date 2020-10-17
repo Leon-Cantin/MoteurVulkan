@@ -5,7 +5,7 @@
 
 struct GpuBuffer
 {
-	VkBuffer buffer;
+	GfxApiBuffer buffer;
 	GfxMemAlloc gpuMemory;
 };
 
@@ -18,15 +18,15 @@ struct PerFrameBuffer
 class I_BufferAllocator
 {
 public:
-	virtual bool Allocate( VkBuffer buffer, GfxMemAlloc* o_gfx_mem_alloc ) = 0;
+	virtual bool Allocate( GfxApiBuffer buffer, GfxMemAlloc* o_gfx_mem_alloc ) = 0;
 	virtual bool UploadData( const GpuBuffer& buffer, const void* data ) = 0;
 };
 
-void CreateCommitedGpuBuffer( VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags, VkMemoryPropertyFlags memoryProperties, GpuBuffer* o_buffer );
+void CreateCommitedGpuBuffer( GfxDeviceSize size, GfxBufferUsageFlags bufferUsageFlags, GfxMemoryPropertyFlags memoryProperties, GpuBuffer* o_buffer );
 void DestroyCommitedGpuBuffer( GpuBuffer* buffer );
 
-void UpdateGpuBuffer( const GpuBuffer* buffer, const void* src, VkDeviceSize size, VkDeviceSize offset );
+void UpdateGpuBuffer( const GpuBuffer* buffer, const void* src, GfxDeviceSize size, GfxDeviceSize offset );
 
-void CreatePerFrameBuffer( VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags, VkMemoryPropertyFlags memoryProperties, PerFrameBuffer * o_buffer );
-void UpdatePerFrameBuffer( const PerFrameBuffer * buffer, const void* src, VkDeviceSize size, uint32_t frame );
+void CreatePerFrameBuffer( GfxDeviceSize size, GfxBufferUsageFlags bufferUsageFlags, GfxMemoryPropertyFlags memoryProperties, PerFrameBuffer * o_buffer );
+void UpdatePerFrameBuffer( const PerFrameBuffer * buffer, const void* src, GfxDeviceSize size, uint32_t frame );
 void DestroyPerFrameBuffer( PerFrameBuffer * o_buffer );

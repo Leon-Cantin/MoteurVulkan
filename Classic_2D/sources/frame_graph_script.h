@@ -59,9 +59,9 @@ static FG::DataEntry techniqueDataEntries[static_cast< size_t >(eTechniqueDataEn
 	CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::BINDLESS_TEXTURES, BINDLESS_TEXTURES_MAX ),
 	CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::TEXT, 1 ),
 
-	CREATE_IMAGE_COLOR_SAMPLER( eTechniqueDataEntryImageName::SCENE_COLOR, VkFormat( 0 ), screenSize, VK_IMAGE_USAGE_SAMPLED_BIT, false, eSamplers::Point ),
-	CREATE_IMAGE_DEPTH( eTechniqueDataEntryImageName::SCENE_DEPTH, VK_FORMAT_D32_SFLOAT, screenSize, 0, false ),
-	CREATE_IMAGE_COLOR( eTechniqueDataEntryImageName::BACKBUFFER, VkFormat( 0 ), FG::SWAPCHAIN_SIZED, 0, true ),
+	CREATE_IMAGE_COLOR_SAMPLER( eTechniqueDataEntryImageName::SCENE_COLOR, GfxFormat::UNDEFINED, screenSize, GfxImageUsageFlagBits::SAMPLED, false, eSamplers::Point ),
+	CREATE_IMAGE_DEPTH( eTechniqueDataEntryImageName::SCENE_DEPTH, GfxFormat::D32_SFLOAT, screenSize, 0, false ),
+	CREATE_IMAGE_COLOR( eTechniqueDataEntryImageName::BACKBUFFER, GfxFormat::UNDEFINED, FG::SWAPCHAIN_SIZED, 0, true ),
 };
 
 inline void SetBuffers( GpuInputData* buffers, eTechniqueDataEntryName id, GpuBuffer* input, uint32_t count )
@@ -170,7 +170,7 @@ void CopyRecordDrawCommandsBuffer( uint32_t currentFrame, const SceneFrameData* 
 	//TODO: don't let this code choose with "currentFrame" it doesn't need to know that.
 	CmdBeginVkLabel( graphicsCommandBuffer, "Copy Renderpass", glm::vec4( 0.8f, 0.8f, 0.8f, 1.0f ) );
 	const FrameBuffer& frameBuffer = renderpass->outputFrameBuffer[currentFrame];
-	BeginRenderPass( graphicsCommandBuffer, *renderpass, frameBuffer.frameBuffer, frameBuffer.extent );
+	BeginRenderPass( graphicsCommandBuffer, *renderpass, frameBuffer );
 
 	vkCmdBindPipeline( graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipeline );
 	vkCmdBindDescriptorSets( graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, 0, 1, &technique->descriptor_sets[RENDERPASS_SET].hw_descriptorSets[currentFrame], 0, nullptr );
@@ -230,7 +230,7 @@ static FG::RenderPassCreationData FG_Copy_CreateGraphNode( const Swapchain* swap
 FG::FrameGraph InitializeScript( const Swapchain* swapchain )
 {
 	//Setup resources
-	VkFormat swapchainFormat = swapchain->surfaceFormat.format;
+	GfxFormat swapchainFormat = GetFormat( swapchain->surfaceFormat );
 	VkExtent2D swapchainExtent = swapchain->extent;
 
 	uint32_t backBufferId = (uint32_t) eTechniqueDataEntryImageName::BACKBUFFER;

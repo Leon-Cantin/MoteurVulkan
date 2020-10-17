@@ -1,24 +1,27 @@
 #include "renderpass.h"
 #include "vk_debug.h"
 
-void BeginRenderPass(VkCommandBuffer commandBuffer, const RenderPass& renderpass, VkFramebuffer framebuffer, VkExtent2D extent)
+void BeginRenderPass(VkCommandBuffer commandBuffer, const RenderPass& renderpass, const FrameBuffer& framebuffer)
 {
 	VkRenderPassBeginInfo render_pass_info = {};
 	render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	render_pass_info.renderPass = renderpass.vk_renderpass;
-	render_pass_info.framebuffer = framebuffer;
+	render_pass_info.framebuffer = framebuffer.frameBuffer;
 	render_pass_info.renderArea.offset = { 0, 0 };
-	render_pass_info.renderArea.extent = extent;
+	render_pass_info.renderArea.extent = framebuffer.extent;
 
 	uint32_t colorCount = static_cast<uint32_t>(renderpass.colorFormats.size());
 	bool hasDepth = renderpass.depthFormat != VK_FORMAT_UNDEFINED;
 	uint32_t totalCount = colorCount + (hasDepth ? 1 : 0);
-	std::array<VkClearValue, 5> clearValues = { 0.0f, 0.0f, 0.0f, 1.0f };
+	VkClearValue clearValues[5];
 	assert(totalCount <= 5);
+	for( uint32_t i = 0; i < colorCount; ++i )
+		clearValues[i] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	if (hasDepth)
 		clearValues[colorCount] = { 1.0f, 0 };
+
 	render_pass_info.clearValueCount = totalCount;
-	render_pass_info.pClearValues = clearValues.data();
+	render_pass_info.pClearValues = clearValues;
 
 	vkCmdBeginRenderPass(commandBuffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 }
@@ -26,38 +29,6 @@ void BeginRenderPass(VkCommandBuffer commandBuffer, const RenderPass& renderpass
 void EndRenderPass(VkCommandBuffer commandBuffer)
 {
 	vkCmdEndRenderPass(commandBuffer);
-}
-
-VkFormat ConvertToVkFormat( GfxFormat gfxFormat )
-{
-	return static_cast< VkFormat >(gfxFormat);
-}
-
-VkImageLayout ConvertToVkImageLayout( GfxLayout layout, GfxAccess access )
-{
-	switch( layout )
-	{
-	case GfxLayout::UNDEFINED:
-		return VK_IMAGE_LAYOUT_UNDEFINED;
-	case GfxLayout::GENERAL:
-		return VK_IMAGE_LAYOUT_GENERAL;
-	case GfxLayout::TRANSFER :
-		return access == GfxAccess::READ ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	case GfxLayout::DEPTH_STENCIL :
-		return access == GfxAccess::READ ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-	case GfxLayout::COLOR :
-		return access == GfxAccess::READ ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-	case GfxLayout::PRESENT:
-		return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-	default:
-		assert( false );
-		return VK_IMAGE_LAYOUT_UNDEFINED;
-	}
-}
-
-VkAttachmentLoadOp ConvertVkLoadOp( GfxLoadOp loadOp )
-{
-	return static_cast< VkAttachmentLoadOp >(loadOp);
 }
 
 RenderPass CreateRenderPass( const char* name, const AttachementDescription* colorAttachementDescriptions, uint32_t colorAttachementCount, const AttachementDescription* depthStencilAttachement )
@@ -74,7 +45,7 @@ RenderPass CreateRenderPass( const char* name, const AttachementDescription* col
 	{
 		const AttachementDescription& srcDescription = colorAttachementDescriptions[i];
 		VkAttachmentDescription& description = attachements[i];
-		description.format = ConvertToVkFormat( srcDescription.format );
+		description.format = ToVkFormat( srcDescription.format );
 		description.flags = 0;
 		description.samples = VK_SAMPLE_COUNT_1_BIT;
 		description.loadOp = ConvertVkLoadOp( srcDescription.loadOp );
@@ -92,7 +63,7 @@ RenderPass CreateRenderPass( const char* name, const AttachementDescription* col
 	if( hasDepth )
 	{
 		VkAttachmentDescription& description = attachements[colorAttachementCount];
-		description.format = ConvertToVkFormat( depthStencilAttachement->format );
+		description.format = ToVkFormat( depthStencilAttachement->format );
 		description.flags = 0;
 		description.samples = VK_SAMPLE_COUNT_1_BIT;
 		description.loadOp = ConvertVkLoadOp( depthStencilAttachement->loadOp );
@@ -148,4 +119,11 @@ RenderPass CreateRenderPass( const char* name, const AttachementDescription* col
 	MarkVkObject( ( uint64_t )renderPass.vk_renderpass, VK_OBJECT_TYPE_RENDER_PASS, name );
 
 	return renderPass;
+}
+
+
+void Destroy( RenderPass* renderpass )
+{
+	vkDestroyRenderPass( g_vk.device.device, renderpass->vk_renderpass, nullptr );
+	renderpass->vk_renderpass = VK_NULL_HANDLE;
 }

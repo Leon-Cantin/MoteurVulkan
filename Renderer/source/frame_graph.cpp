@@ -28,17 +28,15 @@ namespace FG
 	FrameGraph::FrameGraph( FrameGraphInternal* imp )
 		: imp( imp ) {}
 
-	static GfxImage CreateImage( VkFormat format, VkExtent2D extent, VkImageUsageFlagBits usage_flags, VkImageAspectFlagBits aspect_flags, VkImageLayout image_layout, I_ImageAlloctor* allocator )
+	//TODO could be generalized in gfxImage
+	static GfxImage CreateImage( GfxFormat format, VkExtent2D extent, GfxImageUsageFlags usage_flags, I_ImageAlloctor* allocator )
 	{
 		//TODO: we aren't getting any error for not transitionning to the image_layout? is it done in the renderpass?
-		GfxImage image;
-		image.format = format;
-		image.extent = extent;
-		image.mipLevels = 1;
+		GfxImage image = CreateImage( extent.width, extent.height, 1, format, usage_flags );
 
-		create_image( extent.width, extent.height, image.mipLevels, format, usage_flags, &image.image );
 		allocator->Allocate( image.image, &image.gfx_mem_alloc );
-		image.imageView = create_image_view( image.image, VK_IMAGE_VIEW_TYPE_2D, format, aspect_flags, image.mipLevels );
+
+		image.imageView = CreateImageView( image );
 
 		return image;
 	}
@@ -98,7 +96,7 @@ namespace FG
 
 	static void ComposeGraph( FrameGraphCreationData& creationData, FrameGraphInternal* o_frameGraph )
 	{
-		o_frameGraph->_gfx_mem_heap = create_gfx_heap( 8 * 1024 * 1024, 15, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
+		o_frameGraph->_gfx_mem_heap = create_gfx_heap( 8 * 1024 * 1024, GfxMemoryPropertyBit::DEVICE_LOCAL );
 		GfxHeaps_BatchedAllocator image_allocator( &o_frameGraph->_gfx_mem_heap );
 		image_allocator.Prepare();
 
@@ -124,7 +122,7 @@ namespace FG
 					ResourceDesc* resourceDesc = &creationData.resources[renderTargetId].resourceDesc;
 					if (renderTargetId != creationData.RT_OUTPUT_TARGET)
 					{
-						o_frameGraph->_render_targets[renderTargetId] = CreateImage( resourceDesc->format, resourceDesc->extent, resourceDesc->usage_flags, resourceDesc->aspect_flags, resourceDesc->image_layout, &image_allocator);
+						o_frameGraph->_render_targets[renderTargetId] = CreateImage( resourceDesc->format, resourceDesc->extent, resourceDesc->usage_flags, &image_allocator);
 					}
 				}
 				else
@@ -188,16 +186,16 @@ namespace FG
 	{
 		int32_t outputBufferIndex = FindResourceIndex( passCreationData, outputTargetIndex );
 		VkExtent2D extent = frameGraph->_render_targets[passCreationData.e_render_targets[0]].extent;
-		VkImageView colorImages[MAX_ATTACHMENTS_COUNT];
+		GfxImageView colorImages[MAX_ATTACHMENTS_COUNT];
 		for (uint32_t i = 0; i < colorCount; ++i)
 			colorImages[i] = frameGraph->_render_targets[passCreationData.e_render_targets[i]].imageView;
-		VkImageView* depthImage = containsDepth ? &frameGraph->_render_targets[passCreationData.e_render_targets[colorCount]].imageView : nullptr;
+		GfxImageView* depthImage = containsDepth ? &frameGraph->_render_targets[passCreationData.e_render_targets[colorCount]].imageView : nullptr;
 
 		for( uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 		{
 			if( outputBufferIndex >= 0 ) //If this pass uses( writes? ) to the backbuffer could probably be generalized to passes that can output to multiple targets (temporal stuff)
 				colorImages[outputBufferIndex] = frameGraph->_output_buffers[i].imageView;
-			createFrameBuffer( colorImages, colorCount, depthImage, extent, renderpass->vk_renderpass, &renderpass->outputFrameBuffer[i] );
+			renderpass->outputFrameBuffer[i] = CreateFrameBuffer( colorImages, colorCount, depthImage, extent, *renderpass );
 		}
 	}
 
@@ -273,11 +271,9 @@ namespace FG
 			RenderPass& renderpass = frameGraph->_render_passes[i];
 			for (uint32_t fb_index = 0; fb_index < SIMULTANEOUS_FRAMES; ++fb_index)
 			{
-				vkDestroyFramebuffer(g_vk.device.device, renderpass.outputFrameBuffer[fb_index].frameBuffer, nullptr);
-				renderpass.outputFrameBuffer[fb_index].frameBuffer = VK_NULL_HANDLE;
+				Destroy( &renderpass.outputFrameBuffer[fb_index] );
 			}
-			vkDestroyRenderPass(g_vk.device.device, renderpass.vk_renderpass, nullptr);
-			renderpass.vk_renderpass = VK_NULL_HANDLE;
+			Destroy( &renderpass );
 		}
 		frameGraph->_render_passes_count = 0;
 

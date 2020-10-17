@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <cstring>
 
-GfxMemAlloc allocate_gfx_memory( VkDeviceSize size, uint32_t type )
+GfxMemAlloc allocate_gfx_memory( GfxDeviceSize size, GfxMemoryType type )
 {
 	VkMemoryAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -20,7 +20,7 @@ GfxMemAlloc allocate_gfx_memory( VkDeviceSize size, uint32_t type )
 	return { memory, offset, size, is_parent_pool };
 }
 
-GfxMemAlloc suballocate_gfx_memory( const GfxMemAlloc& gfx_mem, VkDeviceSize size, VkDeviceSize offset )
+GfxMemAlloc suballocate_gfx_memory( const GfxMemAlloc& gfx_mem, GfxDeviceSize size, GfxDeviceSize offset )
 {
 	assert( offset + size <= gfx_mem.size );
 	assert( gfx_mem.offset == 0 );//Just to be sure right now
@@ -35,7 +35,7 @@ void destroy_gfx_memory( GfxMemAlloc* gfx_mem )
 		vkFreeMemory( g_vk.device.device, gfx_mem->memory, nullptr );
 }
 
-void UpdateGpuMemory( const GfxMemAlloc* dstMemory, const void* src, VkDeviceSize size, VkDeviceSize offset )
+void UpdateGpuMemory( const GfxMemAlloc* dstMemory, const void* src, GfxDeviceSize size, GfxDeviceSize offset )
 {
 	assert( offset + size <= dstMemory->size );
 	assert( size );//don't map memory with no size
@@ -45,13 +45,13 @@ void UpdateGpuMemory( const GfxMemAlloc* dstMemory, const void* src, VkDeviceSiz
 	vkUnmapMemory( g_vk.device.device, dstMemory->memory );
 }
 
-bool IsRequiredMemoryType( uint32_t typeFilter, uint32_t memoryType )
+bool IsRequiredMemoryType( GfxMemoryTypeFilter typeFilter, GfxMemoryType memoryType )
 {
 	uint32_t memoryTypeBit = 1 << memoryType;
 	return (typeFilter & memoryTypeBit);
 }
 
-uint32_t findMemoryType( uint32_t typeFilter, VkMemoryPropertyFlags properties )
+GfxMemoryType findMemoryType( GfxMemoryTypeFilter typeFilter, GfxMemoryPropertyFlags properties )
 {
 	VkPhysicalDeviceMemoryProperties memProperties;
 	vkGetPhysicalDeviceMemoryProperties(g_vk.physicalDevice, &memProperties);
@@ -64,3 +64,18 @@ uint32_t findMemoryType( uint32_t typeFilter, VkMemoryPropertyFlags properties )
 
 	throw std::runtime_error("failed to find suitable memory type!");
 }
+
+GfxMemoryRequirements GetImageMemoryRequirement( GfxApiImage image )
+{
+	VkMemoryRequirements memRequirements;
+	vkGetImageMemoryRequirements( g_vk.device.device, image, &memRequirements );
+	return memRequirements;
+}
+
+GfxMemoryRequirements GetBufferMemoryRequirement( GfxApiBuffer buffer )
+{
+	VkMemoryRequirements memRequirements;
+	vkGetBufferMemoryRequirements( g_vk.device.device, buffer, &memRequirements );
+	return memRequirements;
+}
+

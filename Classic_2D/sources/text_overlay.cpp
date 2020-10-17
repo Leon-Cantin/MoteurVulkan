@@ -57,7 +57,7 @@ static void CmdDrawText( VkCommandBuffer commandBuffer, VkExtent2D extent, size_
 {
 	CmdBeginVkLabel(commandBuffer, "Text overlay Renderpass", glm::vec4(0.6f, 0.6f, 0.6f, 1.0f));
 	const FrameBuffer& frameBuffer = renderpass->outputFrameBuffer[frameIndex];
-	BeginRenderPass(commandBuffer, *renderpass, frameBuffer.frameBuffer, frameBuffer.extent);
+	BeginRenderPass(commandBuffer, *renderpass, frameBuffer);
 
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipeline );
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, RENDERPASS_SET, 1, &technique->descriptor_sets[RENDERPASS_SET].hw_descriptorSets[0], 0, nullptr);
@@ -170,7 +170,7 @@ void LoadFontTexture()
 
 	GfxHeaps_CommitedResourceAllocator allocator = {};
 	allocator.Prepare();
-	Load2DTexture( &font24pixels[0][0], fontWidth, fontHeight, 1, VK_FORMAT_R8_UNORM, &g_fontImage, &allocator );
+	Load2DTexture( &font24pixels[0][0], fontWidth, fontHeight, 1, GfxFormat::R8_UNORM, &g_fontImage, &allocator );
 	allocator.Commit();
 }
 

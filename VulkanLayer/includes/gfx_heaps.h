@@ -8,5 +8,5 @@ struct GfxHeap
 	GfxMemAlloc gfx_mem_alloc;
 };
 
-GfxHeap create_gfx_heap( size_t size, uint32_t memoryTypeBits, VkMemoryPropertyFlags properties );
+GfxHeap create_gfx_heap( GfxDeviceSize size, GfxMemoryPropertyFlags properties );
 void destroy( GfxHeap* gfxHeap );

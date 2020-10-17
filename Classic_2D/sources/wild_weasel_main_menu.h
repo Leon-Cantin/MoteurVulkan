@@ -91,7 +91,7 @@ namespace WildWeasel_Menu
 
 		//LoadAssets
 		uint32_t memoryTypeMask = 15;/*TODO this works for now for textures, comes from asking VK for a textures*/
-		gfx_heap = create_gfx_heap( 16 * 1024 * 1024, memoryTypeMask, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
+		gfx_heap = create_gfx_heap( 16 * 1024 * 1024, GfxMemoryPropertyBit::DEVICE_LOCAL );
 		GfxHeaps_BatchedAllocator gfx_mem_allocator( &gfx_heap );
 		gfx_mem_allocator.Prepare();
 

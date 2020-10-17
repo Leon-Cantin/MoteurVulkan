@@ -40,86 +40,64 @@ bool hasStencilComponent(VkFormat format) {
 	return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-void transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount)
+VkImageLayout ConvertToVkImageLayout( GfxLayout layout, GfxAccess access )
 {
-	VkImageMemoryBarrier barrier = {};
-	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier.oldLayout = oldLayout;
-	barrier.newLayout = newLayout;
-	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.image = image;
-
-	barrier.subresourceRange.baseMipLevel = 0;
-	barrier.subresourceRange.levelCount = mipLevels;
-	barrier.subresourceRange.baseArrayLayer = 0;
-	barrier.subresourceRange.layerCount = layerCount;
-
-	if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-
-		if (hasStencilComponent(format)) {
-			barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-		}
+	switch( layout )
+	{
+	case GfxLayout::UNDEFINED:
+		return VK_IMAGE_LAYOUT_UNDEFINED;
+	case GfxLayout::GENERAL:
+		return VK_IMAGE_LAYOUT_GENERAL;
+	case GfxLayout::TRANSFER:
+		return access == GfxAccess::READ ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	case GfxLayout::DEPTH_STENCIL:
+		return access == GfxAccess::READ ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+	case GfxLayout::COLOR:
+		return access == GfxAccess::READ ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	case GfxLayout::PRESENT:
+		return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	default:
+		assert( false );
+		return VK_IMAGE_LAYOUT_UNDEFINED;
 	}
-	else {
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	}
-
-	VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
-	VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
-	if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED ) {
-
-		barrier.srcAccessMask = 0;
-		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-
-		if( newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL )
-		{
-			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-			destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		}
-		else if( newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL )
-		{
-			barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-			destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-		}
-		else if( newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL )
-		{
-			barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-			destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		}
-	}
-	else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-		sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-	}
-	else if (oldLayout == VK_IMAGE_LAYOUT_GENERAL && newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {//TODO: this is clearly too generic maybe have a chain that determine these
-		barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-		barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-
-		sourceStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-		destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-	}
-
-	if( sourceStage == VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM  || destinationStage == VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM ) {
-		throw std::invalid_argument("unsupported layout transition!");
-	}
-
-	vkCmdPipelineBarrier(
-		commandBuffer,
-		sourceStage, destinationStage,
-		0,
-		0, nullptr,
-		0, nullptr,
-		1, &barrier
-	);
 }
 
-static VkImageView CreateImageView( VkImage image, VkFormat format, VkImageViewType imageViewType, VkImageAspectFlags aspectFlags, uint32_t mipLevels )
+VkAttachmentLoadOp ConvertVkLoadOp( GfxLoadOp loadOp )
 {
+	return static_cast< VkAttachmentLoadOp >(loadOp);
+}
+
+VkImageAspectFlags GetAspectFlags( VkFormat format )
+{
+	switch( format )
+	{
+	case VK_FORMAT_D32_SFLOAT:
+		return VK_IMAGE_ASPECT_DEPTH_BIT;
+	case VK_FORMAT_S8_UINT:
+		return VK_IMAGE_ASPECT_STENCIL_BIT;
+	case VK_FORMAT_D32_SFLOAT_S8_UINT:
+	case VK_FORMAT_D16_UNORM_S8_UINT:
+	case VK_FORMAT_D24_UNORM_S8_UINT:
+		return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_DEPTH_BIT;
+	default:
+		return VK_IMAGE_ASPECT_COLOR_BIT;
+	}
+}
+
+static VkImageView CreateImageView( VkImage image, VkFormat format, VkImageViewType imageViewType, VkImageAspectFlags aspectFlags, uint32_t mipLevels, uint32_t layerCount )
+{
+	//TODO: use something like this, but with the format, to get the aspectMask
+/*if( newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ) {
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+
+	if( hasStencilComponent( format ) ) {
+		barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+	}
+}
+else {
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+}*/
+
 	VkImageViewCreateInfo create_info = {};
 	create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	create_info.image = image;
@@ -136,18 +114,13 @@ static VkImageView CreateImageView( VkImage image, VkFormat format, VkImageViewT
 	create_info.subresourceRange.baseMipLevel = 0;
 	create_info.subresourceRange.levelCount = mipLevels;
 	create_info.subresourceRange.baseArrayLayer = 0;
-	create_info.subresourceRange.layerCount = 1;
+	create_info.subresourceRange.layerCount = layerCount;
 
 	VkImageView imageView;
 	if( vkCreateImageView( g_vk.device.device, &create_info, nullptr, &imageView ) != VK_SUCCESS )
 		throw std::runtime_error( "failed to create image views!" );
 
 	return imageView;
-}
-
-VkImageView create_image_view( VkImage image, VkImageViewType type, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels )
-{
-	return CreateImageView( image, format, type, aspectFlags, mipLevels );
 }
 
 void BindMemory( VkImage image, VkDeviceMemory memory )
@@ -170,6 +143,8 @@ static VkImage CreateImage( const VkImageCreateInfo& imageInfo )
 	return image;
 }
 
+#define CUBE_IMAGE_LAYER_COUNT 6;
+
 static VkImageCreateInfo fill_cube_image_info( uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageUsageFlags usage )
 {
 	VkImageCreateInfo imageInfo = {};
@@ -179,7 +154,7 @@ static VkImageCreateInfo fill_cube_image_info( uint32_t width, uint32_t height, 
 	imageInfo.extent.height = static_cast< uint32_t >(height);
 	imageInfo.extent.depth = 1;
 	imageInfo.mipLevels = mipLevels;
-	imageInfo.arrayLayers = 6;
+	imageInfo.arrayLayers = CUBE_IMAGE_LAYER_COUNT;
 	imageInfo.format = format;
 	imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL; // use VK_IMAGE_TILING_LINEAR for direct access to texels
 	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -210,7 +185,7 @@ static VkImageCreateInfo fill_image_info( VkImageType type, uint32_t width, uint
 	return imageInfo;
 }
 
-void create_image( uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageUsageFlags usage, VkImage* image )
+static void create_image( uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageUsageFlags usage, VkImage* image )
 {
 	VkImageCreateInfo imageInfo = fill_image_info( VK_IMAGE_TYPE_2D, width, height, mipLevels, format, usage );
 	*image = CreateImage( imageInfo );
@@ -244,4 +219,48 @@ VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTil
 	}
 
 	throw std::runtime_error("failed to find supported format!");
+}
+
+GfxImage CreateImage( uint32_t width, uint32_t height, uint32_t mipLevels, GfxFormat format, GfxImageUsageFlags usage )
+{
+	GfxImage image = {};
+	create_image( width, height, mipLevels, ToVkFormat( format ), usage, &image.image );
+	image.extent = { width, height };
+	image.format = format;
+	image.layers = 0;
+	image.mipLevels = mipLevels;
+
+	return image;
+}
+
+GfxImage CreateCubeImage( uint32_t width, uint32_t height, uint32_t mipLevels, GfxFormat format, GfxImageUsageFlags usage )
+{
+	GfxImage image = {};
+	create_cube_image( width, height, mipLevels, ToVkFormat( format ), usage, &image.image );
+	image.extent = { width, height };
+	image.format = format;
+	image.layers = CUBE_IMAGE_LAYER_COUNT;
+	image.mipLevels = mipLevels;
+
+	return image;
+}
+
+GfxImageView CreateCubeImageView( const GfxImage& parentImage )
+{
+	const VkFormat format = ToVkFormat( parentImage.format );
+	return CreateImageView( parentImage.image, format, VK_IMAGE_VIEW_TYPE_CUBE, GetAspectFlags( format ), parentImage.mipLevels, parentImage.layers );
+}
+
+GfxImageView CreateImageView( const GfxImage& parentImage )
+{
+	const VkFormat format = ToVkFormat( parentImage.format );
+	return CreateImageView( parentImage.image, format, VK_IMAGE_VIEW_TYPE_2D, GetAspectFlags( format ), parentImage.mipLevels, 1 );
+}
+
+void DestroyImage( GfxImage* image )
+{
+	vkDestroyImageView( g_vk.device.device, image->imageView, nullptr );
+	vkDestroyImage( g_vk.device.device, image->image, nullptr );
+	destroy_gfx_memory( &image->gfx_mem_alloc );
+	image = {};
 }

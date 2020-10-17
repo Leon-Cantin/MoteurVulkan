@@ -45,7 +45,7 @@ void CmdBeginGeometryRenderPass(VkCommandBuffer commandBuffer, VkExtent2D extent
 {
 	CmdBeginVkLabel(commandBuffer, "Geometry renderpass", glm::vec4(0.8f, 0.6f, 0.4f, 1.0f));
 	const FrameBuffer& frameBuffer = renderpass->outputFrameBuffer[currentFrame];
-	BeginRenderPass(commandBuffer, *renderpass, frameBuffer.frameBuffer, frameBuffer.extent );
+	BeginRenderPass(commandBuffer, *renderpass, frameBuffer );
 
 	BeginTechnique( commandBuffer, technique, currentFrame );
 }

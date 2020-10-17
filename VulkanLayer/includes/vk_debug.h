@@ -5,6 +5,8 @@
 #include "glm/vec4.hpp"
 
 void MarkVkObject(uint64_t object, VkObjectType objetType, const char * name);
+void MarkGfxObject( GfxApiImage image, const char * name );
+void MarkGfxObject( GfxImageView imageView, const char * name );
 
 void CmdBeginVkLabel(VkCommandBuffer commandBuffer, const char * name, const glm::vec4& color);
 void CmdEndVkLabel(VkCommandBuffer commandBuffer);

@@ -95,17 +95,17 @@ void createSwapChain(VkSurfaceKHR vkSurface, uint32_t maxWidth, uint32_t maxHeig
 
 	VkFormat swapchainFormat = surfaceFormat.format;
 
-	std::vector<VkImageView> swapChainImageViews(image_count);
-	for (size_t i = 0; i < image_count; ++i)
-		swapChainImageViews[i] = create_image_view(swapChainImages[i], VK_IMAGE_VIEW_TYPE_2D, swapchainFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-
 	o_swapchain.images.resize(image_count);
 	o_swapchain.imageCount = image_count;
 	o_swapchain.extent = extent;
 	o_swapchain.presentMode = presentMode;
 	o_swapchain.surfaceFormat = surfaceFormat;
 	for( size_t i = 0; i < image_count; ++i )
-		o_swapchain.images[i] = { swapChainImages[i], swapChainImageViews[i], surfaceFormat.format, extent, 1, { VK_NULL_HANDLE, 0, 0 } };
+	{
+		const GfxMemAlloc memAlloc = {};
+		o_swapchain.images[i] = { swapChainImages[i], VK_NULL_HANDLE, ToGfxFormat( surfaceFormat.format ), extent, 1, 1, memAlloc };
+		o_swapchain.images[i].imageView = CreateImageView( o_swapchain.images[i] );
+	}
 }
 
 

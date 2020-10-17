@@ -41,6 +41,16 @@ void MarkVkObject(uint64_t objectHandle, VkObjectType objetType, const char * na
 	vkSetDebugMarkerSetObjectName_func(g_vk.device.device, &info);
 }
 
+void MarkGfxObject( GfxApiImage image, const char * name )
+{
+	MarkVkObject( ( uint64_t )image, VK_OBJECT_TYPE_IMAGE, name );
+}
+
+void MarkGfxObject( GfxImageView imageView, const char * name )
+{
+	MarkVkObject( ( uint64_t )imageView, VK_OBJECT_TYPE_IMAGE_VIEW, name );
+}
+
 void CmdBeginVkLabel(VkCommandBuffer commandBuffer, const char * name, const glm::vec4& color)
 {
 	if (vkCmdBeginDebugUtilsLabelEXT_func == VK_NULL_HANDLE)

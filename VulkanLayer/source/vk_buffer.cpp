@@ -3,12 +3,22 @@
 #include <cassert>
 #include <stdexcept>
 
-VkBuffer create_buffer( VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags )
+VkMemoryPropertyFlags ToVkMemoryPropertyFlags( GfxMemoryPropertyFlags gfxMemoryProperty )
+{
+	return static_cast< VkMemoryPropertyFlags >(gfxMemoryProperty);
+}
+
+VkBufferUsageFlags ToVkBufferUsageFlags( GfxBufferUsageFlags bufferUsageFlags )
+{
+	return static_cast< VkBufferUsageFlags >(bufferUsageFlags);
+}
+
+VkBuffer create_buffer( GfxDeviceSize size, GfxBufferUsageFlags bufferUsageFlags )
 {
 	VkBufferCreateInfo bufferInfo = {};
 	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 	bufferInfo.size = size;
-	bufferInfo.usage = bufferUsageFlags;
+	bufferInfo.usage = ToVkBufferUsageFlags( bufferUsageFlags );
 	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 	VkBuffer buffer;
@@ -18,12 +28,12 @@ VkBuffer create_buffer( VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags )
 	return buffer;
 }
 
-void BindMemory( VkBuffer buffer, const GfxMemAlloc& gfx_mem_alloc )
+void BindMemory( GfxApiBuffer buffer, const GfxMemAlloc& gfx_mem_alloc )
 {
 	vkBindBufferMemory( g_vk.device.device, buffer, gfx_mem_alloc.memory, gfx_mem_alloc.offset );
 }
 
-void copy_buffer( VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkBuffer srcBuffer, VkDeviceSize dst_offset, VkDeviceSize src_offset, VkDeviceSize size )
+void copy_buffer( VkCommandBuffer commandBuffer, GfxApiBuffer dstBuffer, GfxApiBuffer srcBuffer, GfxDeviceSize dst_offset, GfxDeviceSize src_offset, GfxDeviceSize size )
 {
 	//TODO: maybe create a new command pool with VK_COMMAND_POOL_CREATE_TRANSIENT_BIT for memory transfers
 	VkBufferCopy copyRegion = {};
@@ -33,7 +43,7 @@ void copy_buffer( VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkBuffer sr
 	vkCmdCopyBuffer( commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion );
 }
 
-void copy_buffer( VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkBuffer srcBuffer, VkDeviceSize size )
+void copy_buffer( VkCommandBuffer commandBuffer, GfxApiBuffer dstBuffer, GfxApiBuffer srcBuffer, GfxDeviceSize size )
 {
 	copy_buffer( commandBuffer, dstBuffer, srcBuffer, 0, 0, size );
 }

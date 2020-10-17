@@ -3,8 +3,8 @@
 #include "vk_globals.h"
 #include "vk_memory.h"
 
-VkBuffer create_buffer( VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags );
-void BindMemory( VkBuffer buffer, const GfxMemAlloc& gfx_mem_alloc );
+VkBuffer create_buffer( GfxDeviceSize size, GfxBufferUsageFlags bufferUsageFlags );
+void BindMemory( GfxApiBuffer buffer, const GfxMemAlloc& gfx_mem_alloc );
 
-void copy_buffer( VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkBuffer srcBuffer, VkDeviceSize dst_offset, VkDeviceSize src_offset, VkDeviceSize size );
-void copy_buffer( VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkBuffer srcBuffer, VkDeviceSize size );
+void copy_buffer( VkCommandBuffer commandBuffer, GfxApiBuffer dstBuffer, GfxApiBuffer srcBuffer, GfxDeviceSize dst_offset, GfxDeviceSize src_offset, GfxDeviceSize size );
+void copy_buffer( VkCommandBuffer commandBuffer, GfxApiBuffer dstBuffer, GfxApiBuffer srcBuffer, GfxDeviceSize size );
