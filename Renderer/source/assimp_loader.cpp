@@ -47,11 +47,11 @@ void LoadModel_AssImp( const char * filename, GfxModel& o_modelAsset, size_t hac
 	}
 
 	std::vector<VIDesc> modelVIDescs = {
-		{ eVIDataType::POSITION, eVIDataElementType::FLOAT, 3 },
-		{ eVIDataType::NORMAL, eVIDataElementType::FLOAT, 3 },
-		{ eVIDataType::TANGENT, eVIDataElementType::FLOAT, 3 },
-		{ eVIDataType::COLOR, eVIDataElementType::FLOAT, 3 },
-		{ eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2 },
+		{ ( VIDataType )eVIDataType::POSITION, eVIDataElementType::FLOAT, 3 },
+		{ ( VIDataType )eVIDataType::NORMAL, eVIDataElementType::FLOAT, 3 },
+		{ ( VIDataType )eVIDataType::TANGENT, eVIDataElementType::FLOAT, 3 },
+		{ ( VIDataType )eVIDataType::COLOR, eVIDataElementType::FLOAT, 3 },
+		{ ( VIDataType )eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2 },
 	};
 	std::vector<void*> modelData = {
 		vertPos.data(),

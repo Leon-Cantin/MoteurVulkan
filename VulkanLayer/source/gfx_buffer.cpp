@@ -70,7 +70,7 @@ void UpdateGpuBuffer( const GpuBuffer* buffer, const void* src, GfxDeviceSize si
 	UpdateGpuMemory( &buffer->gpuMemory, src, size, offset );
 }
 
-void DestroyCommitedGpuBuffer( GpuBuffer* buffer )
+void Destroy( GpuBuffer* buffer )
 {
 	vkDestroyBuffer( g_vk.device.device, buffer->buffer, nullptr );
 	destroy_gfx_memory( &buffer->gpuMemory );

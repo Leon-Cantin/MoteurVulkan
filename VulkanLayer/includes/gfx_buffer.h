@@ -22,8 +22,13 @@ public:
 	virtual bool UploadData( const GpuBuffer& buffer, const void* data ) = 0;
 };
 
+inline bool isValid( const GpuBuffer& gpuBuffer )
+{
+	return gpuBuffer.buffer != VK_NULL_HANDLE;
+}
+
 void CreateCommitedGpuBuffer( GfxDeviceSize size, GfxBufferUsageFlags bufferUsageFlags, GfxMemoryPropertyFlags memoryProperties, GpuBuffer* o_buffer );
-void DestroyCommitedGpuBuffer( GpuBuffer* buffer );
+void Destroy( GpuBuffer* buffer );
 
 void UpdateGpuBuffer( const GpuBuffer* buffer, const void* src, GfxDeviceSize size, GfxDeviceSize offset );
 

@@ -96,7 +96,7 @@ namespace IH
 		constexpr uint32_t kbStateSize = 256;
 		uint8_t kbState[kbStateSize];
 		//TODO cross platform
-		//GetKeyboardState(kbState);
+		GetKeyboardState(kbState);
 		constexpr uint8_t KEY_PRESSED_MASK = 1 << 7;
 		for (uint32_t i = 0; i < kbStateSize; ++i)
 		{

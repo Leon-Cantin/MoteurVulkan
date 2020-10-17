@@ -96,13 +96,6 @@ void CreateSolidColorImage( glm::vec4 color, GfxImage* o_image, I_ImageAlloctor*
 
 void generateMipmaps( VkCommandBuffer commandBuffer, GfxApiImage image, GfxFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels )
 {
-	//TODO: Move that check somewhere else or just remove
-	// Check if image format supports linear blitting
-	/*VkFormatProperties formatProperties;
-	vkGetPhysicalDeviceFormatProperties( g_vk.physicalDevice, imageFormat, &formatProperties );
-	if( !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT) )
-		throw std::runtime_error( "texture image format does not support linear blitting!" );*/
-
 	int32_t mipWidth = texWidth;
 	int32_t mipHeight = texHeight;
 

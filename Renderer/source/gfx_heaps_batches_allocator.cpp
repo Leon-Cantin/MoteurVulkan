@@ -26,7 +26,7 @@ void GfxHeaps_BatchedAllocator::Prepare()
 void GfxHeaps_BatchedAllocator::Commit()
 {
 	endSingleTimeCommands( commandBuffer );
-	DestroyCommitedGpuBuffer( &stagingBuffer );
+	Destroy( &stagingBuffer );
 }
 
 bool GfxHeaps_BatchedAllocator::Allocate( GfxApiImage image, GfxMemAlloc* o_gfx_mem_alloc )
@@ -117,7 +117,7 @@ void GfxHeaps_CommitedResourceAllocator::Commit()
 {
 	endSingleTimeCommands( commandBuffer );
 	commandBuffer = VK_NULL_HANDLE;
-	DestroyCommitedGpuBuffer( &stagingBuffer );
+	Destroy( &stagingBuffer );
 }
 
 bool GfxHeaps_CommitedResourceAllocator::Allocate( GfxApiImage image, GfxMemAlloc* o_gfx_mem_alloc )

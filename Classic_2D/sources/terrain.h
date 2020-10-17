@@ -107,9 +107,9 @@ BackgroundInstance CreateBackgroundGfxModel( const int screen_width, const int s
 	}
 
 	std::vector<VIDesc> modelVIDescs = {
-		{ eVIDataType::POSITION, eVIDataElementType::FLOAT, 3 },
-		{ eVIDataType::COLOR, eVIDataElementType::FLOAT, 3 },
-		{ eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2 },
+		{ ( VIDataType )eVIDataType::POSITION, eVIDataElementType::FLOAT, 3 },
+		{ ( VIDataType )eVIDataType::COLOR, eVIDataElementType::FLOAT, 3 },
+		{ ( VIDataType )eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2 },
 	};
 
 	std::vector<void*> modelData = {

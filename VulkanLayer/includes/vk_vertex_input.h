@@ -13,23 +13,13 @@ enum class eVIDataElementType : uint8_t
 	FLOAT,
 	ELEMENT_TYPE_COUNT
 };
-static const char COMPONENT_TYPE_SIZES[] = { 1, 1, 2, 2, 4, 4 };
-
-enum class eVIDataType : uint8_t
-{
-	POSITION = 0,
-	NORMAL,
-	TANGENT,
-	COLOR,
-	TEX_COORD,
-	VI_DATA_TYPE_COUNT
-};
+static const uint8_t COMPONENT_TYPE_SIZES[] = { 1, 1, 2, 2, 4, 4 };
 
 struct VIDesc
 {
-	eVIDataType dataType;
+	VIDataType dataType;
 	eVIDataElementType elementType;
-	unsigned char elementsCount;
+	uint8_t elementsCount;
 
 	inline bool operator==( const VIDesc& other ) const
 	{
@@ -42,7 +32,7 @@ struct VIDesc
 struct VIBinding
 {
 	VIDesc desc;
-	unsigned char location;
+	uint8_t location;
 };
 
 uint32_t GetBindingSize( const VIDesc* binding );

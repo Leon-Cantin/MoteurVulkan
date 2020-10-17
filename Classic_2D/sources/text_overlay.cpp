@@ -152,9 +152,9 @@ void CreateTextVertexBuffer(size_t maxCharCount)
 	uint32_t maxIndices = maxCharCount * indexesPerChar;
 
 	std::vector<VIDesc> modelVIDescs = {
-		{ eVIDataType::POSITION, eVIDataElementType::FLOAT, 3 },
-		{ eVIDataType::COLOR, eVIDataElementType::FLOAT, 3 },
-		{ eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2 },
+		{ ( VIDataType )eVIDataType::POSITION, eVIDataElementType::FLOAT, 3 },
+		{ ( VIDataType )eVIDataType::COLOR, eVIDataElementType::FLOAT, 3 },
+		{ ( VIDataType )eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2 },
 	};
 	
 	textModel = CreateGfxModel( modelVIDescs, maxVertices, maxIndices, sizeof( uint32_t ) );

@@ -182,6 +182,20 @@ inline GfxFormat GetFormat( const GfxSurfaceFormat& surfaceFormat )
 	return ToGfxFormat( surfaceFormat.format );
 }
 
+enum class GfxIndexType
+{
+	UINT16 = VK_INDEX_TYPE_UINT16,
+    UINT32 = VK_INDEX_TYPE_UINT32,
+	UNKNOWN = VK_INDEX_TYPE_MAX_ENUM,
+};
+
+inline VkIndexType ToVkIndexType( GfxIndexType gfxIndexType )
+{
+	return static_cast<VkIndexType>( gfxIndexType );
+}
+
+typedef uint8_t VIDataType;
+
 #define GFX_REMAINING_MIP_LEVELS VK_REMAINING_MIP_LEVELS
 #define GFX_REMAINING_ARRAY_LAYERS VK_REMAINING_ARRAY_LAYERS
 

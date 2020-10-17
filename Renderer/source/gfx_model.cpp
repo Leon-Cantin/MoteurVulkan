@@ -7,31 +7,31 @@
 
 void DestroyGfxModel(GfxModel& gfxModel)
 {
-	for( uint8_t i = 0; i < ( uint8_t )eVIDataType::VI_DATA_TYPE_COUNT; ++i )
+	for( uint8_t i = 0; i < ( VIDataType )eVIDataType::VI_DATA_TYPE_COUNT; ++i )
 	{
-		if( gfxModel.vertAttribBuffers[i].buffer.gpuMemory.memory != VK_NULL_HANDLE )
-			DestroyCommitedGpuBuffer( &gfxModel.vertAttribBuffers[i].buffer );
+		if( isValid( gfxModel.vertAttribBuffers[i].buffer ) )
+			Destroy( &gfxModel.vertAttribBuffers[i].buffer );
 	}
-	DestroyCommitedGpuBuffer( &gfxModel.indexBuffer );
+	Destroy( &gfxModel.indexBuffer );
 }
 
-static VkIndexType GetIndexType( uint8_t sizeofIndexType )
+static GfxIndexType GetIndexType( uint8_t sizeofIndexType )
 {
 	switch( sizeofIndexType )
 	{
 	case 4:
-		return VK_INDEX_TYPE_UINT32;
+		return GfxIndexType::UINT32;
 	case 2:
-		return VK_INDEX_TYPE_UINT16;
+		return GfxIndexType::UINT16;
 	default:
 		std::runtime_error( "Unknown index type" );
 	}
-	return VK_INDEX_TYPE_MAX_ENUM;
+	return GfxIndexType::UNKNOWN;
 }
 
 GfxModelVertexInput* GetVertexInput( GfxModel& gfxModel, eVIDataType dataType )
 {
-	return &gfxModel.vertAttribBuffers[( uint8_t )dataType];
+	return &gfxModel.vertAttribBuffers[( VIDataType )dataType];
 }
 
 const GfxModelVertexInput* GetVertexInput( const GfxModel& gfxModel, eVIDataType dataType )
@@ -48,14 +48,14 @@ GfxModel CreateGfxModel( const std::vector<VIDesc>& viDescs, size_t vertexCount,
 
 	for( const VIDesc& viDesc : viDescs )
 	{
-		GfxModelVertexInput* currentVI = GetVertexInput( gfxModel, viDesc.dataType );
+		GfxModelVertexInput* currentVI = GetVertexInput( gfxModel, static_cast<eVIDataType>( viDesc.dataType ) );
 		currentVI->desc = viDesc;
-		VkDeviceSize bufferSize = GetBindingSize( &viDesc ) * vertexCount;
-		CreateCommitedGpuBuffer( bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &currentVI->buffer );
+		GfxDeviceSize bufferSize = GetBindingSize( &viDesc ) * vertexCount;
+		CreateCommitedGpuBuffer( bufferSize, GfxBufferUsageFlagBits::VERTEX_BUFFER | GfxBufferUsageFlagBits::TRANSFER_DST_BUFFER, GfxMemoryPropertyBit::HOST_VISIBLE | GfxMemoryPropertyBit::HOST_COHERENT, &currentVI->buffer );
 	}
 
-	VkDeviceSize bufferSize = indexTypeSize * indiceCount;
-	CreateCommitedGpuBuffer( bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &gfxModel.indexBuffer );
+	GfxDeviceSize bufferSize = indexTypeSize * indiceCount;
+	CreateCommitedGpuBuffer( bufferSize, GfxBufferUsageFlagBits::INDEX_BUFFER | GfxBufferUsageFlagBits::TRANSFER_DST_BUFFER, GfxMemoryPropertyBit::HOST_VISIBLE | GfxMemoryPropertyBit::HOST_COHERENT, &gfxModel.indexBuffer );
 	gfxModel.indexType = GetIndexType( indexTypeSize );
 
 	return gfxModel;
@@ -70,16 +70,16 @@ GfxModel CreateGfxModel( const std::vector<VIDesc>& viDescs, const std::vector<v
 	for( uint8_t i = 0; i < viDescs.size(); ++i )
 	{
 		const VIDesc& viDesc = viDescs[i];
-		GfxModelVertexInput* currentVI = GetVertexInput( gfxModel, viDesc.dataType );
+		GfxModelVertexInput* currentVI = GetVertexInput( gfxModel, static_cast< eVIDataType >( viDesc.dataType ) );
 		currentVI->desc = viDesc;
-		VkDeviceSize bufferSize = GetBindingSize( &viDesc ) * vertexCount;
-		currentVI->buffer.buffer = create_buffer( bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT );
+		GfxDeviceSize bufferSize = GetBindingSize( &viDesc ) * vertexCount;
+		currentVI->buffer.buffer = create_buffer( bufferSize, GfxBufferUsageFlagBits::VERTEX_BUFFER | GfxBufferUsageFlagBits::TRANSFER_DST_BUFFER );
 		allocator->Allocate( currentVI->buffer.buffer, &currentVI->buffer.gpuMemory );
 		allocator->UploadData( currentVI->buffer, data[i] );
 	}
 
-	VkDeviceSize bufferSize = indexTypeSize * indiceCount;
-	gfxModel.indexBuffer.buffer = create_buffer( bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT );
+	GfxDeviceSize bufferSize = indexTypeSize * indiceCount;
+	gfxModel.indexBuffer.buffer = create_buffer( bufferSize, GfxBufferUsageFlagBits::INDEX_BUFFER | GfxBufferUsageFlagBits::TRANSFER_DST_BUFFER );
 	allocator->Allocate( gfxModel.indexBuffer.buffer, &gfxModel.indexBuffer.gpuMemory );
 	allocator->UploadData( gfxModel.indexBuffer, indicesData );
 	gfxModel.indexType = GetIndexType( indexTypeSize );

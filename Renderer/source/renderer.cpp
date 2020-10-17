@@ -293,7 +293,7 @@ void CmdBindVertexInputs( VkCommandBuffer commandBuffer, const std::vector<VIBin
 
 	for( uint32_t i = 0; i < gpuPipelineVIBingindCount; ++i )
 	{
-		const GfxModelVertexInput* modelVI = GetVertexInput( gfxModel, gpuPipelineVIBindings[i].desc.dataType );
+		const GfxModelVertexInput* modelVI = GetVertexInput( gfxModel, ( eVIDataType )gpuPipelineVIBindings[i].desc.dataType );
 		assert( gpuPipelineVIBindings[i].desc == modelVI->desc );
 		//assert( modelVI.vertAttribBuffers != VK_NULL_HANDLE );
 		vertexBuffers[i] = modelVI->buffer.buffer;
@@ -306,6 +306,6 @@ void CmdBindVertexInputs( VkCommandBuffer commandBuffer, const std::vector<VIBin
 void CmdDrawIndexed( VkCommandBuffer commandBuffer, const std::vector<VIBinding>& gpuPipelineVIBindings, const GfxModel& gfxModel )
 {
 	CmdBindVertexInputs( commandBuffer, gpuPipelineVIBindings, gfxModel );
-	vkCmdBindIndexBuffer( commandBuffer, gfxModel.indexBuffer.buffer, 0, gfxModel.indexType );
+	vkCmdBindIndexBuffer( commandBuffer, gfxModel.indexBuffer.buffer, 0, (VkIndexType)gfxModel.indexType );
 	vkCmdDrawIndexed( commandBuffer, gfxModel.indexCount, 1, 0, 0, 0 );
 }

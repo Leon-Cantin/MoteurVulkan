@@ -9,27 +9,38 @@
 #include <array>
 #include <vector>
 
+//TODO I'd like to make this a class, but it doesn't convert implicitly to VIDataType
+enum class eVIDataType : VIDataType
+{
+	POSITION = 0,
+	NORMAL,
+	TANGENT,
+	COLOR,
+	TEX_COORD,
+	VI_DATA_TYPE_COUNT
+};
+
 static const std::vector<VIBinding> VIBindingsFullModel = {
-	{ eVIDataType::POSITION, eVIDataElementType::FLOAT, 3, 0 },
-	{ eVIDataType::COLOR, eVIDataElementType::FLOAT, 3, 1 },
-	{ eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2, 2 },
-	{ eVIDataType::NORMAL, eVIDataElementType::FLOAT, 3, 3 },
-	{ eVIDataType::TANGENT, eVIDataElementType::FLOAT, 3, 4 }
+	{ (VIDataType)eVIDataType::POSITION, eVIDataElementType::FLOAT, 3, 0 },
+	{ (VIDataType)eVIDataType::COLOR, eVIDataElementType::FLOAT, 3, 1 },
+	{ (VIDataType)eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2, 2 },
+	{ (VIDataType)eVIDataType::NORMAL, eVIDataElementType::FLOAT, 3, 3 },
+	{ (VIDataType)eVIDataType::TANGENT, eVIDataElementType::FLOAT, 3, 4 }
 };
 
 static const std::vector<VIBinding> VIBindingsSimpleModel = {
-	{ eVIDataType::POSITION, eVIDataElementType::FLOAT, 3, 0 },
-	{ eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2, 1 },
+	{ ( VIDataType )eVIDataType::POSITION, eVIDataElementType::FLOAT, 3, 0 },
+	{ ( VIDataType )eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2, 1 },
 };
 
 static const std::vector<VIBinding> VIBindingsMeshOnly = {
-	{ eVIDataType::POSITION, eVIDataElementType::FLOAT, 3, 0 },
+	{ ( VIDataType )eVIDataType::POSITION, eVIDataElementType::FLOAT, 3, 0 },
 };
 
 static const std::vector<VIBinding> VIBindings_PosColUV = {
-	{ eVIDataType::POSITION, eVIDataElementType::FLOAT, 3, 0 },
-	{ eVIDataType::COLOR, eVIDataElementType::FLOAT, 3, 1 },
-	{ eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2, 2 }
+	{ ( VIDataType )eVIDataType::POSITION, eVIDataElementType::FLOAT, 3, 0 },
+	{ ( VIDataType )eVIDataType::COLOR, eVIDataElementType::FLOAT, 3, 1 },
+	{ ( VIDataType )eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2, 2 }
 };
 
 struct GfxModelVertexInput
@@ -40,12 +51,12 @@ struct GfxModelVertexInput
 
 struct GfxModel
 {
-	GfxModelVertexInput vertAttribBuffers[(uint8_t)eVIDataType::VI_DATA_TYPE_COUNT];
+	GfxModelVertexInput vertAttribBuffers[(VIDataType)eVIDataType::VI_DATA_TYPE_COUNT];
 	uint32_t vertexCount;
 
 	GpuBuffer indexBuffer;
 	uint32_t indexCount;
-	VkIndexType indexType;
+	GfxIndexType indexType;
 };
 
 GfxModelVertexInput* GetVertexInput( GfxModel& gfxModel, eVIDataType dataType );

@@ -38,7 +38,7 @@ public:
 	void Commit();
 
 	//Image allocator
-	bool Allocate( VkImage image, GfxMemAlloc* o_gfx_mem_alloc );
+	bool Allocate( GfxApiImage image, GfxMemAlloc* o_gfx_mem_alloc );
 	bool UploadData( const GfxImage& image, const void* data );
 
 private:

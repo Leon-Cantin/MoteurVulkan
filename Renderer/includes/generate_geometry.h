@@ -50,9 +50,9 @@ GfxModel GenerateQuad( float width, float height, I_BufferAllocator* allocator )
 	text_indices[5] = 0;
 
 	std::vector<VIDesc> modelVIDescs = {
-		{ eVIDataType::POSITION, eVIDataElementType::FLOAT, 3 },
-		{ eVIDataType::COLOR, eVIDataElementType::FLOAT, 3 },
-		{ eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2 },
+		{ ( VIDataType )eVIDataType::POSITION, eVIDataElementType::FLOAT, 3 },
+		{ ( VIDataType )eVIDataType::COLOR, eVIDataElementType::FLOAT, 3 },
+		{ ( VIDataType )eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2 },
 	};
 
 	std::vector<void*> modelData = {
