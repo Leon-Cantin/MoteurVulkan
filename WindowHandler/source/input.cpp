@@ -4,6 +4,8 @@
 #include <vector>
 #include <array>
 #include <assert.h>
+#include <cstring>
+#include <cstdint>
 
 #include "window_handler.h"
 //TODO: this is starting to be a mess. especially init and cleanup
@@ -23,8 +25,8 @@ namespace IH
 	const uint32_t HELD_KEYS_MAX_SIZE = 256;
 	int heldKeys[HELD_KEYS_MAX_SIZE];
 	uint32_t heldKeysSize = 0;
-	constexpr byte PRESSED_STATE = 0xFF;
-	byte lastKeysState[HELD_KEYS_MAX_SIZE];
+	constexpr uint8_t PRESSED_STATE = 0xFF;
+	uint8_t lastKeysState[HELD_KEYS_MAX_SIZE];
 	bool inputsActive = true;
 
 	static void character_callback( uint32_t codepoint)
@@ -92,9 +94,10 @@ namespace IH
 		//ResetReleasedKeys();
 
 		constexpr uint32_t kbStateSize = 256;
-		byte kbState[kbStateSize];
-		GetKeyboardState(kbState);
-		constexpr byte KEY_PRESSED_MASK = 1 << 7;
+		uint8_t kbState[kbStateSize];
+		//TODO cross platform
+		//GetKeyboardState(kbState);
+		constexpr uint8_t KEY_PRESSED_MASK = 1 << 7;
 		for (uint32_t i = 0; i < kbStateSize; ++i)
 		{
 			if ((kbState[i] & KEY_PRESSED_MASK))
