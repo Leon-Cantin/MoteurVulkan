@@ -86,6 +86,37 @@ enum class GfxFilter
 	LINEAR = VK_FILTER_LINEAR,
 };
 
+enum class GfxMipFilter
+{
+	NEAREST = VK_SAMPLER_MIPMAP_MODE_NEAREST,
+	LINEAR = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+};
+
+enum class GfxSamplerAddressMode {
+	REPEAT = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+	MIRRORED_REPEAT = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,
+	CLAMP_TO_EDGE = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+	CLAMP_TO_BORDER = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+	MIRROR_CLAMP_TO_EDGE = VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,
+};
+
+enum class GfxCompareOp {
+	NEVER = VK_COMPARE_OP_NEVER,
+	LESS = VK_COMPARE_OP_LESS,
+	EQUAL = VK_COMPARE_OP_EQUAL,
+	LESS_OR_EQUAL = VK_COMPARE_OP_LESS_OR_EQUAL,
+	GREATER = VK_COMPARE_OP_GREATER,
+	NOT_EQUAL = VK_COMPARE_OP_NOT_EQUAL,
+	GREATER_OR_EQUAL = VK_COMPARE_OP_GREATER_OR_EQUAL,
+	ALWAYS = VK_COMPARE_OP_ALWAYS,
+	NONE = VK_COMPARE_OP_MAX_ENUM,
+};
+
+typedef VkSampler GfxApiSampler;
+
+bool CreateSampler( GfxFilter minFilter, GfxFilter magFilter, GfxMipFilter mipFilter, float anisotropy, GfxSamplerAddressMode samplerAddressMode, GfxCompareOp compareOp, GfxApiSampler* o_sampler );
+void Destroy( GfxApiSampler* sampler );
+
 typedef VkFlags GfxFlags;
 typedef GfxFlags GfxMemoryPropertyFlags;
 
@@ -225,6 +256,46 @@ void GfxApiDestroyTimeStampsPool( GfxTimeStampQueryPool queryPool );
 void GfxApiCmdResetTimeStamps( VkCommandBuffer commandBuffer, GfxTimeStampQueryPool timeStampQueryPool, uint32_t firstQueryId, uint32_t count );
 void GfxApiGetTimeStampResults( GfxTimeStampQueryPool timeStampQueryPool, uint32_t firstQueryId, uint32_t count, uint64_t* values );
 void GfxApiCmdWriteTimestamp( VkCommandBuffer commandBuffer, GfxTimeStampQueryPool timeStampQueryPool, GfxPipelineStageFlagBits stageBits, uint32_t queryId );
+
+inline VkFilter ToVkFilter( GfxFilter filter )
+{
+	return static_cast< VkFilter >(filter);
+}
+
+inline VkSamplerMipmapMode ToVkMipFilter( GfxMipFilter mipFilter )
+{
+	return static_cast< VkSamplerMipmapMode >(mipFilter);
+}
+
+inline VkSamplerAddressMode ToVkSamplerAddressMode( GfxSamplerAddressMode samplerAddressMode )
+{
+	return static_cast< VkSamplerAddressMode >(samplerAddressMode);
+}
+
+inline VkCompareOp ToVkCompareOp( GfxCompareOp compareOp )
+{
+	return static_cast< VkCompareOp >(compareOp);
+}
+
+enum GfxShaderStageFlagBits 
+{
+	GFX_SHADER_STAGE_VERTEX_BIT = VK_SHADER_STAGE_VERTEX_BIT,
+	GFX_SHADER_STAGE_TESSELLATION_CONTROL_BIT = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+	GFX_SHADER_STAGE_TESSELLATION_EVALUATION_BIT = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+	GFX_SHADER_STAGE_GEOMETRY_BIT = VK_SHADER_STAGE_GEOMETRY_BIT,
+	GFX_SHADER_STAGE_FRAGMENT_BIT = VK_SHADER_STAGE_FRAGMENT_BIT,
+	GFX_SHADER_STAGE_COMPUTE_BIT = VK_SHADER_STAGE_COMPUTE_BIT,
+	GFX_SHADER_STAGE_ALL_GRAPHICS = VK_SHADER_STAGE_ALL_GRAPHICS,
+	GFX_SHADER_STAGE_ALL = VK_SHADER_STAGE_ALL,
+};
+
+typedef GfxFlags GfxShaderStageFlags;
+
+inline VkShaderStageFlags ToVkShaderStageFlags( GfxShaderStageFlags shaderStageFlag )
+{
+	return static_cast< VkShaderStageFlags >(shaderStageFlag);
+}
+
 
 #define GFX_REMAINING_MIP_LEVELS VK_REMAINING_MIP_LEVELS
 #define GFX_REMAINING_ARRAY_LAYERS VK_REMAINING_ARRAY_LAYERS

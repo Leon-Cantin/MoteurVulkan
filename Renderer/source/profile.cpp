@@ -8,7 +8,6 @@ GfxTimeStampQueryPool g_timeStampQueryPool;
 void CreateTimeStampsQueryPool(uint32_t setCount)
 {
 	g_timeStampQueryPool = GfxApiCreateTimeStampsQueryPool( setCount * Timestamp::TIMESTAMP_COUNT );
-	VkQueryPoolCreateInfo poolCreateInfo = {};
 }
 
 void DestroyTimeStampsPool()

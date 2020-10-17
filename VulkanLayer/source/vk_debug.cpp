@@ -51,6 +51,11 @@ void MarkGfxObject( GfxImageView imageView, const char * name )
 	MarkVkObject( ( uint64_t )imageView, VK_OBJECT_TYPE_IMAGE_VIEW, name );
 }
 
+void MarkGfxObject( GfxApiSampler sampler, const char * name )
+{
+	MarkVkObject( ( uint64_t )sampler, VK_OBJECT_TYPE_SAMPLER, name );
+}
+
 void CmdBeginVkLabel(VkCommandBuffer commandBuffer, const char * name, const glm::vec4& color)
 {
 	if (vkCmdBeginDebugUtilsLabelEXT_func == VK_NULL_HANDLE)

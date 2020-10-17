@@ -77,11 +77,6 @@ void EndCommandBufferRecording(VkCommandBuffer commandBuffer)
 		throw std::runtime_error("failed to record command buffer!");
 }
 
-VkFilter ToVkFilter( GfxFilter filter )
-{
-	return static_cast< VkFilter >(filter);
-}
-
 void CmdBlitImage( VkCommandBuffer commandBuffer, GfxApiImage srcImage, int32_t srcX1, int32_t srcY1, int32_t srcZ1, int32_t srcX2, int32_t srcY2, int32_t srcZ2, uint32_t srcMipLevel, GfxLayout srcLayout, GfxAccess srcAccess,
 	GfxApiImage dstImage, int32_t dstX1, int32_t dstY1, int32_t dstZ1, int32_t dstX2, int32_t dstY2, int32_t dstZ2, uint32_t dstMipLevel, GfxLayout dstLayout, GfxAccess dstAccess, GfxFilter filter )
 {

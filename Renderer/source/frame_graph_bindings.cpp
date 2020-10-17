@@ -43,7 +43,7 @@ namespace FG
 		layoutBinding.binding = dataBinding->binding;
 		layoutBinding.descriptorCount = dataEntry->count;
 		layoutBinding.descriptorType = DescriptorTypeToVkType( dataEntry->descriptorType, dataBinding->descriptorAccess );
-		layoutBinding.stageFlags = dataBinding->stageFlags;
+		layoutBinding.stageFlags = ToVkShaderStageFlags( dataBinding->stageFlags );
 		layoutBinding.pImmutableSamplers = nullptr;
 		return layoutBinding;
 	}

@@ -16,6 +16,7 @@ inline bool IsBufferType( eDescriptorType type )
 	return type == eDescriptorType::BUFFER || type == eDescriptorType::BUFFER_DYNAMIC;
 }
 
+//TODO: Remove in favor of GfxAccess
 enum eDescriptorAccess
 {
 	READ = 0,
@@ -27,7 +28,7 @@ struct GfxDataBinding
 	uint32_t id;
 	uint32_t binding;
 	eDescriptorAccess descriptorAccess;
-	VkShaderStageFlags stageFlags;
+	GfxShaderStageFlags stageFlags;
 };
 
 struct GfxDescriptorSetDesc
