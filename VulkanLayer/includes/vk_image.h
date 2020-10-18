@@ -13,33 +13,6 @@ bool hasStencilComponent(VkFormat format);
 VkFormat findDepthFormat();
 VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
-
-struct GfxImage {
-	//TODO: should split into the following. Also fix IsValid to check the image
-	/*
-	-image
-		-image
-		-format
-		-extent
-		-miplevels
-	-view
-	-alloc
-	*/
-	GfxApiImage image = VK_NULL_HANDLE;
-	GfxImageView imageView = VK_NULL_HANDLE;
-	GfxFormat format;
-	VkExtent2D extent;
-	uint32_t layers;
-	uint32_t mipLevels;
-	GfxMemAlloc gfx_mem_alloc;
-};
-
-struct GfxImageSamplerCombined
-{
-	GfxImage* image;
-	VkSampler sampler = VK_NULL_HANDLE;
-};
-
 inline bool IsValid( const GfxImage& image )
 {
 	return IsValid( image.gfx_mem_alloc );

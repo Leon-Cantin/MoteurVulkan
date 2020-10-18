@@ -36,7 +36,7 @@ namespace FG
 		void( *RecordDrawCommands )(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique);
 		std::vector<GfxDescriptorSetDesc> descriptorSets;
 		GpuPipelineLayout gpuPipelineLayout;
-		GpuPipelineState gpuPipelineState;
+		GpuPipelineStateDesc gpuPipelineStateDesc;
 	};
 
 	struct RenderPassCreationData

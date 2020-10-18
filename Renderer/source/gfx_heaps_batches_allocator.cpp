@@ -17,7 +17,7 @@ GfxHeaps_BatchedAllocator::GfxHeaps_BatchedAllocator()
 
 void GfxHeaps_BatchedAllocator::Prepare()
 {
-	CreateCommitedGpuBuffer( 16 * 1024 * 1024, GfxBufferUsageFlagBits::TRANSFER_SRC_BUFFER, GfxMemoryPropertyBit::HOST_VISIBLE | GfxMemoryPropertyBit::HOST_COHERENT, &stagingBuffer );
+	CreateCommitedGpuBuffer( 16 * 1024 * 1024, GFX_BUFFER_USAGE_TRANSFER_SRC_BIT, GFX_MEMORY_PROPERTY_HOST_VISIBLE_BIT | GFX_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer );
 	commandBuffer = beginSingleTimeCommands();
 	stagingBufferAllocator = {};
 	stagingBufferAllocator.buffer = &stagingBuffer;
@@ -107,7 +107,7 @@ bool GfxHeaps_BatchedAllocator::UploadData( const GpuBuffer& buffer, const void*
 void GfxHeaps_CommitedResourceAllocator::Prepare()
 {
 	assert( commandBuffer == VK_NULL_HANDLE );
-	CreateCommitedGpuBuffer( 16 * 1024 * 1024, GfxBufferUsageFlagBits::TRANSFER_SRC_BUFFER, GfxMemoryPropertyBit::HOST_VISIBLE | GfxMemoryPropertyBit::HOST_COHERENT, &stagingBuffer );
+	CreateCommitedGpuBuffer( 16 * 1024 * 1024, GFX_BUFFER_USAGE_TRANSFER_SRC_BIT, GFX_MEMORY_PROPERTY_HOST_VISIBLE_BIT | GFX_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer );
 	commandBuffer = beginSingleTimeCommands();
 	stagingBufferAllocator = {};
 	stagingBufferAllocator.buffer = &stagingBuffer;
@@ -128,7 +128,7 @@ bool GfxHeaps_CommitedResourceAllocator::Allocate( GfxApiImage image, GfxMemAllo
 	const GfxDeviceSize size = GetSize( mem_requirements );
 	const GfxMemoryTypeFilter memoryTypeFilter = GetMemoryTypeFilter( mem_requirements );
 
-	const GfxMemoryType memoryType = findMemoryType( memoryTypeFilter, GfxMemoryPropertyBit::DEVICE_LOCAL );
+	const GfxMemoryType memoryType = findMemoryType( memoryTypeFilter, GFX_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
 
 	*o_gfx_mem_alloc = allocate_gfx_memory( size, memoryType );
 	BindMemory( image, *o_gfx_mem_alloc );

@@ -96,7 +96,7 @@ namespace FG
 
 	static void ComposeGraph( FrameGraphCreationData& creationData, FrameGraphInternal* o_frameGraph )
 	{
-		o_frameGraph->_gfx_mem_heap = create_gfx_heap( 8 * 1024 * 1024, GfxMemoryPropertyBit::DEVICE_LOCAL );
+		o_frameGraph->_gfx_mem_heap = create_gfx_heap( 8 * 1024 * 1024, GFX_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
 		GfxHeaps_BatchedAllocator image_allocator( &o_frameGraph->_gfx_mem_heap );
 		image_allocator.Prepare();
 

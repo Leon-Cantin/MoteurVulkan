@@ -462,7 +462,7 @@ namespace WildWeasel_Game
 		ConCom::Init();
 
 		//LoadAssets
-		gfx_heap = create_gfx_heap( 16 * 1024 * 1024, GfxMemoryPropertyBit::DEVICE_LOCAL );
+		gfx_heap = create_gfx_heap( 16 * 1024 * 1024, GFX_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
 		GfxHeaps_BatchedAllocator gfx_mem_allocator( &gfx_heap );
 		gfx_mem_allocator.Prepare();
 

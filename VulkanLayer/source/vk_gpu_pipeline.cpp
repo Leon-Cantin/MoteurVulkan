@@ -15,10 +15,45 @@ uint32_t GetBindingDescription( const std::vector<VIBinding>& VIBindings, VIStat
 	return count;
 }
 
-void CreatePipeline( const GpuPipelineState& gpuPipeline, const VkExtent2D& viewportSize, VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkPipeline* o_pipeline )
+void CreateGfxPipelineLayout( const GfxDescriptorSetDesc* descriptorTablesDescs, const GfxDescriptorTableLayout* descriptorTableLayouts, uint32_t descriptorTablesDescsCount, const GfxRootConstantRange* rootConstantRanges, uint32_t rootConstantRangesCount, GfxPipelineLayout* o_pipelineLayout )
 {
+	//Order the table layouts in the order they are bound in the pipeline
+	VkDescriptorSetLayout orderedDescriptorTablesLayouts[8];
+	assert( descriptorTablesDescsCount < 8 );
+	for( uint32_t i = 0; i < descriptorTablesDescsCount; ++i )
+	{
+		const GfxDescriptorSetDesc& setDesc = descriptorTablesDescs[i];
+		assert( i == setDesc.id ); //We can't leave any hole in the pilpeline layout
+		orderedDescriptorTablesLayouts[i] = descriptorTableLayouts[setDesc.id];
+	}
+
+	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
+	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipeline_layout_info.setLayoutCount = descriptorTablesDescsCount;
+	pipeline_layout_info.pSetLayouts = orderedDescriptorTablesLayouts;
+
+	VkPushConstantRange pushConstantRanges[8];
+	assert( rootConstantRangesCount < 8 );
+	for( uint32_t i = 0; i < rootConstantRangesCount; ++i )
+	{
+		pushConstantRanges[i].stageFlags = rootConstantRanges[i].stageFlags;
+		pushConstantRanges[i].offset = sizeof( root_constant_t ) * rootConstantRanges[i].offset;
+		pushConstantRanges[i].size = sizeof( root_constant_t ) * rootConstantRanges[i].count;
+	}
+	pipeline_layout_info.pushConstantRangeCount = rootConstantRangesCount;
+	pipeline_layout_info.pPushConstantRanges = pushConstantRanges;
+
+	if( vkCreatePipelineLayout( g_vk.device.device, &pipeline_layout_info, nullptr, o_pipelineLayout ) != VK_SUCCESS ) {
+		throw std::runtime_error( "failed to create pipeline layout!" );
+	}
+}
+
+void CreatePipeline( const GpuPipelineStateDesc& gpuPipelineDesc, const RenderPass& renderPass, GfxPipelineLayout pipelineLayout, VkPipeline* o_pipeline )
+{
+	const VkExtent2D& viewportSize = renderPass.outputFrameBuffer[0].extent;//TODO: temp hack to get a relative size;
+
 	//Vertex Input
-	const VIState& viState = gpuPipeline.viState;
+	const VIState& viState = gpuPipelineDesc.viState;
 	VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
 	vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertex_input_info.vertexBindingDescriptionCount = viState.vibDescriptionsCount;
@@ -29,21 +64,21 @@ void CreatePipeline( const GpuPipelineState& gpuPipeline, const VkExtent2D& view
 	//Input assembly
 	VkPipelineInputAssemblyStateCreateInfo input_assembly = {};
 	input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-	input_assembly.topology = gpuPipeline.primitiveTopology;
+	input_assembly.topology = gpuPipelineDesc.primitiveTopology;
 	input_assembly.primitiveRestartEnable = VK_FALSE;
 
 	VkPipelineShaderStageCreateInfo shader_stages[8];
 	uint32_t shadersCount = 0;
 
-	for( uint8_t i = 0; i < gpuPipeline.shaders.size(); ++i )
+	for( uint8_t i = 0; i < gpuPipelineDesc.shaders.size(); ++i )
 	{
 		VkPipelineShaderStageCreateInfo& shaderStageInfo = shader_stages[shadersCount++];
 		shaderStageInfo = {};
 		shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		shaderStageInfo.stage = gpuPipeline.shaders[i].flags;
+		shaderStageInfo.stage = gpuPipelineDesc.shaders[i].flags;
 		//TODO: these cast are dangerous for alligment
-		shaderStageInfo.module = create_shader_module( reinterpret_cast< const uint32_t * >(gpuPipeline.shaders[i].code.data()), gpuPipeline.shaders[i].code.size() );
-		shaderStageInfo.pName = gpuPipeline.shaders[i].entryPoint;
+		shaderStageInfo.module = create_shader_module( reinterpret_cast< const uint32_t * >(gpuPipelineDesc.shaders[i].code.data()), gpuPipelineDesc.shaders[i].code.size() );
+		shaderStageInfo.pName = gpuPipelineDesc.shaders[i].entryPoint;
 	}
 
 	//Rasterizer
@@ -53,12 +88,12 @@ void CreatePipeline( const GpuPipelineState& gpuPipeline, const VkExtent2D& view
 	rasterizer.rasterizerDiscardEnable = VK_FALSE;
 	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterizer.lineWidth = 1.0f;
-	rasterizer.cullMode = gpuPipeline.rasterizationState.backFaceCulling ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE;
+	rasterizer.cullMode = gpuPipelineDesc.rasterizationState.backFaceCulling ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE;
 	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-	rasterizer.depthBiasEnable = gpuPipeline.rasterizationState.depthBiased;
-	rasterizer.depthBiasConstantFactor = gpuPipeline.rasterizationState.depthBiased ? 1.25f : 0.0f; // Optional
+	rasterizer.depthBiasEnable = gpuPipelineDesc.rasterizationState.depthBiased;
+	rasterizer.depthBiasConstantFactor = gpuPipelineDesc.rasterizationState.depthBiased ? 1.25f : 0.0f; // Optional
 	rasterizer.depthBiasClamp = 0.0f; // Optional
-	rasterizer.depthBiasSlopeFactor = gpuPipeline.rasterizationState.depthBiased ? 1.75f : 0.0f; // Optional
+	rasterizer.depthBiasSlopeFactor = gpuPipelineDesc.rasterizationState.depthBiased ? 1.75f : 0.0f; // Optional
 
 	VkPipelineMultisampleStateCreateInfo multisampling = {};
 	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -71,9 +106,9 @@ void CreatePipeline( const GpuPipelineState& gpuPipeline, const VkExtent2D& view
 
 	VkPipelineDepthStencilStateCreateInfo depthStencil = {};
 	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-	depthStencil.depthTestEnable = gpuPipeline.depthStencilState.depthRead;
-	depthStencil.depthWriteEnable = gpuPipeline.depthStencilState.depthWrite;
-	depthStencil.depthCompareOp = gpuPipeline.depthStencilState.depthCompareOp,
+	depthStencil.depthTestEnable = gpuPipelineDesc.depthStencilState.depthRead;
+	depthStencil.depthWriteEnable = gpuPipelineDesc.depthStencilState.depthWrite;
+	depthStencil.depthCompareOp = gpuPipelineDesc.depthStencilState.depthCompareOp,
 	depthStencil.depthBoundsTestEnable = VK_FALSE;
 	depthStencil.minDepthBounds = 0.0f; // Optional
 	depthStencil.maxDepthBounds = 1.0f; // Optional
@@ -84,7 +119,7 @@ void CreatePipeline( const GpuPipelineState& gpuPipeline, const VkExtent2D& view
 	//Color blending
 	VkPipelineColorBlendAttachmentState color_blend_attachement = {};
 	color_blend_attachement.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	if( gpuPipeline.blendEnabled )
+	if( gpuPipelineDesc.blendEnabled )
 	{
 		color_blend_attachement.blendEnable = VK_TRUE;
 		color_blend_attachement.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
@@ -159,7 +194,7 @@ void CreatePipeline( const GpuPipelineState& gpuPipeline, const VkExtent2D& view
 	ÅEInitial and final image layout in attachment descriptions
 	ÅELoad and store operations in attachment descriptions
 	ÅEImage layout in attachment references*/
-	pipeline_info.renderPass = renderPass;
+	pipeline_info.renderPass = renderPass.vk_renderpass;
 	pipeline_info.subpass = 0;
 
 	pipeline_info.basePipelineHandle = VK_NULL_HANDLE; // Optional

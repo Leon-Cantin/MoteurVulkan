@@ -3,12 +3,6 @@
 #include "vk_buffer.h"
 #include <array>
 
-struct GpuBuffer
-{
-	GfxApiBuffer buffer;
-	GfxMemAlloc gpuMemory;
-};
-
 struct PerFrameBuffer
 {
 	std::array<GpuBuffer, SIMULTANEOUS_FRAMES> buffers;

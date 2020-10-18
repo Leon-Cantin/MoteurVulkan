@@ -2,41 +2,6 @@
 #include "gfx_buffer.h"
 #include "gfx_image.h"
 
-enum eDescriptorType
-{
-	BUFFER = 0,
-	BUFFER_DYNAMIC,
-	IMAGE,
-	SAMPLER,
-	IMAGE_SAMPLER,
-};
-
-inline bool IsBufferType( eDescriptorType type )
-{
-	return type == eDescriptorType::BUFFER || type == eDescriptorType::BUFFER_DYNAMIC;
-}
-
-//TODO: Remove in favor of GfxAccess
-enum eDescriptorAccess
-{
-	READ = 0,
-	WRITE,
-};
-
-struct GfxDataBinding
-{
-	uint32_t id;
-	uint32_t binding;
-	eDescriptorAccess descriptorAccess;
-	GfxShaderStageFlags stageFlags;
-};
-
-struct GfxDescriptorSetDesc
-{
-	uint32_t id;
-	std::vector<GfxDataBinding> dataBindings;
-};
-
 constexpr size_t MAX_DATA_ENTRIES = 16;
 
 union GpuInputDataEntry
@@ -77,6 +42,12 @@ inline GfxImageSamplerCombined* GetImage( const GpuInputData* buffers, uint32_t 
 {
 	assert( id < MAX_DATA_ENTRIES );
 	return buffers->data[id].image;
+}
+
+inline void* GetData( const GpuInputData* buffers, uint32_t id )
+{
+	assert( id < MAX_DATA_ENTRIES );
+	return static_cast<void*>(buffers->data[id].buffer);
 }
 
 inline uint32_t GetDataCount( const GpuInputData* buffers, uint32_t id )

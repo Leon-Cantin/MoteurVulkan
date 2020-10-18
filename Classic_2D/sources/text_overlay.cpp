@@ -32,9 +32,9 @@ GpuPipelineLayout GetTextPipelineLayout()
 	return GpuPipelineLayout();
 }
 
-GpuPipelineState GetTextPipelineState()
+GpuPipelineStateDesc GetTextPipelineState()
 {
-	GpuPipelineState gpuPipelineState = {};
+	GpuPipelineStateDesc gpuPipelineState = {};
 	GetBindingDescription( VIBindings_PosColUV, &gpuPipelineState.viState );
 
 	gpuPipelineState.shaders = {

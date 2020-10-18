@@ -11,6 +11,10 @@
 #undef max
 #undef min
 
+const int SIMULTANEOUS_FRAMES = 2;
+
+#include <vector> //TODO: remove this, used in some structures
+
 struct GpuInstance
 {
 	VkInstance instance;
@@ -121,9 +125,9 @@ typedef VkFlags GfxFlags;
 typedef GfxFlags GfxMemoryPropertyFlags;
 
 enum GfxMemoryPropertyBit : GfxMemoryPropertyFlags {
-	DEVICE_LOCAL = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-	HOST_VISIBLE = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-	HOST_COHERENT  = VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+	GFX_MEMORY_PROPERTY_DEVICE_LOCAL_BIT = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+	GFX_MEMORY_PROPERTY_HOST_VISIBLE_BIT = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+	GFX_MEMORY_PROPERTY_HOST_COHERENT_BIT = VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 };
 
 typedef GfxFlags GfxImageUsageFlags;
@@ -150,15 +154,15 @@ enum GfxImageAspectFlagBits : GfxImageAspectFlags {
 typedef GfxFlags GfxBufferUsageFlags;
 
 enum GfxBufferUsageFlagBits : GfxBufferUsageFlags {
-	TRANSFER_SRC_BUFFER = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-	TRANSFER_DST_BUFFER = VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-	UNIFORM_TEXEL_BUFFER = VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,
-	STORAGE_TEXEL_BUFFER = VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT,
-	UNIFORM_BUFFER = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-	STORAGE_BUFFER = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-	INDEX_BUFFER = VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-	VERTEX_BUFFER = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-	INDIRECT_BUFFER = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
+	GFX_BUFFER_USAGE_TRANSFER_SRC_BIT = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+	GFX_BUFFER_USAGE_TRANSFER_DST_BIT = VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+	GFX_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT = VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,
+	GFX_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT = VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT,
+	GFX_BUFFER_USAGE_UNIFORM_BUFFER_BIT = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+	GFX_BUFFER_USAGE_STORAGE_BUFFER_BIT = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+	GFX_BUFFER_USAGE_INDEX_BUFFER_BIT = VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+	GFX_BUFFER_USAGE_VERTEX_BUFFER_BIT = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+	GFX_BUFFER_USAGE_INDIRECT_BUFFER_BIT = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
 };
 
 typedef VkImageView GfxImageView;
@@ -296,9 +300,204 @@ inline VkShaderStageFlags ToVkShaderStageFlags( GfxShaderStageFlags shaderStageF
 	return static_cast< VkShaderStageFlags >(shaderStageFlag);
 }
 
+enum eDescriptorType
+{
+	BUFFER = 0,
+	BUFFER_DYNAMIC,
+	IMAGE,
+	SAMPLER,
+	IMAGE_SAMPLER,
+};
+
+inline bool IsBufferType( eDescriptorType type )
+{
+	return type == eDescriptorType::BUFFER || type == eDescriptorType::BUFFER_DYNAMIC;
+}
+
+//TODO: Remove in favor of GfxAccess?
+enum eDescriptorAccess
+{
+	READ = 0,
+	WRITE,
+};
+
+VkDescriptorType DescriptorTypeToVkType( eDescriptorType type, eDescriptorAccess access );
+
+typedef VkDescriptorSetLayoutBinding GfxDescriptorTableLayoutBinding;
+typedef VkDescriptorSetLayout GfxDescriptorTableLayout;
+typedef VkDescriptorSet GfxDescriptorTable;
+
+GfxDescriptorTableLayoutBinding CreateDescriptorTableLayoutBinding( uint32_t descriptorBindingSlot, GfxShaderStageFlags descriptorStageFlags, eDescriptorType descriptorType, eDescriptorAccess descriptorAccess, uint32_t descriptorCount );
+
+typedef VkDescriptorPool GfxDescriptorPool;
 
 #define GFX_REMAINING_MIP_LEVELS VK_REMAINING_MIP_LEVELS
 #define GFX_REMAINING_ARRAY_LAYERS VK_REMAINING_ARRAY_LAYERS
+
+struct GfxRootConstantRange {
+	GfxShaderStageFlags    stageFlags;
+	uint32_t              offset;
+	uint32_t              count;
+};
+
+typedef VkPipelineLayout GfxPipelineLayout;
+typedef uint32_t root_constant_t;
+
+struct GfxDataBinding
+{
+	uint32_t id;
+	uint32_t binding;
+	eDescriptorAccess descriptorAccess;
+	GfxShaderStageFlags stageFlags;
+};
+
+struct GfxDescriptorSetDesc
+{
+	uint32_t id;
+	std::vector<GfxDataBinding> dataBindings;
+};
+
+struct WriteDescriptor
+{
+	uint32_t dstBinding;
+	uint32_t count;
+	VkDescriptorType type;
+	VkDescriptorBufferInfo* pBufferInfos;
+	VkDescriptorImageInfo* pImageInfos;
+};
+
+struct WriteDescriptorTable
+{
+	WriteDescriptor* writeDescriptors;
+	uint32_t count;
+};
+
+void CreateGfxPipelineLayout( const GfxDescriptorSetDesc* descriptorTablesDescs, const GfxDescriptorTableLayout* descriptorTableLayouts, uint32_t descriptorTablesDescsCount, const GfxRootConstantRange* rootConstantRanges, uint32_t rootConstantRangesCount, GfxPipelineLayout* o_pipelineLayout );
+
+struct GfxMemAlloc
+{
+	VkDeviceMemory memory;
+	GfxDeviceSize offset;
+	GfxDeviceSize size;
+	bool is_parent_pool;
+};
+
+struct GfxImage {
+	//TODO: should split into the following. Also fix IsValid to check the image
+	/*
+	-image
+		-image
+		-format
+		-extent
+		-miplevels
+	-view
+	-alloc
+	*/
+	GfxApiImage image = VK_NULL_HANDLE;
+	GfxImageView imageView = VK_NULL_HANDLE;
+	GfxFormat format;
+	VkExtent2D extent;
+	uint32_t layers;
+	uint32_t mipLevels;
+	GfxMemAlloc gfx_mem_alloc;
+};
+
+struct GfxImageSamplerCombined
+{
+	GfxImage* image;
+	VkSampler sampler = VK_NULL_HANDLE;
+};
+
+struct GpuBuffer
+{
+	GfxApiBuffer buffer;
+	GfxMemAlloc gpuMemory;
+};
+
+class BatchDescriptorsUpdater
+{
+private:
+	WriteDescriptor writeDescriptors[8];
+	uint32_t writeDescriptorsCount = 0;
+
+	VkDescriptorBufferInfo descriptorBuffersInfos[16];
+	uint32_t descriptorBuffersInfosCount = 0;
+	VkDescriptorImageInfo descriptorImagesInfos[16];
+	uint32_t descriptorImagesInfosCount = 0;
+
+public:
+	void AddImagesBinding( const GfxImageSamplerCombined* images, uint32_t count, uint32_t binding, eDescriptorType type, eDescriptorAccess access );
+	void AddBuffersBinding( const GpuBuffer* buffers, uint32_t count, uint32_t binding, eDescriptorType type, eDescriptorAccess access );
+	//TODO: I could maybe use the union GpuInputDataEntry instead of void* ...
+	void AddBinding( const void* data, uint32_t count, uint32_t binding, eDescriptorType type, eDescriptorAccess access );
+	void Submit( GfxDescriptorTable descriptorTable );
+};
+
+void CreateDescriptorPool( uint32_t uniformBuffersCount, uint32_t uniformBufferDynamicCount, uint32_t combinedImageSamplerCount, uint32_t storageImageCount, uint32_t sampledImageCount, uint32_t maxSets, VkDescriptorPool * o_descriptorPool );
+void CreateDesciptorTableLayout( const VkDescriptorSetLayoutBinding* bindings, uint32_t count, GfxDescriptorTableLayout* o_layout );
+void CreateDescriptorTables( GfxDescriptorPool descriptorPool, uint32_t count, GfxDescriptorTableLayout * descriptorSetLayouts, GfxDescriptorTable* o_descriptorTables );
+void UpdateDescriptorTables( size_t writeDescriptorTableCount, const WriteDescriptorTable* writeDescriptorTable, GfxDescriptorTable* descriptorTable );
+
+constexpr uint32_t VI_STATE_MAX_DESCRIPTIONS = 5;
+struct VIState
+{
+	VkVertexInputBindingDescription vibDescription[VI_STATE_MAX_DESCRIPTIONS];
+	uint32_t vibDescriptionsCount;
+	VkVertexInputAttributeDescription visDescriptions[VI_STATE_MAX_DESCRIPTIONS];
+	uint32_t visDescriptionsCount;
+};
+
+struct ShaderCreation
+{
+	std::vector<char> code;
+	const char* entryPoint;
+	VkShaderStageFlagBits flags;
+};
+
+struct RasterizationState
+{
+	bool depthBiased;
+	bool backFaceCulling;
+};
+
+struct DepthStencilState
+{
+	bool depthRead;
+	bool depthWrite;
+	VkCompareOp depthCompareOp;
+};
+
+struct GpuPipelineLayout
+{
+	std::vector<GfxRootConstantRange> RootConstantRanges;
+};
+
+struct GpuPipelineStateDesc
+{
+	VIState viState;
+	std::vector<ShaderCreation> shaders;
+	RasterizationState rasterizationState;
+	DepthStencilState depthStencilState;
+	bool blendEnabled;
+	VkPrimitiveTopology primitiveTopology;
+};
+
+struct FrameBuffer
+{
+	VkFramebuffer frameBuffer;
+	VkExtent2D extent;
+	uint32_t layerCount;
+	uint32_t colorCount;
+	uint32_t depthCount;
+};
+
+struct RenderPass {
+	VkRenderPass vk_renderpass;
+	std::vector<VkFormat> colorFormats;
+	VkFormat depthFormat;
+	FrameBuffer outputFrameBuffer[SIMULTANEOUS_FRAMES];
+};
+
 
 struct Vk_Globals {
 	GpuInstance instance = {};
@@ -311,5 +510,3 @@ struct Vk_Globals {
 };
 
 extern Vk_Globals g_vk;
-
-const int SIMULTANEOUS_FRAMES = 2;

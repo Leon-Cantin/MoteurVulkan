@@ -132,7 +132,7 @@ static VkDescriptorPool CreateDescriptorPool_BAD()
 	const uint32_t maxSets = geometryDescriptorSets + textDescriptorSetsCount + copyDescriptorSetsCount;
 
 	VkDescriptorPool descriptorPool;
-	createDescriptorPool( uniformBuffersCount, uniformBuffersDynamicCount, imageSamplersCount, storageImageCount, sampledImageCount, maxSets, &descriptorPool );
+	CreateDescriptorPool( uniformBuffersCount, uniformBuffersDynamicCount, imageSamplersCount, storageImageCount, sampledImageCount, maxSets, &descriptorPool );
 
 	return descriptorPool;
 }

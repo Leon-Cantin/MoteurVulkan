@@ -1,25 +1,7 @@
 #pragma once
 #include "vk_globals.h"
 
-#include "vk_gpu_pipeline.h"
-
 #include <vector>
-
-struct FrameBuffer
-{
-	VkFramebuffer frameBuffer;
-	VkExtent2D extent;
-	uint32_t layerCount;
-	uint32_t colorCount;
-	uint32_t depthCount;
-};
-
-struct RenderPass {
-	VkRenderPass vk_renderpass;
-	std::vector<VkFormat> colorFormats;
-	VkFormat depthFormat;
-	FrameBuffer outputFrameBuffer[SIMULTANEOUS_FRAMES];
-};
 
 struct AttachementDescription
 {

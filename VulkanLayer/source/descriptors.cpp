@@ -4,7 +4,9 @@
 #include <assert.h>
 #include <array>
 
-void createDescriptorPool(uint32_t uniformBuffersCount, uint32_t uniformBufferDynamicCount, uint32_t combinedImageSamplerCount, uint32_t storageImageCount, uint32_t sampledImageCount, uint32_t maxSets, VkDescriptorPool * o_descriptorPool)
+//TODO: Replace dynamic buffers (vulkan's concept) with root descriptors (from DX12)
+
+void CreateDescriptorPool(uint32_t uniformBuffersCount, uint32_t uniformBufferDynamicCount, uint32_t combinedImageSamplerCount, uint32_t storageImageCount, uint32_t sampledImageCount, uint32_t maxSets, VkDescriptorPool * o_descriptorPool)
 {
 	std::array<VkDescriptorPoolSize, 5> poolSizes = {};
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -29,25 +31,25 @@ void createDescriptorPool(uint32_t uniformBuffersCount, uint32_t uniformBufferDy
 		throw std::runtime_error("failed to create descriptor pool!");
 }
 
-void CreateDescriptorSets( VkDescriptorPool descriptorPool, size_t count, VkDescriptorSetLayout * descriptorSetLayouts, VkDescriptorSet* o_descriptorSets)
+void CreateDescriptorTables( GfxDescriptorPool descriptorPool, uint32_t count, GfxDescriptorTableLayout * descriptorSetLayouts, GfxDescriptorTable* o_descriptorSets)
 {
 	VkDescriptorSetAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	allocInfo.descriptorPool = descriptorPool;
-	allocInfo.descriptorSetCount = static_cast< uint32_t >(count);
+	allocInfo.descriptorSetCount = count;
 	allocInfo.pSetLayouts = descriptorSetLayouts;
 
 	if( vkAllocateDescriptorSets( g_vk.device.device, &allocInfo, o_descriptorSets ) != VK_SUCCESS )
 		throw std::runtime_error( "failed to allocate descriptor sets!" );
 }
 
-void UpdateDescriptorSets( size_t writeDescriptorSetsCount, const WriteDescriptorSet* writeDescriptorSets, VkDescriptorSet* descriptorSets )
+void UpdateDescriptorTables( size_t writeDescriptorSetsCount, const WriteDescriptorTable* writeDescriptorSets, GfxDescriptorTable* descriptorSets )
 {
 	std::vector<VkWriteDescriptorSet> vkWriteDescriptorSets;
 	for( uint32_t i = 0; i < writeDescriptorSetsCount; ++i )
 	{
 		VkDescriptorSet descriptorSet = descriptorSets[i];
-		const WriteDescriptorSet* writeDescriptorSet = &writeDescriptorSets[i];
+		const WriteDescriptorTable* writeDescriptorSet = &writeDescriptorSets[i];
 		for( uint32_t j = 0; j < writeDescriptorSet->count; ++j )
 		{
 			const WriteDescriptor* writeDescriptor = &writeDescriptorSet->writeDescriptors[j];
@@ -69,7 +71,7 @@ void UpdateDescriptorSets( size_t writeDescriptorSetsCount, const WriteDescripto
 	vkUpdateDescriptorSets( g_vk.device.device, static_cast< uint32_t >(vkWriteDescriptorSets.size()), vkWriteDescriptorSets.data(), 0, nullptr );
 }
 
-void CreateDesciptorSetLayout( const VkDescriptorSetLayoutBinding* bindings, uint32_t count, VkDescriptorSetLayout* o_layout )
+void CreateDesciptorTableLayout( const VkDescriptorSetLayoutBinding* bindings, uint32_t count, GfxDescriptorTableLayout* o_layout )
 {
 	VkDescriptorSetLayoutCreateInfo layoutInfo = {};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -79,4 +81,39 @@ void CreateDesciptorSetLayout( const VkDescriptorSetLayoutBinding* bindings, uin
 	//Describe complete set of resources available (image, sampler, ubo, constants, ...)
 	if (vkCreateDescriptorSetLayout(g_vk.device.device, &layoutInfo, nullptr, o_layout) != VK_SUCCESS)
 		throw std::runtime_error("failed to create descriptor set layout!");
+}
+
+GfxDescriptorTableLayoutBinding CreateDescriptorTableLayoutBinding( uint32_t descriptorBindingSlot, GfxShaderStageFlags descriptorStageFlags, eDescriptorType descriptorType, eDescriptorAccess descriptorAccess, uint32_t descriptorCount )
+{
+	VkDescriptorSetLayoutBinding layoutBinding;
+
+	layoutBinding.binding = descriptorBindingSlot;
+	layoutBinding.descriptorCount = descriptorCount;
+	layoutBinding.descriptorType = DescriptorTypeToVkType( descriptorType, descriptorAccess );
+	layoutBinding.stageFlags = ToVkShaderStageFlags( descriptorStageFlags );
+	layoutBinding.pImmutableSamplers = nullptr;
+
+	return layoutBinding;
+}
+
+VkDescriptorType DescriptorTypeToVkType( eDescriptorType type, eDescriptorAccess access )
+{
+	bool write = access == eDescriptorAccess::WRITE;
+	switch( type )
+	{
+	case eDescriptorType::BUFFER:
+		return write ? VK_DESCRIPTOR_TYPE_STORAGE_BUFFER : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	case eDescriptorType::BUFFER_DYNAMIC:
+		return write ? VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+	case eDescriptorType::IMAGE:
+		return write ? VK_DESCRIPTOR_TYPE_STORAGE_IMAGE : VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+	case eDescriptorType::SAMPLER:
+		assert( !write );
+		return VK_DESCRIPTOR_TYPE_SAMPLER;
+	case eDescriptorType::IMAGE_SAMPLER:
+		assert( !write );
+		return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	default:
+		throw std::runtime_error( "Unknown descriptor type" );
+	}
 }

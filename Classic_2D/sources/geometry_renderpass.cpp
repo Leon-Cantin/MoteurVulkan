@@ -9,19 +9,19 @@
 GpuPipelineLayout GetGeoPipelineLayout()
 {
 	GpuPipelineLayout pipelineLayout = {};
-	pipelineLayout.pushConstantRanges.resize( 1 );
+	pipelineLayout.RootConstantRanges.resize( 1 );
 
-	VkPushConstantRange pushConstantRange = {};
-	pipelineLayout.pushConstantRanges[0].offset = 0;
-	pipelineLayout.pushConstantRanges[0].size = sizeof( uint32_t );
-	pipelineLayout.pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	pipelineLayout.RootConstantRanges[0] = {};
+	pipelineLayout.RootConstantRanges[0].offset = 0;
+	pipelineLayout.RootConstantRanges[0].count = 1;
+	pipelineLayout.RootConstantRanges[0].stageFlags = GFX_SHADER_STAGE_FRAGMENT_BIT;
 	
 	return pipelineLayout;
 }
 
-GpuPipelineState GetGeoPipelineState()
+GpuPipelineStateDesc GetGeoPipelineState()
 {
-	GpuPipelineState gpuPipelineState = {};
+	GpuPipelineStateDesc gpuPipelineState = {};
 	GetBindingDescription( VIBindings_PosColUV, &gpuPipelineState.viState );
 
 	gpuPipelineState.shaders = {

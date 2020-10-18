@@ -119,7 +119,7 @@ static FG::RenderPassCreationData FG_Geometry_CreateGraphNode( const Swapchain* 
 	frameGraphNode->RecordDrawCommands = GeometryRecordDrawCommandsBuffer;
 
 	frameGraphNode->gpuPipelineLayout = GetGeoPipelineLayout();
-	frameGraphNode->gpuPipelineState = GetGeoPipelineState();
+	frameGraphNode->gpuPipelineStateDesc = GetGeoPipelineState();
 	frameGraphNode->descriptorSets.push_back( geoPassSetDesc );
 	frameGraphNode->descriptorSets.push_back( geoInstanceSetDesc );
 
@@ -147,7 +147,7 @@ static FG::RenderPassCreationData FG_TextOverlay_CreateGraphNode( const Swapchai
 	frameGraphNode->RecordDrawCommands = TextRecordDrawCommandsBuffer;
 
 	frameGraphNode->gpuPipelineLayout = GetTextPipelineLayout();
-	frameGraphNode->gpuPipelineState = GetTextPipelineState();
+	frameGraphNode->gpuPipelineStateDesc = GetTextPipelineState();
 	//TODO: we don't need one set per frame for this one
 	frameGraphNode->descriptorSets.push_back( textPassSet );
 
@@ -186,9 +186,9 @@ GpuPipelineLayout GetCopyPipelineLayout()
 	return GpuPipelineLayout();
 }
 
-GpuPipelineState GetCopyPipelineState()
+GpuPipelineStateDesc GetCopyPipelineState()
 {
-	GpuPipelineState gpuPipelineState = {};
+	GpuPipelineStateDesc gpuPipelineState = {};
 	GetBindingDescription( VIBindings_PosColUV, &gpuPipelineState.viState );//unused
 
 	gpuPipelineState.shaders = {
@@ -220,7 +220,7 @@ static FG::RenderPassCreationData FG_Copy_CreateGraphNode( const Swapchain* swap
 	frameGraphNode->RecordDrawCommands = CopyRecordDrawCommandsBuffer;
 
 	frameGraphNode->gpuPipelineLayout = GpuPipelineLayout();
-	frameGraphNode->gpuPipelineState = GetCopyPipelineState();
+	frameGraphNode->gpuPipelineStateDesc = GetCopyPipelineState();
 	//TODO: generalize instance and pass set into an array of binding point and set
 	frameGraphNode->descriptorSets.push_back( copyPassSet );
 
