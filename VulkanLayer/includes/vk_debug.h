@@ -8,6 +8,8 @@ void MarkVkObject(uint64_t object, VkObjectType objetType, const char * name);
 void MarkGfxObject( GfxApiImage image, const char * name );
 void MarkGfxObject( GfxImageView imageView, const char * name );
 void MarkGfxObject( GfxApiSampler sampler, const char * name );
+void MarkGfxObject( GfxFence fence, const char * name );
+void MarkGfxObject( GfxSemaphore semaphore, const char * name );
 
 void CmdBeginLabel(VkCommandBuffer commandBuffer, const char * name, const glm::vec4& color);
 void CmdEndLabel(VkCommandBuffer commandBuffer);

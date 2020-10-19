@@ -27,6 +27,10 @@ typedef VkPhysicalDevice PhysicalDevice;
 
 typedef VkDeviceSize GfxDeviceSize;
 
+typedef VkDevice GfxDevice;
+
+typedef VkCommandPool GfxCommandPool;
+
 struct Queue
 {
 	VkQueue queue = VK_NULL_HANDLE;
@@ -233,24 +237,24 @@ typedef uint8_t VIDataType;
 
 typedef VkPipelineStageFlags GfxPipelineStageFlag;
 
-enum class GfxPipelineStageFlagBits : GfxPipelineStageFlag {
-	TOP_OF_PIPE = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-	DRAW_INDIRECT = VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
-	VERTEX_INPUT = VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
-	VERTEX_SHADER = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-	TESSELLATION_CONTROL_SHADER = VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT,
-	TESSELLATION_EVALUATION_SHADER = VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT,
-	GEOMETRY_SHADER = VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT,
-	FRAGMENT_SHADER = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-	EARLY_FRAGMENT_TESTS = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-	LATE_FRAGMENT_TESTS = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-	COLOR_ATTACHMENT_OUTPUT = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-	COMPUTE_SHADER = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-	TRANSFER = VK_PIPELINE_STAGE_TRANSFER_BIT,
-	BOTTOM_OF_PIPE = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-	HOST = VK_PIPELINE_STAGE_HOST_BIT,
-	ALL_GRAPHICS = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-	ALL_COMMANDS = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+enum GfxPipelineStageFlagBits : GfxPipelineStageFlag {
+	GFX_PIPELINE_STAGE_TOP_OF_PIPE_BIT = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+	GFX_PIPELINE_STAGE_DRAW_INDIRECT_BIT = VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
+	GFX_PIPELINE_STAGE_VERTEX_INPUT_BIT = VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+	GFX_PIPELINE_STAGE_VERTEX_SHADER_BIT = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+	GFX_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT = VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT,
+	GFX_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT = VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT,
+	GFX_PIPELINE_STAGE_GEOMETRY_SHADER_BIT = VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT,
+	GFX_PIPELINE_STAGE_FRAGMENT_SHADER_BIT = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+	GFX_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+	GFX_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+	GFX_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+	GFX_PIPELINE_STAGE_COMPUTE_SHADER_BIT = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+	GFX_PIPELINE_STAGE_TRANSFER_BIT = VK_PIPELINE_STAGE_TRANSFER_BIT,
+	GFX_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+	GFX_PIPELINE_STAGE_HOST_BIT = VK_PIPELINE_STAGE_HOST_BIT,
+	GFX_PIPELINE_STAGE_ALL_GRAPHICS_BIT = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+	GFX_PIPELINE_STAGE_ALL_COMMANDS_BIT = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 };
 
 typedef VkQueryPool GfxTimeStampQueryPool;
@@ -540,14 +544,45 @@ void Destroy( GfxDescriptorTable* descriptorTables, uint32_t count, GfxDescripto
 void CmdBindPipeline( VkCommandBuffer commandBuffer, GfxPipelineBindPoint pipelineBindPoint, GfxPipeline pipeline );
 void CmdBindDescriptorTable( VkCommandBuffer commandBuffer, GfxPipelineBindPoint pipelineBindPoint, GfxPipelineLayout pipelineLayout, uint32_t rootBindingPoint, GfxDescriptorTable descriptorTable );
 
+typedef VkSemaphore GfxSemaphore;
+bool CreateGfxSemaphore( GfxSemaphore* pSemaphore );
+void DestroyGfxSemaphore( GfxSemaphore* pSemaphore );
+
+typedef VkFence GfxFence;
+bool CreateGfxFence( GfxFence* pFence );
+void DestroyGfxFence( GfxFence* pFence );
+void ResetGfxFences( const GfxFence* pFences, uint32_t fencesCount );
+void WaitForFence( const GfxFence* pFences, uint32_t fenceCount, uint64_t timeoutNS );
+void WaitForFence( const GfxFence* pFences, uint32_t fenceCount );
+
+bool QueueSubmit( VkQueue queue, VkCommandBuffer* commandBuffers, uint32_t commandBuffersCount, GfxSemaphore* pWaitSemaphores, GfxPipelineStageFlag* waitDstStageMask, uint32_t waitSemaphoresCount, GfxSemaphore* pSignalSemaphores, uint32_t signalSemaphoresCount, GfxFence signalFence );
+
+typedef VkSwapchainKHR GfxSwapchain;
+typedef VkResult GfxSwapchainOperationResult;
+struct GfxSwapchainImage
+{
+	VkSwapchainKHR swapchain;
+	uint32_t imageIndex;
+};
+
+bool SwapchainImageIsValid( GfxSwapchainOperationResult result );
+GfxSwapchainOperationResult AcquireNextSwapchainImage( GfxSwapchain swapchain, GfxSemaphore signalSemaphore, GfxSwapchainImage* swapchainImage );
+GfxSwapchainOperationResult QueuePresent( VkQueue presentQueue, const GfxSwapchainImage& swapchainImage, GfxSemaphore* pWaitSemaphores, uint32_t waitSemaphoresCount );
+
+void CmdBindVertexInputs( VkCommandBuffer commandBuffer, GfxApiBuffer* pVertexBuffers, uint32_t firstBinding, uint32_t vertexBuffersCount, GfxDeviceSize* pBufferOffsets );
+void CmdBindIndexBuffer( VkCommandBuffer commandBuffer, GfxApiBuffer buffer, GfxDeviceSize bufferOffset, GfxIndexType indexType );
+void CmdDrawIndexed( VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance );
+
+void DeviceWaitIdle( GfxDevice device );
+
 struct Vk_Globals {
 	GpuInstance instance = {};
 	PhysicalDevice physicalDevice = VK_NULL_HANDLE;
 	Device device = {};
-	VkCommandPool graphicsSingleUseCommandPool = VK_NULL_HANDLE;
-	VkCommandPool graphicsCommandPool = VK_NULL_HANDLE;
-	VkCommandPool computeCommandPool = VK_NULL_HANDLE;
-	VkCommandPool transferCommandPool = VK_NULL_HANDLE;
+	GfxCommandPool graphicsSingleUseCommandPool = VK_NULL_HANDLE;
+	GfxCommandPool graphicsCommandPool = VK_NULL_HANDLE;
+	GfxCommandPool computeCommandPool = VK_NULL_HANDLE;
+	GfxCommandPool transferCommandPool = VK_NULL_HANDLE;
 };
 
 extern Vk_Globals g_vk;

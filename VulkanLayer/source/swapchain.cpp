@@ -44,7 +44,7 @@ VkExtent2D choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities, uint
 	}
 }
 
-void createSwapChain(VkSurfaceKHR vkSurface, uint32_t maxWidth, uint32_t maxHeight, Swapchain& o_swapchain)
+void CreateSwapChain(VkSurfaceKHR vkSurface, uint32_t maxWidth, uint32_t maxHeight, Swapchain& o_swapchain)
 {
 	SwapChainSupportDetails swapChainSupport = query_swap_chain_support(g_vk.physicalDevice, vkSurface);
 
@@ -85,13 +85,13 @@ void createSwapChain(VkSurfaceKHR vkSurface, uint32_t maxWidth, uint32_t maxHeig
 	create_info.clipped = VK_TRUE;
 	create_info.oldSwapchain = VK_NULL_HANDLE;
 
-	if (vkCreateSwapchainKHR(g_vk.device.device, &create_info, nullptr, &o_swapchain.vkSwapchain) != VK_SUCCESS)
+	if (vkCreateSwapchainKHR(g_vk.device.device, &create_info, nullptr, &o_swapchain.swapchain) != VK_SUCCESS)
 		throw std::runtime_error("failed to create swap chain!");
 
 	//Query swap chain images
-	vkGetSwapchainImagesKHR( g_vk.device.device, o_swapchain.vkSwapchain, &image_count, nullptr);
+	vkGetSwapchainImagesKHR( g_vk.device.device, o_swapchain.swapchain, &image_count, nullptr);
 	std::vector<VkImage> swapChainImages(image_count);
-	vkGetSwapchainImagesKHR( g_vk.device.device, o_swapchain.vkSwapchain, &image_count, swapChainImages.data());
+	vkGetSwapchainImagesKHR( g_vk.device.device, o_swapchain.swapchain, &image_count, swapChainImages.data());
 
 	VkFormat swapchainFormat = surfaceFormat.format;
 
@@ -108,6 +108,14 @@ void createSwapChain(VkSurfaceKHR vkSurface, uint32_t maxWidth, uint32_t maxHeig
 	}
 }
 
+void Destroy( Swapchain* swapchain )
+{
+	for( auto image : swapchain->images )
+		Destroy( &image.imageView );
+
+	vkDestroySwapchainKHR( g_vk.device.device, swapchain->swapchain, nullptr );
+	swapchain->swapchain = VK_NULL_HANDLE;
+}
 
 SwapChainSupportDetails query_swap_chain_support( VkPhysicalDevice device, VkSurfaceKHR surface ) {
 	SwapChainSupportDetails details;

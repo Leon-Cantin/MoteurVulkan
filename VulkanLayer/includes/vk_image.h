@@ -24,3 +24,4 @@ GfxImageView CreateCubeImageView( const GfxImage& parentImage );
 GfxImageView CreateImageView( const GfxImage& parentImage );
 
 void DestroyImage( GfxImage* image );
+void Destroy( GfxImageView* imageView );

@@ -56,6 +56,16 @@ void MarkGfxObject( GfxApiSampler sampler, const char * name )
 	MarkVkObject( ( uint64_t )sampler, VK_OBJECT_TYPE_SAMPLER, name );
 }
 
+void MarkGfxObject( GfxFence fence, const char * name )
+{
+	MarkVkObject( ( uint64_t )fence, VK_OBJECT_TYPE_FENCE, name );
+}
+
+void MarkGfxObject( GfxSemaphore semaphore, const char * name )
+{
+	MarkVkObject( ( uint64_t )semaphore, VK_OBJECT_TYPE_SEMAPHORE, name );
+}
+
 void CmdBeginLabel(VkCommandBuffer commandBuffer, const char * name, const glm::vec4& color)
 {
 	if (vkCmdBeginDebugUtilsLabelEXT_func == VK_NULL_HANDLE)

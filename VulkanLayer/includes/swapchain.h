@@ -5,13 +5,14 @@
 struct Swapchain {
 	std::vector<GfxImage> images;
 	uint32_t imageCount;
-	VkSwapchainKHR vkSwapchain;
+	GfxSwapchain swapchain;
 	GfxSurfaceFormat surfaceFormat;
 	VkPresentModeKHR presentMode;
 	VkExtent2D extent;
 };
 
-void createSwapChain(VkSurfaceKHR vkSurface, uint32_t maxWidth, uint32_t maxHeight, Swapchain& o_swapchain);
+void CreateSwapChain(VkSurfaceKHR vkSurface, uint32_t maxWidth, uint32_t maxHeight, Swapchain& o_swapchain);
+void Destroy( Swapchain* Swapchain );
 
 struct SwapChainSupportDetails {
 	VkSurfaceCapabilitiesKHR capabilities;

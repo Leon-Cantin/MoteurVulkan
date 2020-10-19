@@ -38,8 +38,9 @@ Device CreateDevice( CreateDeviceData createDeviceData );*/
 
 VkCommandBuffer beginSingleTimeCommands();
 void endSingleTimeCommands(VkCommandBuffer commandBuffer);
-void CreateSingleUseCommandPool(uint32_t queueFamilyIndex, VkCommandPool* o_commandPool);
-void CreateCommandPool(uint32_t queueFamilyIndex, VkCommandPool* o_commandPool);
+void CreateSingleUseCommandPool(uint32_t queueFamilyIndex, GfxCommandPool* o_commandPool);
+void CreateCommandPool(uint32_t queueFamilyIndex, GfxCommandPool* o_commandPool);
+void Destroy( GfxCommandPool* commandPool );
 
 void BeginCommandBufferRecording(VkCommandBuffer commandBuffer);
 void EndCommandBufferRecording(VkCommandBuffer commandBuffer);

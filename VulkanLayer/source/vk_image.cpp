@@ -257,9 +257,15 @@ GfxImageView CreateImageView( const GfxImage& parentImage )
 	return CreateImageView( parentImage.image, format, VK_IMAGE_VIEW_TYPE_2D, GetAspectFlags( format ), parentImage.mipLevels, 1 );
 }
 
+void Destroy( GfxImageView* imageView )
+{
+	vkDestroyImageView( g_vk.device.device, *imageView, nullptr );
+	imageView = VK_NULL_HANDLE;
+}
+
 void DestroyImage( GfxImage* image )
 {
-	vkDestroyImageView( g_vk.device.device, image->imageView, nullptr );
+	Destroy( &image->imageView );
 	vkDestroyImage( g_vk.device.device, image->image, nullptr );
 	destroy_gfx_memory( &image->gfx_mem_alloc );
 	image = {};
