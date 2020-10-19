@@ -43,7 +43,7 @@ GpuPipelineStateDesc GetGeoPipelineState()
 
 void CmdBeginGeometryRenderPass(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t currentFrame, const RenderPass * renderpass, const Technique * technique)
 {
-	CmdBeginVkLabel(commandBuffer, "Geometry renderpass", glm::vec4(0.8f, 0.6f, 0.4f, 1.0f));
+	CmdBeginLabel(commandBuffer, "Geometry renderpass", glm::vec4(0.8f, 0.6f, 0.4f, 1.0f));
 	const FrameBuffer& frameBuffer = renderpass->outputFrameBuffer[currentFrame];
 	BeginRenderPass(commandBuffer, *renderpass, frameBuffer );
 
@@ -53,7 +53,7 @@ void CmdBeginGeometryRenderPass(VkCommandBuffer commandBuffer, VkExtent2D extent
 void CmdEndGeometryRenderPass(VkCommandBuffer vkCommandBuffer)
 {
 	EndRenderPass(vkCommandBuffer);
-	CmdEndVkLabel(vkCommandBuffer);
+	CmdEndLabel(vkCommandBuffer);
 }
 
 static void CmdDrawModelAsset( VkCommandBuffer commandBuffer, const DrawListEntry* drawModel, uint32_t currentFrame, const Technique* technique )

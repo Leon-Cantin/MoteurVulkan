@@ -55,20 +55,17 @@ GpuPipelineStateDesc GetTextPipelineState()
 
 static void CmdDrawText( VkCommandBuffer commandBuffer, VkExtent2D extent, size_t frameIndex, const RenderPass * renderpass, const Technique * technique )
 {
-	CmdBeginVkLabel(commandBuffer, "Text overlay Renderpass", glm::vec4(0.6f, 0.6f, 0.6f, 1.0f));
+	CmdBeginLabel(commandBuffer, "Text overlay Renderpass", glm::vec4(0.6f, 0.6f, 0.6f, 1.0f));
 	const FrameBuffer& frameBuffer = renderpass->outputFrameBuffer[frameIndex];
 	BeginRenderPass(commandBuffer, *renderpass, frameBuffer);
 
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipeline );
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, RENDERPASS_SET, 1, &technique->descriptor_sets[RENDERPASS_SET].hw_descriptorSets[0], 0, nullptr);
+	CmdBindPipeline( commandBuffer, GfxPipelineBindPoint::GRAPHICS, technique->pipeline );
+	CmdBindDescriptorTable( commandBuffer, GfxPipelineBindPoint::GRAPHICS, technique->pipelineLayout, RENDERPASS_SET, technique->descriptor_sets[RENDERPASS_SET].hw_descriptorSets[0] );
 
-	CmdBindVertexInputs( commandBuffer, VIBindings_PosColUV, textModel );
-	vkCmdBindIndexBuffer( commandBuffer, textModel.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-
-	vkCmdDrawIndexed(commandBuffer, currentTextCharCount * indexesPerChar, 1, 0, 0, 0);
+	CmdDrawIndexed( commandBuffer, VIBindings_PosColUV, textModel, currentTextCharCount * indexesPerChar );
 
 	EndRenderPass(commandBuffer);
-	CmdEndVkLabel(commandBuffer);
+	CmdEndLabel(commandBuffer);
 }
 
 void UpdateText( const TextZone * textZones, size_t textZonesCount, VkExtent2D surfaceExtent)
@@ -131,7 +128,7 @@ void UpdateText( const TextZone * textZones, size_t textZonesCount, VkExtent2D s
 		}
 	}
 
-	VkDeviceSize bufferSize = sizeof( text_vertex_positions[0] ) * text_vertex_positions.size();
+	GfxDeviceSize bufferSize = sizeof( text_vertex_positions[0] ) * text_vertex_positions.size();
 	UpdateGpuBuffer( &GetVertexInput( textModel, eVIDataType::POSITION )->buffer, text_vertex_positions.data(), bufferSize, 0 );
 
 	bufferSize = sizeof( text_vertex_color[0] ) * text_vertex_color.size();
@@ -142,6 +139,8 @@ void UpdateText( const TextZone * textZones, size_t textZonesCount, VkExtent2D s
 
 	bufferSize = sizeof(text_indices[0]) * text_indices.size();
 	UpdateGpuBuffer( &textModel.indexBuffer, text_indices.data(), bufferSize, 0 );
+
+	//textModel.indexCount = currentTextCharCount * indexesPerChar;
 }
 
 void CreateTextVertexBuffer(size_t maxCharCount)

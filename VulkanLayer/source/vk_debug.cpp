@@ -56,7 +56,7 @@ void MarkGfxObject( GfxApiSampler sampler, const char * name )
 	MarkVkObject( ( uint64_t )sampler, VK_OBJECT_TYPE_SAMPLER, name );
 }
 
-void CmdBeginVkLabel(VkCommandBuffer commandBuffer, const char * name, const glm::vec4& color)
+void CmdBeginLabel(VkCommandBuffer commandBuffer, const char * name, const glm::vec4& color)
 {
 	if (vkCmdBeginDebugUtilsLabelEXT_func == VK_NULL_HANDLE)
 		AcquireDebugUtilsFunc< PFN_vkCmdBeginDebugUtilsLabelEXT>(&vkCmdBeginDebugUtilsLabelEXT_func, "vkCmdBeginDebugUtilsLabelEXT");
@@ -71,7 +71,7 @@ void CmdBeginVkLabel(VkCommandBuffer commandBuffer, const char * name, const glm
 	vkCmdBeginDebugUtilsLabelEXT_func(commandBuffer, &info);
 }
 
-void CmdEndVkLabel(VkCommandBuffer commandBuffer)
+void CmdEndLabel(VkCommandBuffer commandBuffer)
 {
 	if (vkCmdEndDebugUtilsLabelEXT_func == VK_NULL_HANDLE)
 		AcquireDebugUtilsFunc< PFN_vkCmdEndDebugUtilsLabelEXT>(&vkCmdEndDebugUtilsLabelEXT_func, "vkCmdEndDebugUtilsLabelEXT");

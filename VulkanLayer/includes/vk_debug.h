@@ -9,8 +9,8 @@ void MarkGfxObject( GfxApiImage image, const char * name );
 void MarkGfxObject( GfxImageView imageView, const char * name );
 void MarkGfxObject( GfxApiSampler sampler, const char * name );
 
-void CmdBeginVkLabel(VkCommandBuffer commandBuffer, const char * name, const glm::vec4& color);
-void CmdEndVkLabel(VkCommandBuffer commandBuffer);
+void CmdBeginLabel(VkCommandBuffer commandBuffer, const char * name, const glm::vec4& color);
+void CmdEndLabel(VkCommandBuffer commandBuffer);
 void CmdInsertVkLabel(VkCommandBuffer commandBuffer, const char * name, const glm::vec4& color);
 
 void QueueBeginVkLabel(VkQueue queue, const char * name, const glm::vec4& color);

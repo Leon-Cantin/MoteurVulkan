@@ -168,7 +168,7 @@ void CopyRecordDrawCommandsBuffer( uint32_t currentFrame, const SceneFrameData* 
 {
 	//TODO: we don't need extent, it's implicit by the framebuffer
 	//TODO: don't let this code choose with "currentFrame" it doesn't need to know that.
-	CmdBeginVkLabel( graphicsCommandBuffer, "Copy Renderpass", glm::vec4( 0.8f, 0.8f, 0.8f, 1.0f ) );
+	CmdBeginLabel( graphicsCommandBuffer, "Copy Renderpass", glm::vec4( 0.8f, 0.8f, 0.8f, 1.0f ) );
 	const FrameBuffer& frameBuffer = renderpass->outputFrameBuffer[currentFrame];
 	BeginRenderPass( graphicsCommandBuffer, *renderpass, frameBuffer );
 
@@ -178,7 +178,7 @@ void CopyRecordDrawCommandsBuffer( uint32_t currentFrame, const SceneFrameData* 
 	vkCmdDraw( graphicsCommandBuffer, 4, 1, 0, 0 );
 
 	EndRenderPass( graphicsCommandBuffer );
-	CmdEndVkLabel( graphicsCommandBuffer );
+	CmdEndLabel( graphicsCommandBuffer );
 }
 
 GpuPipelineLayout GetCopyPipelineLayout()
