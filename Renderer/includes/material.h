@@ -9,8 +9,8 @@ struct GfxDescriptorSetBinding
 {
 	std::array< GfxDescriptorTable, SIMULTANEOUS_FRAMES> hw_descriptorSets;
 	//TODO: something to manage and generate descriptor sets. Passes can register to use one of many descriptor set layout
-	VkDescriptorSetLayout hw_layout;
-	GfxDescriptorSetDesc desc;
+	GfxDescriptorTableLayout hw_layout;
+	GfxDescriptorTableDesc desc;
 	bool isValid = false;
 };
 
@@ -19,7 +19,7 @@ struct Technique
 	std::array< GfxDescriptorSetBinding, 8 > descriptor_sets;
 
 	GfxPipelineLayout pipelineLayout;
-	VkPipeline pipeline;
+	GfxPipeline pipeline;
 
 	VkDescriptorPool parentDescriptorPool;
 };

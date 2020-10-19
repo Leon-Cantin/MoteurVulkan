@@ -6,4 +6,4 @@
 #include <vector>
 
 uint32_t GetBindingDescription( const std::vector<VIBinding>& VIBindings, VIState* o_viState );
-void CreatePipeline( const GpuPipelineStateDesc& gpuPipelineDesc, const RenderPass& renderPass, GfxPipelineLayout pipelineLayout, VkPipeline* o_pipeline );
+void CreatePipeline( const GpuPipelineStateDesc& gpuPipelineDesc, const RenderPass& renderPass, GfxPipelineLayout pipelineLayout, GfxPipeline* o_pipeline );

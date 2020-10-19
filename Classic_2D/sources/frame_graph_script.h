@@ -84,7 +84,7 @@ inline GfxImageSamplerCombined* GetImage( const GpuInputData* buffers, eTechniqu
 	return GetImage( buffers, static_cast< uint32_t >(id) );
 }
 
-GfxDescriptorSetDesc geoPassSetDesc =
+GfxDescriptorTableDesc geoPassSetDesc =
 {
 	RENDERPASS_SET,
 	{
@@ -94,11 +94,11 @@ GfxDescriptorSetDesc geoPassSetDesc =
 	}
 };
 
-GfxDescriptorSetDesc geoInstanceSetDesc =
+GfxDescriptorTableDesc geoInstanceSetDesc =
 {
 	INSTANCE_SET,
 	{
-		{ static_cast< uint32_t >(eTechniqueDataEntryName::INSTANCE_DATA), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
+		{ static_cast< uint32_t >(eTechniqueDataEntryName::INSTANCE_DATA), 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_VERTEX_BIT | GFX_SHADER_STAGE_FRAGMENT_BIT }
 	}
 };
 
@@ -126,11 +126,11 @@ static FG::RenderPassCreationData FG_Geometry_CreateGraphNode( const Swapchain* 
 	return renderPassCreationData;
 }
 
-GfxDescriptorSetDesc textPassSet =
+GfxDescriptorTableDesc textPassSet =
 {
 	RENDERPASS_SET,
 	{
-		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::TEXT), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_FRAGMENT_BIT }
+		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::TEXT), 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_FRAGMENT_BIT }
 	}
 };
 
@@ -154,11 +154,11 @@ static FG::RenderPassCreationData FG_TextOverlay_CreateGraphNode( const Swapchai
 	return renderPassCreationData;
 }
 
-GfxDescriptorSetDesc copyPassSet =
+GfxDescriptorTableDesc copyPassSet =
 {
 	RENDERPASS_SET,
 	{
-		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::SCENE_COLOR), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_FRAGMENT_BIT }
+		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::SCENE_COLOR), 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_FRAGMENT_BIT }
 	}
 };
 
@@ -192,8 +192,8 @@ GpuPipelineStateDesc GetCopyPipelineState()
 	GetBindingDescription( VIBindings_PosColUV, &gpuPipelineState.viState );//unused
 
 	gpuPipelineState.shaders = {
-		{ FS::readFile( "shaders/copy.vert.spv" ), "main", VK_SHADER_STAGE_VERTEX_BIT },
-		{ FS::readFile( "shaders/copy.frag.spv" ), "main", VK_SHADER_STAGE_FRAGMENT_BIT } };
+		{ FS::readFile( "shaders/copy.vert.spv" ), "main", GFX_SHADER_STAGE_VERTEX_BIT },
+		{ FS::readFile( "shaders/copy.frag.spv" ), "main", GFX_SHADER_STAGE_FRAGMENT_BIT } };
 
 	gpuPipelineState.rasterizationState.backFaceCulling = false;
 	gpuPipelineState.rasterizationState.depthBiased = false;
@@ -202,7 +202,7 @@ GpuPipelineStateDesc GetCopyPipelineState()
 	gpuPipelineState.depthStencilState.depthWrite = false;
 
 	gpuPipelineState.blendEnabled = false;
-	gpuPipelineState.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+	gpuPipelineState.primitiveTopology = GfxPrimitiveTopology::TRIANGLE_STRIP;
 	return gpuPipelineState;
 }
 

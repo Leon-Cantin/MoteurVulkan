@@ -11,20 +11,20 @@
 //Don't recall this if the technique is the same
 void BeginTechnique( VkCommandBuffer commandBuffer, const Technique* technique, size_t currentFrame )
 {
-	vkCmdBindPipeline( commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipeline );
-	vkCmdBindDescriptorSets( commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, RENDERPASS_SET, 1, &technique->descriptor_sets[RENDERPASS_SET].hw_descriptorSets[currentFrame], 0, nullptr );
+	CmdBindPipeline( commandBuffer, GfxPipelineBindPoint::GRAPHICS, technique->pipeline );
+	CmdBindDescriptorTable( commandBuffer, GfxPipelineBindPoint::GRAPHICS, technique->pipelineLayout, RENDERPASS_SET, technique->descriptor_sets[RENDERPASS_SET].hw_descriptorSets[currentFrame] );
 }
 
 void Destroy( Technique* technique )
 {
-	vkDestroyPipeline( g_vk.device.device, technique->pipeline, nullptr );
-	vkDestroyPipelineLayout( g_vk.device.device, technique->pipelineLayout, nullptr );
+	Destroy( &technique->pipeline );
+	Destroy( &technique->pipelineLayout );
 	for( GfxDescriptorSetBinding& setBinding : technique->descriptor_sets )
 	{
 		if( setBinding.isValid )
 		{
-			vkDestroyDescriptorSetLayout( g_vk.device.device, setBinding.hw_layout, nullptr );
-			vkFreeDescriptorSets( g_vk.device.device, technique->parentDescriptorPool, setBinding.hw_descriptorSets.size(), setBinding.hw_descriptorSets.data() );
+			Destroy( &setBinding.hw_layout );
+			Destroy( setBinding.hw_descriptorSets.data(), setBinding.hw_descriptorSets.size(), technique->parentDescriptorPool );
 		}
 	}
 }

@@ -38,18 +38,18 @@ GpuPipelineStateDesc GetTextPipelineState()
 	GetBindingDescription( VIBindings_PosColUV, &gpuPipelineState.viState );
 
 	gpuPipelineState.shaders = {
-		{ FS::readFile( "shaders/text.vert.spv" ), "main", VK_SHADER_STAGE_VERTEX_BIT },
-		{ FS::readFile( "shaders/text.frag.spv" ), "main", VK_SHADER_STAGE_FRAGMENT_BIT } };
+		{ FS::readFile( "shaders/text.vert.spv" ), "main", GFX_SHADER_STAGE_VERTEX_BIT },
+		{ FS::readFile( "shaders/text.frag.spv" ), "main", GFX_SHADER_STAGE_FRAGMENT_BIT } };
 
 	gpuPipelineState.rasterizationState.backFaceCulling = false;
 	gpuPipelineState.rasterizationState.depthBiased = false;
 
 	gpuPipelineState.depthStencilState.depthRead = false;
 	gpuPipelineState.depthStencilState.depthWrite = false;
-	gpuPipelineState.depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS;
+	gpuPipelineState.depthStencilState.depthCompareOp = GfxCompareOp::LESS;
 
 	gpuPipelineState.blendEnabled = true;
-	gpuPipelineState.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	gpuPipelineState.primitiveTopology = GfxPrimitiveTopology::TRIANGLE_LIST;
 	return gpuPipelineState;
 }
 

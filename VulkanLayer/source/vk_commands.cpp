@@ -109,3 +109,19 @@ void CmdBlitImage( VkCommandBuffer commandBuffer, GfxApiImage srcImage, int32_t 
 	CmdBlitImage( commandBuffer, srcImage, srcX1, srcY1, srcZ1, srcX2, srcY2, srcZ2, srcMipLevel, GfxLayout::TRANSFER, GfxAccess::READ,
 		dstImage, dstX1, dstY1, dstZ1, dstX2, dstY2, dstZ2, dstMipLevel, GfxLayout::TRANSFER, GfxAccess::WRITE, filter );
 }
+
+void CmdBindRootDescriptor( VkCommandBuffer commandBuffer, GfxPipelineBindPoint pipelineBindPoint, GfxPipelineLayout pipelineLayout, uint32_t rootBindingPoint, GfxRootDescriptor rootDescriptor, uint32_t bufferOffset )
+{
+	vkCmdBindDescriptorSets( commandBuffer, ToVkPipelineBindPoint(pipelineBindPoint), pipelineLayout, rootBindingPoint, 1,
+		&rootDescriptor, 1, &bufferOffset );
+}
+
+void CmdBindPipeline( VkCommandBuffer commandBuffer, GfxPipelineBindPoint pipelineBindPoint, GfxPipeline pipeline )
+{
+	vkCmdBindPipeline( commandBuffer, ToVkPipelineBindPoint( pipelineBindPoint ), pipeline );
+}
+
+void CmdBindDescriptorTable( VkCommandBuffer commandBuffer, GfxPipelineBindPoint pipelineBindPoint, GfxPipelineLayout pipelineLayout, uint32_t rootBindingPoint, GfxDescriptorTable descriptorTable )
+{
+	vkCmdBindDescriptorSets( commandBuffer, ToVkPipelineBindPoint( pipelineBindPoint ), pipelineLayout, rootBindingPoint, 1, &descriptorTable, 0, nullptr );
+}

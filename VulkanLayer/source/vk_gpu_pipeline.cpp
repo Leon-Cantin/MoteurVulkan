@@ -15,14 +15,14 @@ uint32_t GetBindingDescription( const std::vector<VIBinding>& VIBindings, VIStat
 	return count;
 }
 
-void CreateGfxPipelineLayout( const GfxDescriptorSetDesc* descriptorTablesDescs, const GfxDescriptorTableLayout* descriptorTableLayouts, uint32_t descriptorTablesDescsCount, const GfxRootConstantRange* rootConstantRanges, uint32_t rootConstantRangesCount, GfxPipelineLayout* o_pipelineLayout )
+void CreateGfxPipelineLayout( const GfxDescriptorTableDesc* descriptorTablesDescs, const GfxDescriptorTableLayout* descriptorTableLayouts, uint32_t descriptorTablesDescsCount, const GfxRootConstantRange* rootConstantRanges, uint32_t rootConstantRangesCount, GfxPipelineLayout* o_pipelineLayout )
 {
 	//Order the table layouts in the order they are bound in the pipeline
 	VkDescriptorSetLayout orderedDescriptorTablesLayouts[8];
 	assert( descriptorTablesDescsCount < 8 );
 	for( uint32_t i = 0; i < descriptorTablesDescsCount; ++i )
 	{
-		const GfxDescriptorSetDesc& setDesc = descriptorTablesDescs[i];
+		const GfxDescriptorTableDesc& setDesc = descriptorTablesDescs[i];
 		assert( i == setDesc.id ); //We can't leave any hole in the pilpeline layout
 		orderedDescriptorTablesLayouts[i] = descriptorTableLayouts[setDesc.id];
 	}
@@ -48,7 +48,7 @@ void CreateGfxPipelineLayout( const GfxDescriptorSetDesc* descriptorTablesDescs,
 	}
 }
 
-void CreatePipeline( const GpuPipelineStateDesc& gpuPipelineDesc, const RenderPass& renderPass, GfxPipelineLayout pipelineLayout, VkPipeline* o_pipeline )
+void CreatePipeline( const GpuPipelineStateDesc& gpuPipelineDesc, const RenderPass& renderPass, GfxPipelineLayout pipelineLayout, GfxPipeline* o_pipeline )
 {
 	const VkExtent2D& viewportSize = renderPass.outputFrameBuffer[0].extent;//TODO: temp hack to get a relative size;
 
@@ -64,7 +64,7 @@ void CreatePipeline( const GpuPipelineStateDesc& gpuPipelineDesc, const RenderPa
 	//Input assembly
 	VkPipelineInputAssemblyStateCreateInfo input_assembly = {};
 	input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-	input_assembly.topology = gpuPipelineDesc.primitiveTopology;
+	input_assembly.topology = ToVkPrimitiveTopology( gpuPipelineDesc.primitiveTopology );
 	input_assembly.primitiveRestartEnable = VK_FALSE;
 
 	VkPipelineShaderStageCreateInfo shader_stages[8];
@@ -75,7 +75,7 @@ void CreatePipeline( const GpuPipelineStateDesc& gpuPipelineDesc, const RenderPa
 		VkPipelineShaderStageCreateInfo& shaderStageInfo = shader_stages[shadersCount++];
 		shaderStageInfo = {};
 		shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		shaderStageInfo.stage = gpuPipelineDesc.shaders[i].flags;
+		shaderStageInfo.stage = ToVkShaderStageFlagBits( gpuPipelineDesc.shaders[i].flags );
 		//TODO: these cast are dangerous for alligment
 		shaderStageInfo.module = create_shader_module( reinterpret_cast< const uint32_t * >(gpuPipelineDesc.shaders[i].code.data()), gpuPipelineDesc.shaders[i].code.size() );
 		shaderStageInfo.pName = gpuPipelineDesc.shaders[i].entryPoint;
@@ -108,7 +108,7 @@ void CreatePipeline( const GpuPipelineStateDesc& gpuPipelineDesc, const RenderPa
 	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 	depthStencil.depthTestEnable = gpuPipelineDesc.depthStencilState.depthRead;
 	depthStencil.depthWriteEnable = gpuPipelineDesc.depthStencilState.depthWrite;
-	depthStencil.depthCompareOp = gpuPipelineDesc.depthStencilState.depthCompareOp,
+	depthStencil.depthCompareOp = ToVkCompareOp( gpuPipelineDesc.depthStencilState.depthCompareOp );
 	depthStencil.depthBoundsTestEnable = VK_FALSE;
 	depthStencil.minDepthBounds = 0.0f; // Optional
 	depthStencil.maxDepthBounds = 1.0f; // Optional
@@ -206,4 +206,16 @@ void CreatePipeline( const GpuPipelineStateDesc& gpuPipelineDesc, const RenderPa
 
 	for( uint8_t i = 0; i < shadersCount; ++i )
 		vkDestroyShaderModule( g_vk.device.device, shader_stages[i].module, nullptr );
+}
+
+void Destroy( GfxPipeline* pipeline )
+{
+	vkDestroyPipeline( g_vk.device.device, *pipeline, nullptr );
+	*pipeline = VK_NULL_HANDLE;
+}
+
+void Destroy( GfxPipelineLayout* pipelineLayout )
+{
+	vkDestroyPipelineLayout( g_vk.device.device, *pipelineLayout, nullptr );
+	*pipelineLayout = VK_NULL_HANDLE;
 }

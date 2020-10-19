@@ -117,3 +117,16 @@ VkDescriptorType DescriptorTypeToVkType( eDescriptorType type, eDescriptorAccess
 		throw std::runtime_error( "Unknown descriptor type" );
 	}
 }
+
+void Destroy( GfxDescriptorTableLayout* layout )
+{
+	vkDestroyDescriptorSetLayout( g_vk.device.device, *layout, nullptr );
+	layout = VK_NULL_HANDLE;
+}
+
+void Destroy( GfxDescriptorTable* descriptorTables, uint32_t count, GfxDescriptorPool descriptorPool )
+{
+	vkFreeDescriptorSets( g_vk.device.device, descriptorPool, count, descriptorTables );
+	for( uint32_t i = 0; i < count; ++i )
+		descriptorTables[i] = VK_NULL_HANDLE;
+}

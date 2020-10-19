@@ -293,6 +293,11 @@ enum GfxShaderStageFlagBits
 	GFX_SHADER_STAGE_ALL = VK_SHADER_STAGE_ALL,
 };
 
+inline VkShaderStageFlagBits ToVkShaderStageFlagBits( GfxShaderStageFlagBits flags )
+{
+	return static_cast< VkShaderStageFlagBits >(flags);
+}
+
 typedef GfxFlags GfxShaderStageFlags;
 
 inline VkShaderStageFlags ToVkShaderStageFlags( GfxShaderStageFlags shaderStageFlag )
@@ -326,6 +331,22 @@ VkDescriptorType DescriptorTypeToVkType( eDescriptorType type, eDescriptorAccess
 typedef VkDescriptorSetLayoutBinding GfxDescriptorTableLayoutBinding;
 typedef VkDescriptorSetLayout GfxDescriptorTableLayout;
 typedef VkDescriptorSet GfxDescriptorTable;
+typedef VkDescriptorSet GfxRootDescriptor;
+
+enum class GfxPipelineBindPoint {
+	GRAPHICS = VK_PIPELINE_BIND_POINT_GRAPHICS,
+	COMPUTE = VK_PIPELINE_BIND_POINT_COMPUTE,
+};
+
+typedef VkPipelineLayout GfxPipelineLayout;
+typedef uint32_t root_constant_t;
+
+void CmdBindRootDescriptor( VkCommandBuffer commandBuffer, GfxPipelineBindPoint pipelineBindPoint, GfxPipelineLayout pipelineLayout, uint32_t rootBindingPoint, GfxRootDescriptor rootDescriptor, uint32_t bufferOffset );
+
+inline VkPipelineBindPoint ToVkPipelineBindPoint( GfxPipelineBindPoint pipelineBindPoint )
+{
+	return static_cast< VkPipelineBindPoint >(pipelineBindPoint);
+}
 
 GfxDescriptorTableLayoutBinding CreateDescriptorTableLayoutBinding( uint32_t descriptorBindingSlot, GfxShaderStageFlags descriptorStageFlags, eDescriptorType descriptorType, eDescriptorAccess descriptorAccess, uint32_t descriptorCount );
 
@@ -340,9 +361,6 @@ struct GfxRootConstantRange {
 	uint32_t              count;
 };
 
-typedef VkPipelineLayout GfxPipelineLayout;
-typedef uint32_t root_constant_t;
-
 struct GfxDataBinding
 {
 	uint32_t id;
@@ -351,7 +369,7 @@ struct GfxDataBinding
 	GfxShaderStageFlags stageFlags;
 };
 
-struct GfxDescriptorSetDesc
+struct GfxDescriptorTableDesc
 {
 	uint32_t id;
 	std::vector<GfxDataBinding> dataBindings;
@@ -372,7 +390,7 @@ struct WriteDescriptorTable
 	uint32_t count;
 };
 
-void CreateGfxPipelineLayout( const GfxDescriptorSetDesc* descriptorTablesDescs, const GfxDescriptorTableLayout* descriptorTableLayouts, uint32_t descriptorTablesDescsCount, const GfxRootConstantRange* rootConstantRanges, uint32_t rootConstantRangesCount, GfxPipelineLayout* o_pipelineLayout );
+void CreateGfxPipelineLayout( const GfxDescriptorTableDesc* descriptorTablesDescs, const GfxDescriptorTableLayout* descriptorTableLayouts, uint32_t descriptorTablesDescsCount, const GfxRootConstantRange* rootConstantRanges, uint32_t rootConstantRangesCount, GfxPipelineLayout* o_pipelineLayout );
 
 struct GfxMemAlloc
 {
@@ -451,7 +469,7 @@ struct ShaderCreation
 {
 	std::vector<char> code;
 	const char* entryPoint;
-	VkShaderStageFlagBits flags;
+	GfxShaderStageFlagBits flags;
 };
 
 struct RasterizationState
@@ -464,13 +482,27 @@ struct DepthStencilState
 {
 	bool depthRead;
 	bool depthWrite;
-	VkCompareOp depthCompareOp;
+	GfxCompareOp depthCompareOp;
 };
 
 struct GpuPipelineLayout
 {
 	std::vector<GfxRootConstantRange> RootConstantRanges;
 };
+
+enum class GfxPrimitiveTopology {
+	POINT_LIST = VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+	LINE_LIST = VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
+	LINE_STRIP = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,
+	TRIANGLE_LIST = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+	TRIANGLE_STRIP = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+	TRIANGLE_FAN = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,
+};
+
+inline VkPrimitiveTopology ToVkPrimitiveTopology( GfxPrimitiveTopology primitiveTopology )
+{
+	return static_cast< VkPrimitiveTopology >(primitiveTopology);
+}
 
 struct GpuPipelineStateDesc
 {
@@ -479,7 +511,7 @@ struct GpuPipelineStateDesc
 	RasterizationState rasterizationState;
 	DepthStencilState depthStencilState;
 	bool blendEnabled;
-	VkPrimitiveTopology primitiveTopology;
+	GfxPrimitiveTopology primitiveTopology;
 };
 
 struct FrameBuffer
@@ -498,6 +530,15 @@ struct RenderPass {
 	FrameBuffer outputFrameBuffer[SIMULTANEOUS_FRAMES];
 };
 
+typedef VkPipeline GfxPipeline;
+
+void Destroy( GfxPipeline* pipeline );
+void Destroy( GfxPipelineLayout* pipelineLayout );
+void Destroy( GfxDescriptorTableLayout* layout );
+void Destroy( GfxDescriptorTable* descriptorTables, uint32_t count, GfxDescriptorPool descriptorPool );
+
+void CmdBindPipeline( VkCommandBuffer commandBuffer, GfxPipelineBindPoint pipelineBindPoint, GfxPipeline pipeline );
+void CmdBindDescriptorTable( VkCommandBuffer commandBuffer, GfxPipelineBindPoint pipelineBindPoint, GfxPipelineLayout pipelineLayout, uint32_t rootBindingPoint, GfxDescriptorTable descriptorTable );
 
 struct Vk_Globals {
 	GpuInstance instance = {};

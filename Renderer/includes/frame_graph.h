@@ -34,7 +34,7 @@ namespace FG
 	struct FrameGraphNode
 	{
 		void( *RecordDrawCommands )(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique);
-		std::vector<GfxDescriptorSetDesc> descriptorSets;
+		std::vector<GfxDescriptorTableDesc> descriptorSets;
 		GpuPipelineLayout gpuPipelineLayout;
 		GpuPipelineStateDesc gpuPipelineStateDesc;
 	};
