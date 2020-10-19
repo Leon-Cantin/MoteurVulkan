@@ -11,9 +11,9 @@ void MarkGfxObject( GfxApiSampler sampler, const char * name );
 void MarkGfxObject( GfxFence fence, const char * name );
 void MarkGfxObject( GfxSemaphore semaphore, const char * name );
 
-void CmdBeginLabel(VkCommandBuffer commandBuffer, const char * name, const glm::vec4& color);
-void CmdEndLabel(VkCommandBuffer commandBuffer);
-void CmdInsertVkLabel(VkCommandBuffer commandBuffer, const char * name, const glm::vec4& color);
+void CmdBeginLabel(GfxCommandBuffer commandBuffer, const char * name, const glm::vec4& color);
+void CmdEndLabel(GfxCommandBuffer commandBuffer);
+void CmdInsertVkLabel(GfxCommandBuffer commandBuffer, const char * name, const glm::vec4& color);
 
 void QueueBeginVkLabel(VkQueue queue, const char * name, const glm::vec4& color);
 void QueueEndVkLabel(VkQueue queue);

@@ -184,7 +184,7 @@ namespace VK
 		}
 	};
 
-	static QueueFamilyIndices find_queue_families( const VkPhysicalDevice device, VkSurfaceKHR swapchainSurface ) {
+	static QueueFamilyIndices find_queue_families( const VkPhysicalDevice device, DisplaySurface swapchainSurface ) {
 		QueueFamilyIndices indices;
 
 		uint32_t queueFamilyCount = 0;
@@ -226,7 +226,7 @@ namespace VK
 		return indices;
 	}
 
-	static bool is_device_suitable( const VkPhysicalDevice device, VkSurfaceKHR swapchain_surface )
+	static bool is_device_suitable( const VkPhysicalDevice device, DisplaySurface swapchain_surface )
 	{
 		VkPhysicalDeviceProperties deviceProperties;
 		vkGetPhysicalDeviceProperties( device, &deviceProperties );
@@ -333,7 +333,7 @@ namespace VK
 		vkGetDeviceQueue( vk_device, indices.transfer_family.value(), 0, &transfer_queue );
 
 		//TODO HACK: Cheatin because of globals in MarkVkObject
-		g_vk.device.device = vk_device;
+		g_gfx.device.device = vk_device;
 
 		MarkVkObject( ( uint64_t )(graphics_queue), VK_OBJECT_TYPE_QUEUE, "graphics_queue" );
 		MarkVkObject( ( uint64_t )(present_queue), VK_OBJECT_TYPE_QUEUE, "present_queue" );
@@ -400,7 +400,7 @@ namespace VK
 			throw std::runtime_error( "failed to create instance" );
 
 		//TODO HACK: Cheatin because of globals in SetupDebugCallBack
-		g_vk.instance.instance = instance.instance;
+		g_gfx.instance.instance = instance.instance;
 
 		if( enableValidationLayer )
 			SetupDebugCallback();

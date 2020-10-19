@@ -20,7 +20,7 @@ namespace Engine
 
 	struct EngineState
 	{
-		EngineState( void( *initRendererImp )(VkSurfaceKHR), void( *destroyRendererImp )(), const char* name, int window_width, int window_height )
+		EngineState( void( *initRendererImp )(DisplaySurface), void( *destroyRendererImp )(), const char* name, int window_width, int window_height )
 			:_initRendererImp(initRendererImp), _destroyRendererImp(destroyRendererImp), _name(name), _window_width(window_width), _window_height(window_height)
 		{
 			MEM::zero( &_currentSceneScript );
@@ -32,7 +32,7 @@ namespace Engine
 
 		}
 
-		void( *_initRendererImp )(VkSurfaceKHR);
+		void( *_initRendererImp )(DisplaySurface);
 		void( *_destroyRendererImp )();
 
 		std::unordered_map< std::string, SceneScript > _scripts_library;

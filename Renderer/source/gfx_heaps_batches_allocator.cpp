@@ -49,7 +49,7 @@ bool GfxHeaps_BatchedAllocator::Allocate( GfxApiImage image, GfxMemAlloc* o_gfx_
 	return true;
 }
 
-static bool UploadDataCommon( VkCommandBuffer commandBuffer, const GfxImage& gfxImage, const void* data, BufferAllocator* stagingBufferAllocator, GpuBuffer* stagingBuffer )
+static bool UploadDataCommon( GfxCommandBuffer commandBuffer, const GfxImage& gfxImage, const void* data, BufferAllocator* stagingBufferAllocator, GpuBuffer* stagingBuffer )
 {
 	const uint32_t layerCount = 1;
 

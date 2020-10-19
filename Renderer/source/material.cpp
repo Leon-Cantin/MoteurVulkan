@@ -9,7 +9,7 @@
 #include <array>
 
 //Don't recall this if the technique is the same
-void BeginTechnique( VkCommandBuffer commandBuffer, const Technique* technique, size_t currentFrame )
+void BeginTechnique( GfxCommandBuffer commandBuffer, const Technique* technique, size_t currentFrame )
 {
 	CmdBindPipeline( commandBuffer, GfxPipelineBindPoint::GRAPHICS, technique->pipeline );
 	CmdBindDescriptorTable( commandBuffer, GfxPipelineBindPoint::GRAPHICS, technique->pipelineLayout, RENDERPASS_SET, technique->descriptor_sets[RENDERPASS_SET].hw_descriptorSets[currentFrame] );

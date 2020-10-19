@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <stdexcept>
 
-void copyBufferToImage( VkCommandBuffer commandBuffer, VkBuffer buffer, uint32_t bufferOffset, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount )
+void copyBufferToImage( GfxCommandBuffer commandBuffer, VkBuffer buffer, uint32_t bufferOffset, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount )
 {
 	VkBufferImageCopy region = {};
 	region.bufferOffset = bufferOffset;
@@ -117,7 +117,7 @@ else {
 	create_info.subresourceRange.layerCount = layerCount;
 
 	VkImageView imageView;
-	if( vkCreateImageView( g_vk.device.device, &create_info, nullptr, &imageView ) != VK_SUCCESS )
+	if( vkCreateImageView( g_gfx.device.device, &create_info, nullptr, &imageView ) != VK_SUCCESS )
 		throw std::runtime_error( "failed to create image views!" );
 
 	return imageView;
@@ -125,19 +125,19 @@ else {
 
 void BindMemory( VkImage image, VkDeviceMemory memory )
 {
-	vkBindImageMemory( g_vk.device.device, image, memory, 0 );
+	vkBindImageMemory( g_gfx.device.device, image, memory, 0 );
 }
 
 void BindMemory( VkImage image, const GfxMemAlloc& gfx_mem_alloc )
 {
-	vkBindImageMemory( g_vk.device.device, image, gfx_mem_alloc.memory, gfx_mem_alloc.offset );
+	vkBindImageMemory( g_gfx.device.device, image, gfx_mem_alloc.memory, gfx_mem_alloc.offset );
 }
 
 static VkImage CreateImage( const VkImageCreateInfo& imageInfo )
 {
 	VkImage image;
 
-	if( vkCreateImage( g_vk.device.device, &imageInfo, nullptr, &image ) != VK_SUCCESS )
+	if( vkCreateImage( g_gfx.device.device, &imageInfo, nullptr, &image ) != VK_SUCCESS )
 		throw std::runtime_error( "failed to create image!" );
 
 	return image;
@@ -208,7 +208,7 @@ VkFormat findDepthFormat() {
 VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
 	for (VkFormat format : candidates) {
 		VkFormatProperties props;
-		vkGetPhysicalDeviceFormatProperties(g_vk.physicalDevice, format, &props);
+		vkGetPhysicalDeviceFormatProperties(g_gfx.physicalDevice, format, &props);
 
 		if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
 			return format;
@@ -259,14 +259,14 @@ GfxImageView CreateImageView( const GfxImage& parentImage )
 
 void Destroy( GfxImageView* imageView )
 {
-	vkDestroyImageView( g_vk.device.device, *imageView, nullptr );
+	vkDestroyImageView( g_gfx.device.device, *imageView, nullptr );
 	imageView = VK_NULL_HANDLE;
 }
 
 void DestroyImage( GfxImage* image )
 {
 	Destroy( &image->imageView );
-	vkDestroyImage( g_vk.device.device, image->image, nullptr );
+	vkDestroyImage( g_gfx.device.device, image->image, nullptr );
 	destroy_gfx_memory( &image->gfx_mem_alloc );
 	image = {};
 }

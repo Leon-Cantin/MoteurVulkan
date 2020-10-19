@@ -299,7 +299,7 @@ namespace FG
 		frameGraphExternal->imp = nullptr;
 	}
 
-	void RecordDrawCommands(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, FrameGraph* frameGraphExternal)
+	void RecordDrawCommands(uint32_t currentFrame, const SceneFrameData* frameData, GfxCommandBuffer graphicsCommandBuffer, VkExtent2D extent, FrameGraph* frameGraphExternal)
 	{
 		FrameGraphInternal* frameGraph = frameGraphExternal->imp;
 		for (uint32_t i = 0; i < frameGraph->_render_passes_count; ++i)

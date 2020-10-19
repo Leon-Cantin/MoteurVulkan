@@ -4,7 +4,7 @@
 
 #include <vector>
 
-typedef VkCommandBuffer CommandBuffer;
+typedef GfxCommandBuffer CommandBuffer;
 typedef VkCommandPool CommandPool;
 
 enum class QueueFlagBits : uint8_t
@@ -36,11 +36,11 @@ Device CreateDevice( CreateDeviceData createDeviceData );*/
 
 
 
-VkCommandBuffer beginSingleTimeCommands();
-void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+GfxCommandBuffer beginSingleTimeCommands();
+void endSingleTimeCommands(GfxCommandBuffer commandBuffer);
 void CreateSingleUseCommandPool(uint32_t queueFamilyIndex, GfxCommandPool* o_commandPool);
 void CreateCommandPool(uint32_t queueFamilyIndex, GfxCommandPool* o_commandPool);
 void Destroy( GfxCommandPool* commandPool );
 
-void BeginCommandBufferRecording(VkCommandBuffer commandBuffer);
-void EndCommandBufferRecording(VkCommandBuffer commandBuffer);
+void BeginCommandBufferRecording(GfxCommandBuffer commandBuffer);
+void EndCommandBufferRecording(GfxCommandBuffer commandBuffer);

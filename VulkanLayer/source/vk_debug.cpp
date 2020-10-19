@@ -19,7 +19,7 @@ VkDebugUtilsMessengerEXT debug_callback_messenger;
 template<class T>
 void AcquireDebugUtilsFunc(T* pFn, const char * funcName)
 {
-	*pFn = (T)vkGetInstanceProcAddr(g_vk.instance.instance, funcName);
+	*pFn = (T)vkGetInstanceProcAddr(g_gfx.instance.instance, funcName);
 	if (*pFn == VK_NULL_HANDLE)
 	{
 		char buffer[256];
@@ -38,7 +38,7 @@ void MarkVkObject(uint64_t objectHandle, VkObjectType objetType, const char * na
 	info.objectHandle = objectHandle;
 	info.objectType = objetType;
 	info.pObjectName = name;
-	vkSetDebugMarkerSetObjectName_func(g_vk.device.device, &info);
+	vkSetDebugMarkerSetObjectName_func(g_gfx.device.device, &info);
 }
 
 void MarkGfxObject( GfxApiImage image, const char * name )
@@ -66,7 +66,7 @@ void MarkGfxObject( GfxSemaphore semaphore, const char * name )
 	MarkVkObject( ( uint64_t )semaphore, VK_OBJECT_TYPE_SEMAPHORE, name );
 }
 
-void CmdBeginLabel(VkCommandBuffer commandBuffer, const char * name, const glm::vec4& color)
+void CmdBeginLabel(GfxCommandBuffer commandBuffer, const char * name, const glm::vec4& color)
 {
 	if (vkCmdBeginDebugUtilsLabelEXT_func == VK_NULL_HANDLE)
 		AcquireDebugUtilsFunc< PFN_vkCmdBeginDebugUtilsLabelEXT>(&vkCmdBeginDebugUtilsLabelEXT_func, "vkCmdBeginDebugUtilsLabelEXT");
@@ -81,7 +81,7 @@ void CmdBeginLabel(VkCommandBuffer commandBuffer, const char * name, const glm::
 	vkCmdBeginDebugUtilsLabelEXT_func(commandBuffer, &info);
 }
 
-void CmdEndLabel(VkCommandBuffer commandBuffer)
+void CmdEndLabel(GfxCommandBuffer commandBuffer)
 {
 	if (vkCmdEndDebugUtilsLabelEXT_func == VK_NULL_HANDLE)
 		AcquireDebugUtilsFunc< PFN_vkCmdEndDebugUtilsLabelEXT>(&vkCmdEndDebugUtilsLabelEXT_func, "vkCmdEndDebugUtilsLabelEXT");
@@ -89,7 +89,7 @@ void CmdEndLabel(VkCommandBuffer commandBuffer)
 	vkCmdEndDebugUtilsLabelEXT_func(commandBuffer);
 }
 
-void CmdInsertVkLabel(VkCommandBuffer commandBuffer, const char * name, const glm::vec4& color)
+void CmdInsertVkLabel(GfxCommandBuffer commandBuffer, const char * name, const glm::vec4& color)
 {
 	if (vkCmdInsertDebugUtilsLabelEXT_func == VK_NULL_HANDLE)
 		AcquireDebugUtilsFunc< PFN_vkCmdInsertDebugUtilsLabelEXT>(&vkCmdInsertDebugUtilsLabelEXT_func, "vkCmdInsertDebugUtilsLabelEXT");
@@ -154,9 +154,9 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 }
 
 VkResult CreateDebugUtilsMessengerEXT( const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pCallback) {
-	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr( g_vk.instance.instance, "vkCreateDebugUtilsMessengerEXT");
+	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr( g_gfx.instance.instance, "vkCreateDebugUtilsMessengerEXT");
 	if (func != nullptr) {
-		return func( g_vk.instance.instance, pCreateInfo, pAllocator, pCallback);
+		return func( g_gfx.instance.instance, pCreateInfo, pAllocator, pCallback);
 	}
 	else {
 		return VK_ERROR_EXTENSION_NOT_PRESENT;
@@ -164,9 +164,9 @@ VkResult CreateDebugUtilsMessengerEXT( const VkDebugUtilsMessengerCreateInfoEXT*
 }
 
 void DestroyDebugUtilsMessengerEXT( VkDebugUtilsMessengerEXT callback, const VkAllocationCallbacks* pAllocator) {
-	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(g_vk.instance.instance, "vkDestroyDebugUtilsMessengerEXT");
+	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(g_gfx.instance.instance, "vkDestroyDebugUtilsMessengerEXT");
 	if (func != nullptr) {
-		func(g_vk.instance.instance, callback, pAllocator);
+		func(g_gfx.instance.instance, callback, pAllocator);
 	}
 }
 

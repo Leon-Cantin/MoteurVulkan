@@ -12,7 +12,7 @@ GfxMemAlloc allocate_gfx_memory( GfxDeviceSize size, GfxMemoryType type )
 	allocInfo.memoryTypeIndex = type;
 
 	VkDeviceMemory memory;
-	if( vkAllocateMemory( g_vk.device.device, &allocInfo, nullptr, &memory ) != VK_SUCCESS )
+	if( vkAllocateMemory( g_gfx.device.device, &allocInfo, nullptr, &memory ) != VK_SUCCESS )
 		throw std::runtime_error( "failed to allocate buffer memory!" );
 
 	const VkDeviceSize offset = 0;
@@ -32,7 +32,7 @@ GfxMemAlloc suballocate_gfx_memory( const GfxMemAlloc& gfx_mem, GfxDeviceSize si
 void destroy_gfx_memory( GfxMemAlloc* gfx_mem )
 {
 	if( gfx_mem->is_parent_pool )
-		vkFreeMemory( g_vk.device.device, gfx_mem->memory, nullptr );
+		vkFreeMemory( g_gfx.device.device, gfx_mem->memory, nullptr );
 }
 
 void UpdateGpuMemory( const GfxMemAlloc* dstMemory, const void* src, GfxDeviceSize size, GfxDeviceSize offset )
@@ -40,9 +40,9 @@ void UpdateGpuMemory( const GfxMemAlloc* dstMemory, const void* src, GfxDeviceSi
 	assert( offset + size <= dstMemory->size );
 	assert( size );//don't map memory with no size
 	void* dst;
-	vkMapMemory( g_vk.device.device, dstMemory->memory, dstMemory->offset + offset, size, 0, &dst );
+	vkMapMemory( g_gfx.device.device, dstMemory->memory, dstMemory->offset + offset, size, 0, &dst );
 	memcpy( dst, src, size );
-	vkUnmapMemory( g_vk.device.device, dstMemory->memory );
+	vkUnmapMemory( g_gfx.device.device, dstMemory->memory );
 }
 
 bool IsRequiredMemoryType( GfxMemoryTypeFilter typeFilter, GfxMemoryType memoryType )
@@ -54,7 +54,7 @@ bool IsRequiredMemoryType( GfxMemoryTypeFilter typeFilter, GfxMemoryType memoryT
 GfxMemoryType findMemoryType( GfxMemoryTypeFilter typeFilter, GfxMemoryPropertyFlags properties )
 {
 	VkPhysicalDeviceMemoryProperties memProperties;
-	vkGetPhysicalDeviceMemoryProperties(g_vk.physicalDevice, &memProperties);
+	vkGetPhysicalDeviceMemoryProperties(g_gfx.physicalDevice, &memProperties);
 
 	for (uint32_t memoryType = 0; memoryType < memProperties.memoryTypeCount; memoryType++) {
 		if ( IsRequiredMemoryType(typeFilter, memoryType) && (memProperties.memoryTypes[memoryType].propertyFlags & properties) == properties) {
@@ -68,14 +68,14 @@ GfxMemoryType findMemoryType( GfxMemoryTypeFilter typeFilter, GfxMemoryPropertyF
 GfxMemoryRequirements GetImageMemoryRequirement( GfxApiImage image )
 {
 	VkMemoryRequirements memRequirements;
-	vkGetImageMemoryRequirements( g_vk.device.device, image, &memRequirements );
+	vkGetImageMemoryRequirements( g_gfx.device.device, image, &memRequirements );
 	return memRequirements;
 }
 
 GfxMemoryRequirements GetBufferMemoryRequirement( GfxApiBuffer buffer )
 {
 	VkMemoryRequirements memRequirements;
-	vkGetBufferMemoryRequirements( g_vk.device.device, buffer, &memRequirements );
+	vkGetBufferMemoryRequirements( g_gfx.device.device, buffer, &memRequirements );
 	return memRequirements;
 }
 

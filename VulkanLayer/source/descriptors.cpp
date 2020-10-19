@@ -27,7 +27,7 @@ void CreateDescriptorPool(uint32_t uniformBuffersCount, uint32_t uniformBufferDy
 	poolInfo.maxSets = maxSets;
 	poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
-	if (vkCreateDescriptorPool(g_vk.device.device, &poolInfo, nullptr, o_descriptorPool) != VK_SUCCESS)
+	if (vkCreateDescriptorPool(g_gfx.device.device, &poolInfo, nullptr, o_descriptorPool) != VK_SUCCESS)
 		throw std::runtime_error("failed to create descriptor pool!");
 }
 
@@ -39,7 +39,7 @@ void CreateDescriptorTables( GfxDescriptorPool descriptorPool, uint32_t count, G
 	allocInfo.descriptorSetCount = count;
 	allocInfo.pSetLayouts = descriptorSetLayouts;
 
-	if( vkAllocateDescriptorSets( g_vk.device.device, &allocInfo, o_descriptorSets ) != VK_SUCCESS )
+	if( vkAllocateDescriptorSets( g_gfx.device.device, &allocInfo, o_descriptorSets ) != VK_SUCCESS )
 		throw std::runtime_error( "failed to allocate descriptor sets!" );
 }
 
@@ -68,7 +68,7 @@ void UpdateDescriptorTables( size_t writeDescriptorSetsCount, const WriteDescrip
 		}
 	}
 
-	vkUpdateDescriptorSets( g_vk.device.device, static_cast< uint32_t >(vkWriteDescriptorSets.size()), vkWriteDescriptorSets.data(), 0, nullptr );
+	vkUpdateDescriptorSets( g_gfx.device.device, static_cast< uint32_t >(vkWriteDescriptorSets.size()), vkWriteDescriptorSets.data(), 0, nullptr );
 }
 
 void CreateDesciptorTableLayout( const VkDescriptorSetLayoutBinding* bindings, uint32_t count, GfxDescriptorTableLayout* o_layout )
@@ -79,7 +79,7 @@ void CreateDesciptorTableLayout( const VkDescriptorSetLayoutBinding* bindings, u
 	layoutInfo.pBindings = bindings;
 
 	//Describe complete set of resources available (image, sampler, ubo, constants, ...)
-	if (vkCreateDescriptorSetLayout(g_vk.device.device, &layoutInfo, nullptr, o_layout) != VK_SUCCESS)
+	if (vkCreateDescriptorSetLayout(g_gfx.device.device, &layoutInfo, nullptr, o_layout) != VK_SUCCESS)
 		throw std::runtime_error("failed to create descriptor set layout!");
 }
 
@@ -120,13 +120,13 @@ VkDescriptorType DescriptorTypeToVkType( eDescriptorType type, eDescriptorAccess
 
 void Destroy( GfxDescriptorTableLayout* layout )
 {
-	vkDestroyDescriptorSetLayout( g_vk.device.device, *layout, nullptr );
+	vkDestroyDescriptorSetLayout( g_gfx.device.device, *layout, nullptr );
 	layout = VK_NULL_HANDLE;
 }
 
 void Destroy( GfxDescriptorTable* descriptorTables, uint32_t count, GfxDescriptorPool descriptorPool )
 {
-	vkFreeDescriptorSets( g_vk.device.device, descriptorPool, count, descriptorTables );
+	vkFreeDescriptorSets( g_gfx.device.device, descriptorPool, count, descriptorTables );
 	for( uint32_t i = 0; i < count; ++i )
 		descriptorTables[i] = VK_NULL_HANDLE;
 }

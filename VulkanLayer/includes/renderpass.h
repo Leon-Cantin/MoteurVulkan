@@ -21,5 +21,5 @@ struct AttachementDescription
 RenderPass CreateRenderPass( const char* name, const AttachementDescription* colorAttachementDescriptions, uint32_t colorAttachementCount, const AttachementDescription* depthStencilAttachement );
 void Destroy( RenderPass* renderPass );
 
-void BeginRenderPass(VkCommandBuffer commandBuffer, const RenderPass& renderpass, const FrameBuffer& framebuffer);
-void EndRenderPass(VkCommandBuffer commandBuffer);
+void BeginRenderPass(GfxCommandBuffer commandBuffer, const RenderPass& renderpass, const FrameBuffer& framebuffer);
+void EndRenderPass(GfxCommandBuffer commandBuffer);

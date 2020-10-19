@@ -6,10 +6,10 @@ namespace WH
 {
 	namespace VK 
 	{
-		VkSurfaceKHR _windowSurface;
+		DisplaySurface _windowSurface;
 
 #ifdef _WIN32
-		static void create_surface(VkInstance vkInstance, HWND window, HINSTANCE instance, VkSurfaceKHR * windowSurface)
+		static void create_surface(VkInstance vkInstance, HWND window, HINSTANCE instance, DisplaySurface * windowSurface)
 		{
 			VkWin32SurfaceCreateInfoKHR surface_create_info = { VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR, nullptr, 0, instance, window };
 
@@ -19,11 +19,11 @@ namespace WH
 
 		void InitializeWindow()
 		{
-			create_surface( g_vk.instance.instance, WH::g_window, WH::g_instance, &_windowSurface );
+			create_surface( g_gfx.instance.instance, WH::g_window, WH::g_instance, &_windowSurface );
 		}
 
 #elif defined __linux__
-		static void create_surface(VkInstance vkInstance, xcb_connection_t* connection, xcb_window_t window, VkSurfaceKHR * windowSurface)
+		static void create_surface(VkInstance vkInstance, xcb_connection_t* connection, xcb_window_t window, DisplaySurface * windowSurface)
 		{
 			VkXcbSurfaceCreateInfoKHR surface_create_info = {VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR, NULL, 0, connection, window };
 			
@@ -33,13 +33,13 @@ namespace WH
 
 		void InitializeWindow()
 		{
-			create_surface( g_vk.vk_instance, WH::xcb_connection, WH::window, &_windowSurface );
+			create_surface( g_gfx.vk_instance, WH::xcb_connection, WH::window, &_windowSurface );
 		}
 #endif
 
 		void ShutdownWindow()
 		{
-			vkDestroySurfaceKHR( g_vk.instance.instance, _windowSurface, nullptr );
+			vkDestroySurfaceKHR( g_gfx.instance.instance, _windowSurface, nullptr );
 		}
 	}
 }

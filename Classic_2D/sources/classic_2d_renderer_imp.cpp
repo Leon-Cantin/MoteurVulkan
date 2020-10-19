@@ -137,7 +137,7 @@ static VkDescriptorPool CreateDescriptorPool_BAD()
 	return descriptorPool;
 }
 
-void InitRendererImp( VkSurfaceKHR swapchainSurface )
+void InitRendererImp( DisplaySurface swapchainSurface )
 {
 	InitRenderer( swapchainSurface, NeedResize, WH::GetFramebufferSize );
 
@@ -150,7 +150,7 @@ void CompileScene( BindlessTexturesState* bindlessTexturesState )
 	CleanupFrameGraph();
 
 	if( descriptorPool_scene )
-		vkDestroyDescriptorPool( g_vk.device.device, descriptorPool_scene, nullptr );
+		vkDestroyDescriptorPool( g_gfx.device.device, descriptorPool_scene, nullptr );
 	descriptorPool_scene = CreateDescriptorPool_BAD();
 
 	MEM::zero( &_inputBuffers );
@@ -165,7 +165,7 @@ void CleanupRendererImp()
 {
 	CleanupTextRenderPass();
 	CleanupRenderer();	
-	vkDestroyDescriptorPool( g_vk.device.device, descriptorPool_scene, nullptr );
+	vkDestroyDescriptorPool( g_gfx.device.device, descriptorPool_scene, nullptr );
 }
 
 void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, const std::vector<GfxAssetInstance>& drawList, const std::vector<TextZone>& textZones )

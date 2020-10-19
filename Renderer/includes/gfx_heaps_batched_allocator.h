@@ -27,7 +27,7 @@ private:
 	size_t head;
 	BufferAllocator stagingBufferAllocator;
 	GpuBuffer stagingBuffer;
-	VkCommandBuffer commandBuffer;
+	GfxCommandBuffer commandBuffer;
 };
 
 
@@ -44,5 +44,5 @@ public:
 private:
 	BufferAllocator stagingBufferAllocator;
 	GpuBuffer stagingBuffer;
-	VkCommandBuffer commandBuffer;
+	GfxCommandBuffer commandBuffer;
 };

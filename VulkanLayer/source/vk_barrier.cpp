@@ -34,7 +34,7 @@ VkPipelineStageFlags ToPipelineStage( GfxLayout layout )
 	}
 }
 
-void GfxImageBarrier( VkCommandBuffer commandBuffer, GfxApiImage image, GfxLayout oldLayout, GfxAccess oldAccess, GfxLayout newLayout, GfxAccess newAccess, uint32_t baseMipLevel, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount )
+void GfxImageBarrier( GfxCommandBuffer commandBuffer, GfxApiImage image, GfxLayout oldLayout, GfxAccess oldAccess, GfxLayout newLayout, GfxAccess newAccess, uint32_t baseMipLevel, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount )
 {
 	//TODO: should use the format to set aspect according to VK's documentation
 	VkImageAspectFlags aspectFlag = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -67,7 +67,7 @@ void GfxImageBarrier( VkCommandBuffer commandBuffer, GfxApiImage image, GfxLayou
 		1, &barrier );
 }
 
-void GfxImageBarrier( VkCommandBuffer commandBuffer, GfxApiImage image, GfxLayout oldLayout, GfxAccess oldAccess, GfxLayout newLayout, GfxAccess newAccess )
+void GfxImageBarrier( GfxCommandBuffer commandBuffer, GfxApiImage image, GfxLayout oldLayout, GfxAccess oldAccess, GfxLayout newLayout, GfxAccess newAccess )
 {
 	GfxImageBarrier( commandBuffer, image, oldLayout, oldAccess, newLayout, newAccess, 0, VK_REMAINING_MIP_LEVELS, 0, VK_REMAINING_ARRAY_LAYERS );
 }

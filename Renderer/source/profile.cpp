@@ -15,12 +15,12 @@ void DestroyTimeStampsPool()
 	GfxApiDestroyTimeStampsPool( g_timeStampQueryPool );
 }
 
-void CmdResetTimeStampSet(VkCommandBuffer commandBuffer, uint32_t set)
+void CmdResetTimeStampSet(GfxCommandBuffer commandBuffer, uint32_t set)
 {
 	GfxApiCmdResetTimeStamps(commandBuffer, g_timeStampQueryPool, set * Timestamp::TIMESTAMP_COUNT, Timestamp::TIMESTAMP_COUNT);
 }
 
-void CmdWriteTimestamp(VkCommandBuffer commandBuffer, GfxPipelineStageFlagBits stageBits, Timestamp timestamp, uint32_t set)
+void CmdWriteTimestamp(GfxCommandBuffer commandBuffer, GfxPipelineStageFlagBits stageBits, Timestamp timestamp, uint32_t set)
 {
 	GfxApiCmdWriteTimestamp(commandBuffer, g_timeStampQueryPool, stageBits, timestamp + set * Timestamp::TIMESTAMP_COUNT);
 }

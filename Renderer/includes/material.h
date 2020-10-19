@@ -25,5 +25,5 @@ struct Technique
 };
 
 //Don't recall this if the technique is the same
-void BeginTechnique( VkCommandBuffer commandBuffer, const Technique* technique, size_t currentFrame );
+void BeginTechnique( GfxCommandBuffer commandBuffer, const Technique* technique, size_t currentFrame );
 void Destroy( Technique* technique );

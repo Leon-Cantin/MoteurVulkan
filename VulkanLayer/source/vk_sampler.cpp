@@ -29,7 +29,7 @@ bool CreateSampler( GfxFilter minFilter, GfxFilter magFilter, GfxMipFilter mipFi
 	samplerInfo.minLod = 0.0f;
 	samplerInfo.maxLod = std::numeric_limits<float>::max();
 
-	if( vkCreateSampler( g_vk.device.device, &samplerInfo, nullptr, o_sampler ) != VK_SUCCESS )
+	if( vkCreateSampler( g_gfx.device.device, &samplerInfo, nullptr, o_sampler ) != VK_SUCCESS )
 		return false;
 
 	return true;
@@ -37,6 +37,6 @@ bool CreateSampler( GfxFilter minFilter, GfxFilter magFilter, GfxMipFilter mipFi
 
 void Destroy( GfxApiSampler* sampler )
 {
-	vkDestroySampler( g_vk.device.device, *sampler, nullptr );
+	vkDestroySampler( g_gfx.device.device, *sampler, nullptr );
 	*sampler = VK_NULL_HANDLE;
 }

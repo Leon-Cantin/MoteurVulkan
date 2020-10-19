@@ -11,7 +11,7 @@ struct Swapchain {
 	VkExtent2D extent;
 };
 
-void CreateSwapChain(VkSurfaceKHR vkSurface, uint32_t maxWidth, uint32_t maxHeight, Swapchain& o_swapchain);
+void CreateSwapChain( DisplaySurface vkSurface, uint32_t maxWidth, uint32_t maxHeight, Swapchain& o_swapchain);
 void Destroy( Swapchain* Swapchain );
 
 struct SwapChainSupportDetails {
@@ -20,5 +20,5 @@ struct SwapChainSupportDetails {
 	std::vector<VkPresentModeKHR> present_modes;
 };
 
-SwapChainSupportDetails query_swap_chain_support( VkPhysicalDevice device, VkSurfaceKHR surface );
+SwapChainSupportDetails query_swap_chain_support( VkPhysicalDevice device, DisplaySurface surface );
 

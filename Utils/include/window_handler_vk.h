@@ -5,7 +5,7 @@
 
 namespace WH {
 	namespace VK{
-		extern VkSurfaceKHR _windowSurface;
+		extern DisplaySurface _windowSurface;
 
 		void InitializeWindow();
 		void ShutdownWindow();

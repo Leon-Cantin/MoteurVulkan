@@ -94,7 +94,7 @@ void CreateSolidColorImage( glm::vec4 color, GfxImage* o_image, I_ImageAlloctor*
 	o_image->imageView = CreateImageView( *o_image );
 }
 
-void generateMipmaps( VkCommandBuffer commandBuffer, GfxApiImage image, GfxFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels )
+void generateMipmaps( GfxCommandBuffer commandBuffer, GfxApiImage image, GfxFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels )
 {
 	int32_t mipWidth = texWidth;
 	int32_t mipHeight = texHeight;

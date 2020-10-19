@@ -10,4 +10,4 @@
 GpuPipelineLayout GetGeoPipelineLayout();
 GpuPipelineStateDesc GetGeoPipelineState();
 
-void GeometryRecordDrawCommandsBuffer( uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique );
+void GeometryRecordDrawCommandsBuffer( uint32_t currentFrame, const SceneFrameData* frameData, GfxCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique );

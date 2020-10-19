@@ -1,8 +1,8 @@
 #include "vk_globals.h"
 
-Vk_Globals g_vk;
+Gfx_Globals g_gfx;
 
 void DeviceWaitIdle( GfxDevice device )
 {
-	vkDeviceWaitIdle( g_vk.device.device );
+	vkDeviceWaitIdle( g_gfx.device.device );
 }

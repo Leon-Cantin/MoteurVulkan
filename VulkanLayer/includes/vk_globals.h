@@ -30,6 +30,7 @@ typedef VkDeviceSize GfxDeviceSize;
 typedef VkDevice GfxDevice;
 
 typedef VkCommandPool GfxCommandPool;
+typedef VkCommandBuffer GfxCommandBuffer;
 
 struct Queue
 {
@@ -186,10 +187,10 @@ inline GfxFormat ToGfxFormat( VkFormat gfxFormat )
 VkImageLayout ConvertToVkImageLayout( GfxLayout layout, GfxAccess access );
 VkAttachmentLoadOp ConvertVkLoadOp( GfxLoadOp loadOp );
 
-void GfxImageBarrier( VkCommandBuffer commandBuffer, GfxApiImage image, GfxLayout oldLayout, GfxAccess oldAccess, GfxLayout newLayout, GfxAccess newAccess, uint32_t baseMipLevel, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount );
-void GfxImageBarrier( VkCommandBuffer commandBuffer, GfxApiImage image, GfxLayout oldLayout, GfxAccess oldAccess, GfxLayout newLayout, GfxAccess newAccess );
+void GfxImageBarrier( GfxCommandBuffer commandBuffer, GfxApiImage image, GfxLayout oldLayout, GfxAccess oldAccess, GfxLayout newLayout, GfxAccess newAccess, uint32_t baseMipLevel, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount );
+void GfxImageBarrier( GfxCommandBuffer commandBuffer, GfxApiImage image, GfxLayout oldLayout, GfxAccess oldAccess, GfxLayout newLayout, GfxAccess newAccess );
 
-void CmdBlitImage( VkCommandBuffer commandBuffer, GfxApiImage srcImage, int32_t srcX1, int32_t srcY1, int32_t srcZ1, int32_t srcX2, int32_t srcSY2, int32_t srcZ2, uint32_t srcMipLevel,
+void CmdBlitImage( GfxCommandBuffer commandBuffer, GfxApiImage srcImage, int32_t srcX1, int32_t srcY1, int32_t srcZ1, int32_t srcX2, int32_t srcSY2, int32_t srcZ2, uint32_t srcMipLevel,
 	GfxApiImage dstImage, int32_t dstX1, int32_t dstY1, int32_t dstZ1, int32_t dstX2, int32_t dstY2, int32_t dstZ2, uint32_t dstMipLevel, GfxFilter filter );
 
 typedef VkMemoryRequirements GfxMemoryRequirements;
@@ -261,9 +262,9 @@ typedef VkQueryPool GfxTimeStampQueryPool;
 
 GfxTimeStampQueryPool GfxApiCreateTimeStampsQueryPool( uint32_t queriesCount );
 void GfxApiDestroyTimeStampsPool( GfxTimeStampQueryPool queryPool );
-void GfxApiCmdResetTimeStamps( VkCommandBuffer commandBuffer, GfxTimeStampQueryPool timeStampQueryPool, uint32_t firstQueryId, uint32_t count );
+void GfxApiCmdResetTimeStamps( GfxCommandBuffer commandBuffer, GfxTimeStampQueryPool timeStampQueryPool, uint32_t firstQueryId, uint32_t count );
 void GfxApiGetTimeStampResults( GfxTimeStampQueryPool timeStampQueryPool, uint32_t firstQueryId, uint32_t count, uint64_t* values );
-void GfxApiCmdWriteTimestamp( VkCommandBuffer commandBuffer, GfxTimeStampQueryPool timeStampQueryPool, GfxPipelineStageFlagBits stageBits, uint32_t queryId );
+void GfxApiCmdWriteTimestamp( GfxCommandBuffer commandBuffer, GfxTimeStampQueryPool timeStampQueryPool, GfxPipelineStageFlagBits stageBits, uint32_t queryId );
 
 inline VkFilter ToVkFilter( GfxFilter filter )
 {
@@ -345,7 +346,7 @@ enum class GfxPipelineBindPoint {
 typedef VkPipelineLayout GfxPipelineLayout;
 typedef uint32_t root_constant_t;
 
-void CmdBindRootDescriptor( VkCommandBuffer commandBuffer, GfxPipelineBindPoint pipelineBindPoint, GfxPipelineLayout pipelineLayout, uint32_t rootBindingPoint, GfxRootDescriptor rootDescriptor, uint32_t bufferOffset );
+void CmdBindRootDescriptor( GfxCommandBuffer commandBuffer, GfxPipelineBindPoint pipelineBindPoint, GfxPipelineLayout pipelineLayout, uint32_t rootBindingPoint, GfxRootDescriptor rootDescriptor, uint32_t bufferOffset );
 
 inline VkPipelineBindPoint ToVkPipelineBindPoint( GfxPipelineBindPoint pipelineBindPoint )
 {
@@ -541,8 +542,8 @@ void Destroy( GfxPipelineLayout* pipelineLayout );
 void Destroy( GfxDescriptorTableLayout* layout );
 void Destroy( GfxDescriptorTable* descriptorTables, uint32_t count, GfxDescriptorPool descriptorPool );
 
-void CmdBindPipeline( VkCommandBuffer commandBuffer, GfxPipelineBindPoint pipelineBindPoint, GfxPipeline pipeline );
-void CmdBindDescriptorTable( VkCommandBuffer commandBuffer, GfxPipelineBindPoint pipelineBindPoint, GfxPipelineLayout pipelineLayout, uint32_t rootBindingPoint, GfxDescriptorTable descriptorTable );
+void CmdBindPipeline( GfxCommandBuffer commandBuffer, GfxPipelineBindPoint pipelineBindPoint, GfxPipeline pipeline );
+void CmdBindDescriptorTable( GfxCommandBuffer commandBuffer, GfxPipelineBindPoint pipelineBindPoint, GfxPipelineLayout pipelineLayout, uint32_t rootBindingPoint, GfxDescriptorTable descriptorTable );
 
 typedef VkSemaphore GfxSemaphore;
 bool CreateGfxSemaphore( GfxSemaphore* pSemaphore );
@@ -555,7 +556,7 @@ void ResetGfxFences( const GfxFence* pFences, uint32_t fencesCount );
 void WaitForFence( const GfxFence* pFences, uint32_t fenceCount, uint64_t timeoutNS );
 void WaitForFence( const GfxFence* pFences, uint32_t fenceCount );
 
-bool QueueSubmit( VkQueue queue, VkCommandBuffer* commandBuffers, uint32_t commandBuffersCount, GfxSemaphore* pWaitSemaphores, GfxPipelineStageFlag* waitDstStageMask, uint32_t waitSemaphoresCount, GfxSemaphore* pSignalSemaphores, uint32_t signalSemaphoresCount, GfxFence signalFence );
+bool QueueSubmit( VkQueue queue, GfxCommandBuffer* commandBuffers, uint32_t commandBuffersCount, GfxSemaphore* pWaitSemaphores, GfxPipelineStageFlag* waitDstStageMask, uint32_t waitSemaphoresCount, GfxSemaphore* pSignalSemaphores, uint32_t signalSemaphoresCount, GfxFence signalFence );
 
 typedef VkSwapchainKHR GfxSwapchain;
 typedef VkResult GfxSwapchainOperationResult;
@@ -569,13 +570,16 @@ bool SwapchainImageIsValid( GfxSwapchainOperationResult result );
 GfxSwapchainOperationResult AcquireNextSwapchainImage( GfxSwapchain swapchain, GfxSemaphore signalSemaphore, GfxSwapchainImage* swapchainImage );
 GfxSwapchainOperationResult QueuePresent( VkQueue presentQueue, const GfxSwapchainImage& swapchainImage, GfxSemaphore* pWaitSemaphores, uint32_t waitSemaphoresCount );
 
-void CmdBindVertexInputs( VkCommandBuffer commandBuffer, GfxApiBuffer* pVertexBuffers, uint32_t firstBinding, uint32_t vertexBuffersCount, GfxDeviceSize* pBufferOffsets );
-void CmdBindIndexBuffer( VkCommandBuffer commandBuffer, GfxApiBuffer buffer, GfxDeviceSize bufferOffset, GfxIndexType indexType );
-void CmdDrawIndexed( VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance );
+void CmdBindVertexInputs( GfxCommandBuffer commandBuffer, GfxApiBuffer* pVertexBuffers, uint32_t firstBinding, uint32_t vertexBuffersCount, GfxDeviceSize* pBufferOffsets );
+void CmdBindIndexBuffer( GfxCommandBuffer commandBuffer, GfxApiBuffer buffer, GfxDeviceSize bufferOffset, GfxIndexType indexType );
+void CmdDrawIndexed( GfxCommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance );
 
 void DeviceWaitIdle( GfxDevice device );
 
-struct Vk_Globals {
+bool CreateCommandBuffers( GfxCommandPool commandPool, GfxCommandBuffer* pCommandBuffers, uint32_t count );
+void DestroyCommandBuffers( GfxCommandPool commandPool, GfxCommandBuffer* pCommandBuffers, uint32_t count );
+
+struct Gfx_Globals {
 	GpuInstance instance = {};
 	PhysicalDevice physicalDevice = VK_NULL_HANDLE;
 	Device device = {};
@@ -585,4 +589,4 @@ struct Vk_Globals {
 	GfxCommandPool transferCommandPool = VK_NULL_HANDLE;
 };
 
-extern Vk_Globals g_vk;
+extern Gfx_Globals g_gfx;

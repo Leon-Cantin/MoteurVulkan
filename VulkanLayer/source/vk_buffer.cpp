@@ -22,7 +22,7 @@ VkBuffer create_buffer( GfxDeviceSize size, GfxBufferUsageFlags bufferUsageFlags
 	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 	VkBuffer buffer;
-	if( vkCreateBuffer( g_vk.device.device, &bufferInfo, nullptr, &buffer ) != VK_SUCCESS )
+	if( vkCreateBuffer( g_gfx.device.device, &bufferInfo, nullptr, &buffer ) != VK_SUCCESS )
 		throw std::runtime_error( "failed to create buffer!" );
 
 	return buffer;
@@ -30,10 +30,10 @@ VkBuffer create_buffer( GfxDeviceSize size, GfxBufferUsageFlags bufferUsageFlags
 
 void BindMemory( GfxApiBuffer buffer, const GfxMemAlloc& gfx_mem_alloc )
 {
-	vkBindBufferMemory( g_vk.device.device, buffer, gfx_mem_alloc.memory, gfx_mem_alloc.offset );
+	vkBindBufferMemory( g_gfx.device.device, buffer, gfx_mem_alloc.memory, gfx_mem_alloc.offset );
 }
 
-void copy_buffer( VkCommandBuffer commandBuffer, GfxApiBuffer dstBuffer, GfxApiBuffer srcBuffer, GfxDeviceSize dst_offset, GfxDeviceSize src_offset, GfxDeviceSize size )
+void copy_buffer( GfxCommandBuffer commandBuffer, GfxApiBuffer dstBuffer, GfxApiBuffer srcBuffer, GfxDeviceSize dst_offset, GfxDeviceSize src_offset, GfxDeviceSize size )
 {
 	//TODO: maybe create a new command pool with VK_COMMAND_POOL_CREATE_TRANSIENT_BIT for memory transfers
 	VkBufferCopy copyRegion = {};
@@ -43,7 +43,7 @@ void copy_buffer( VkCommandBuffer commandBuffer, GfxApiBuffer dstBuffer, GfxApiB
 	vkCmdCopyBuffer( commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion );
 }
 
-void copy_buffer( VkCommandBuffer commandBuffer, GfxApiBuffer dstBuffer, GfxApiBuffer srcBuffer, GfxDeviceSize size )
+void copy_buffer( GfxCommandBuffer commandBuffer, GfxApiBuffer dstBuffer, GfxApiBuffer srcBuffer, GfxDeviceSize size )
 {
 	copy_buffer( commandBuffer, dstBuffer, srcBuffer, 0, 0, size );
 }

@@ -41,7 +41,7 @@ GpuPipelineStateDesc GetGeoPipelineState()
 	return gpuPipelineState;
 }
 
-void CmdBeginGeometryRenderPass(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t currentFrame, const RenderPass * renderpass, const Technique * technique)
+void CmdBeginGeometryRenderPass(GfxCommandBuffer commandBuffer, VkExtent2D extent, uint32_t currentFrame, const RenderPass * renderpass, const Technique * technique)
 {
 	CmdBeginLabel(commandBuffer, "Geometry renderpass", glm::vec4(0.8f, 0.6f, 0.4f, 1.0f));
 	const FrameBuffer& frameBuffer = renderpass->outputFrameBuffer[currentFrame];
@@ -50,13 +50,13 @@ void CmdBeginGeometryRenderPass(VkCommandBuffer commandBuffer, VkExtent2D extent
 	BeginTechnique( commandBuffer, technique, currentFrame );
 }
 
-void CmdEndGeometryRenderPass(VkCommandBuffer vkCommandBuffer)
+void CmdEndGeometryRenderPass(GfxCommandBuffer vkCommandBuffer)
 {
 	EndRenderPass(vkCommandBuffer);
 	CmdEndLabel(vkCommandBuffer);
 }
 
-static void CmdDrawModelAsset( VkCommandBuffer commandBuffer, const DrawListEntry* drawModel, uint32_t currentFrame, const Technique* technique )
+static void CmdDrawModelAsset( GfxCommandBuffer commandBuffer, const DrawListEntry* drawModel, uint32_t currentFrame, const Technique* technique )
 {	
 	//TODO: could do like the VIB, query a texture of X from an array using an enum index
 	//Have a list of all required paremeters for this pass.
@@ -69,7 +69,7 @@ static void CmdDrawModelAsset( VkCommandBuffer commandBuffer, const DrawListEntr
 	CmdDrawIndexed(commandBuffer, VIBindings_PosColUV, *modelAsset);
 }
 
-void GeometryRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique )
+void GeometryRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, GfxCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique )
 {
 	CmdBeginGeometryRenderPass(graphicsCommandBuffer, extent, currentFrame, renderpass, technique);
 	for (size_t i = 0; i < frameData->drawList.size(); ++i)

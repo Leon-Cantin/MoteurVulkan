@@ -33,7 +33,7 @@ namespace FG
 
 	struct FrameGraphNode
 	{
-		void( *RecordDrawCommands )(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique);
+		void( *RecordDrawCommands )(uint32_t currentFrame, const SceneFrameData* frameData, GfxCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique);
 		std::vector<GfxDescriptorTableDesc> descriptorSets;
 		GpuPipelineLayout gpuPipelineLayout;
 		GpuPipelineStateDesc gpuPipelineStateDesc;
@@ -91,5 +91,5 @@ namespace FG
 	void ClearLast(RenderPassCreationData& resource);
 
 	//Frame graph stuff
-	void RecordDrawCommands( uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, FrameGraph* frameGraphExternal );
+	void RecordDrawCommands( uint32_t currentFrame, const SceneFrameData* frameData, GfxCommandBuffer graphicsCommandBuffer, VkExtent2D extent, FrameGraph* frameGraphExternal );
 }

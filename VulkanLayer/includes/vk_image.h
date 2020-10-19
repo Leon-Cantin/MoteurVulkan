@@ -7,7 +7,7 @@
 void BindMemory( VkImage image, VkDeviceMemory memory );
 void BindMemory( VkImage image, const GfxMemAlloc& gfx_mem_alloc );
 
-void copyBufferToImage( VkCommandBuffer commandBuffer, VkBuffer buffer, uint32_t bufferOffset, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount );
+void copyBufferToImage( GfxCommandBuffer commandBuffer, VkBuffer buffer, uint32_t bufferOffset, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount );
 
 bool hasStencilComponent(VkFormat format);
 VkFormat findDepthFormat();

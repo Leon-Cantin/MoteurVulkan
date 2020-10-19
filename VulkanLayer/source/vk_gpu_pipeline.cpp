@@ -43,7 +43,7 @@ void CreateGfxPipelineLayout( const GfxDescriptorTableDesc* descriptorTablesDesc
 	pipeline_layout_info.pushConstantRangeCount = rootConstantRangesCount;
 	pipeline_layout_info.pPushConstantRanges = pushConstantRanges;
 
-	if( vkCreatePipelineLayout( g_vk.device.device, &pipeline_layout_info, nullptr, o_pipelineLayout ) != VK_SUCCESS ) {
+	if( vkCreatePipelineLayout( g_gfx.device.device, &pipeline_layout_info, nullptr, o_pipelineLayout ) != VK_SUCCESS ) {
 		throw std::runtime_error( "failed to create pipeline layout!" );
 	}
 }
@@ -200,22 +200,22 @@ void CreatePipeline( const GpuPipelineStateDesc& gpuPipelineDesc, const RenderPa
 	pipeline_info.basePipelineHandle = VK_NULL_HANDLE; // Optional
 	pipeline_info.basePipelineIndex = -1; // Optional
 
-	if( vkCreateGraphicsPipelines( g_vk.device.device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, o_pipeline ) != VK_SUCCESS )
+	if( vkCreateGraphicsPipelines( g_gfx.device.device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, o_pipeline ) != VK_SUCCESS )
 		throw std::runtime_error( "failed to create graphics pipeline!" );
 
 
 	for( uint8_t i = 0; i < shadersCount; ++i )
-		vkDestroyShaderModule( g_vk.device.device, shader_stages[i].module, nullptr );
+		vkDestroyShaderModule( g_gfx.device.device, shader_stages[i].module, nullptr );
 }
 
 void Destroy( GfxPipeline* pipeline )
 {
-	vkDestroyPipeline( g_vk.device.device, *pipeline, nullptr );
+	vkDestroyPipeline( g_gfx.device.device, *pipeline, nullptr );
 	*pipeline = VK_NULL_HANDLE;
 }
 
 void Destroy( GfxPipelineLayout* pipelineLayout )
 {
-	vkDestroyPipelineLayout( g_vk.device.device, *pipelineLayout, nullptr );
+	vkDestroyPipelineLayout( g_gfx.device.device, *pipelineLayout, nullptr );
 	*pipelineLayout = VK_NULL_HANDLE;
 }

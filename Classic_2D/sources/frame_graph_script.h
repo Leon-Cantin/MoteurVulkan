@@ -164,7 +164,7 @@ GfxDescriptorTableDesc copyPassSet =
 
 #include "vk_debug.h"
 #include "file_system.h"
-void CopyRecordDrawCommandsBuffer( uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique )
+void CopyRecordDrawCommandsBuffer( uint32_t currentFrame, const SceneFrameData* frameData, GfxCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique )
 {
 	//TODO: we don't need extent, it's implicit by the framebuffer
 	//TODO: don't let this code choose with "currentFrame" it doesn't need to know that.

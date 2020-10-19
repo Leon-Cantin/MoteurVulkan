@@ -28,7 +28,7 @@ FrameBuffer CreateFrameBuffer( GfxImageView* colors, uint32_t colorCount, GfxIma
 	frameBuffer.depthCount = opt_depth ? 1 : 0;
 	frameBuffer.layerCount = 1;
 
-	if (vkCreateFramebuffer(g_vk.device.device, &framebuffer_info, nullptr, &frameBuffer.frameBuffer))
+	if (vkCreateFramebuffer(g_gfx.device.device, &framebuffer_info, nullptr, &frameBuffer.frameBuffer))
 		throw std::runtime_error("failed to create framebuffer!");
 
 	return frameBuffer;
@@ -36,6 +36,6 @@ FrameBuffer CreateFrameBuffer( GfxImageView* colors, uint32_t colorCount, GfxIma
 
 void Destroy( FrameBuffer* frameBuffer )
 {
-	vkDestroyFramebuffer( g_vk.device.device, frameBuffer->frameBuffer, nullptr );
+	vkDestroyFramebuffer( g_gfx.device.device, frameBuffer->frameBuffer, nullptr );
 	*frameBuffer = {};
 }

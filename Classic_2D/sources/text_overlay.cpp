@@ -53,7 +53,7 @@ GpuPipelineStateDesc GetTextPipelineState()
 	return gpuPipelineState;
 }
 
-static void CmdDrawText( VkCommandBuffer commandBuffer, VkExtent2D extent, size_t frameIndex, const RenderPass * renderpass, const Technique * technique )
+static void CmdDrawText( GfxCommandBuffer commandBuffer, VkExtent2D extent, size_t frameIndex, const RenderPass * renderpass, const Technique * technique )
 {
 	CmdBeginLabel(commandBuffer, "Text overlay Renderpass", glm::vec4(0.6f, 0.6f, 0.6f, 1.0f));
 	const FrameBuffer& frameBuffer = renderpass->outputFrameBuffer[frameIndex];
@@ -179,7 +179,7 @@ void CleanupTextRenderPass()
 	DestroyGfxModel( textModel );
 }
 
-void TextRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique )
+void TextRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, GfxCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique )
 {
 	CmdDrawText(graphicsCommandBuffer, extent, currentFrame, renderpass, technique);
 }

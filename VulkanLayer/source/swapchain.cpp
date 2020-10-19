@@ -44,9 +44,9 @@ VkExtent2D choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities, uint
 	}
 }
 
-void CreateSwapChain(VkSurfaceKHR vkSurface, uint32_t maxWidth, uint32_t maxHeight, Swapchain& o_swapchain)
+void CreateSwapChain( DisplaySurface vkSurface, uint32_t maxWidth, uint32_t maxHeight, Swapchain& o_swapchain)
 {
-	SwapChainSupportDetails swapChainSupport = query_swap_chain_support(g_vk.physicalDevice, vkSurface);
+	SwapChainSupportDetails swapChainSupport = query_swap_chain_support(g_gfx.physicalDevice, vkSurface);
 
 	VkSurfaceFormatKHR surfaceFormat = choose_swap_surface_format(swapChainSupport.formats);
 	VkPresentModeKHR presentMode = choose_swap_present_mode(swapChainSupport.present_modes);
@@ -67,8 +67,8 @@ void CreateSwapChain(VkSurfaceKHR vkSurface, uint32_t maxWidth, uint32_t maxHeig
 	create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
 
 	//Add queue info
-	uint32_t queueFamilyIndices[] = { g_vk.device.graphics_queue.queueFamilyIndex, g_vk.device.present_queue.queueFamilyIndex };
-	if ( g_vk.device.graphics_queue.queueFamilyIndex != g_vk.device.present_queue.queueFamilyIndex ) {
+	uint32_t queueFamilyIndices[] = { g_gfx.device.graphics_queue.queueFamilyIndex, g_gfx.device.present_queue.queueFamilyIndex };
+	if ( g_gfx.device.graphics_queue.queueFamilyIndex != g_gfx.device.present_queue.queueFamilyIndex ) {
 		create_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 		create_info.queueFamilyIndexCount = 2;
 		create_info.pQueueFamilyIndices = queueFamilyIndices;
@@ -85,13 +85,13 @@ void CreateSwapChain(VkSurfaceKHR vkSurface, uint32_t maxWidth, uint32_t maxHeig
 	create_info.clipped = VK_TRUE;
 	create_info.oldSwapchain = VK_NULL_HANDLE;
 
-	if (vkCreateSwapchainKHR(g_vk.device.device, &create_info, nullptr, &o_swapchain.swapchain) != VK_SUCCESS)
+	if (vkCreateSwapchainKHR(g_gfx.device.device, &create_info, nullptr, &o_swapchain.swapchain) != VK_SUCCESS)
 		throw std::runtime_error("failed to create swap chain!");
 
 	//Query swap chain images
-	vkGetSwapchainImagesKHR( g_vk.device.device, o_swapchain.swapchain, &image_count, nullptr);
+	vkGetSwapchainImagesKHR( g_gfx.device.device, o_swapchain.swapchain, &image_count, nullptr);
 	std::vector<VkImage> swapChainImages(image_count);
-	vkGetSwapchainImagesKHR( g_vk.device.device, o_swapchain.swapchain, &image_count, swapChainImages.data());
+	vkGetSwapchainImagesKHR( g_gfx.device.device, o_swapchain.swapchain, &image_count, swapChainImages.data());
 
 	VkFormat swapchainFormat = surfaceFormat.format;
 
@@ -113,11 +113,11 @@ void Destroy( Swapchain* swapchain )
 	for( auto image : swapchain->images )
 		Destroy( &image.imageView );
 
-	vkDestroySwapchainKHR( g_vk.device.device, swapchain->swapchain, nullptr );
+	vkDestroySwapchainKHR( g_gfx.device.device, swapchain->swapchain, nullptr );
 	swapchain->swapchain = VK_NULL_HANDLE;
 }
 
-SwapChainSupportDetails query_swap_chain_support( VkPhysicalDevice device, VkSurfaceKHR surface ) {
+SwapChainSupportDetails query_swap_chain_support( VkPhysicalDevice device, DisplaySurface surface ) {
 	SwapChainSupportDetails details;
 
 	//Capabilities

@@ -1,7 +1,7 @@
 #include "renderpass.h"
 #include "vk_debug.h"
 
-void BeginRenderPass(VkCommandBuffer commandBuffer, const RenderPass& renderpass, const FrameBuffer& framebuffer)
+void BeginRenderPass(GfxCommandBuffer commandBuffer, const RenderPass& renderpass, const FrameBuffer& framebuffer)
 {
 	VkRenderPassBeginInfo render_pass_info = {};
 	render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -26,7 +26,7 @@ void BeginRenderPass(VkCommandBuffer commandBuffer, const RenderPass& renderpass
 	vkCmdBeginRenderPass(commandBuffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 }
 
-void EndRenderPass(VkCommandBuffer commandBuffer)
+void EndRenderPass(GfxCommandBuffer commandBuffer)
 {
 	vkCmdEndRenderPass(commandBuffer);
 }
@@ -108,7 +108,7 @@ RenderPass CreateRenderPass( const char* name, const AttachementDescription* col
 	RenderPass renderPass;
 	/*A render pass represents a collection of attachments, subpasses, and dependencies between the subpasses,
 	and describes how the attachments are used over the course of the subpasses.*/
-	if( vkCreateRenderPass( g_vk.device.device, &render_pass_info, nullptr, &renderPass.vk_renderpass ) != VK_SUCCESS )
+	if( vkCreateRenderPass( g_gfx.device.device, &render_pass_info, nullptr, &renderPass.vk_renderpass ) != VK_SUCCESS )
 		throw std::runtime_error( "failed to create render pass!" );
 
 	renderPass.colorFormats.resize( colorAttachementCount );
@@ -124,6 +124,6 @@ RenderPass CreateRenderPass( const char* name, const AttachementDescription* col
 
 void Destroy( RenderPass* renderpass )
 {
-	vkDestroyRenderPass( g_vk.device.device, renderpass->vk_renderpass, nullptr );
+	vkDestroyRenderPass( g_gfx.device.device, renderpass->vk_renderpass, nullptr );
 	renderpass->vk_renderpass = VK_NULL_HANDLE;
 }

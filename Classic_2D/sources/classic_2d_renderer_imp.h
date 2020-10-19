@@ -9,5 +9,5 @@
 void CompileScene( BindlessTexturesState* bindlessTexturesState );
 void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, const std::vector<GfxAssetInstance>& drawList, const std::vector<TextZone>& textZones );
 
-void InitRendererImp( VkSurfaceKHR swapchainSurface );
+void InitRendererImp( DisplaySurface swapchainSurface );
 void CleanupRendererImp();

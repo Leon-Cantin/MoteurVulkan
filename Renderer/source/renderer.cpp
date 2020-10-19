@@ -13,7 +13,7 @@
 #include <iostream>
 
 Swapchain g_swapchain;
-std::array<VkCommandBuffer, SIMULTANEOUS_FRAMES> g_graphicsCommandBuffers;
+std::array<GfxCommandBuffer, SIMULTANEOUS_FRAMES> g_graphicsCommandBuffers;
 
 std::array<GfxSemaphore, SIMULTANEOUS_FRAMES> graphicPassFinishedSemaphores;
 std::array<GfxSemaphore, SIMULTANEOUS_FRAMES> imageAvailableSemaphores;
@@ -27,22 +27,9 @@ FG::FrameGraph _frameGraph;
 bool( *_needResize )();
 void( *_getFrameBufferSize )(uint64_t* width, uint64_t* height);
 
-VkSurfaceKHR _swapchainSurface;
+DisplaySurface _swapchainSurface;
 
 GfxImage dummyImage;
-
-static void CreateCommandBuffer()
-{
-	VkCommandBufferAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = g_vk.graphicsCommandPool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = static_cast<uint32_t>(g_graphicsCommandBuffers.size());
-
-	if (vkAllocateCommandBuffers(g_vk.device.device, &allocInfo, g_graphicsCommandBuffers.data()) != VK_SUCCESS) {
-		throw std::runtime_error("failed to allocate command buffers!");
-	}
-}
 
 static void create_sync_objects()
 {
@@ -78,7 +65,7 @@ static void CreateDummyImage()
 	allocator.Commit();
 }
 
-void InitRenderer( VkSurfaceKHR swapchainSurface, bool( *needResize )(), void( *getFrameBufferSize )(uint64_t* width, uint64_t* height) )
+void InitRenderer( DisplaySurface swapchainSurface, bool( *needResize )(), void( *getFrameBufferSize )(uint64_t* width, uint64_t* height) )
 {
 	//TODO: do better than this shit
 	_getFrameBufferSize = getFrameBufferSize;
@@ -89,9 +76,10 @@ void InitRenderer( VkSurfaceKHR swapchainSurface, bool( *needResize )(), void( *
 	_swapchainSurface = swapchainSurface;
 	CreateSwapChain( swapchainSurface, width, height, g_swapchain );
 
-	CreateCommandPool( g_vk.device.graphics_queue.queueFamilyIndex, &g_vk.graphicsCommandPool );
-	CreateSingleUseCommandPool( g_vk.device.graphics_queue.queueFamilyIndex, &g_vk.graphicsSingleUseCommandPool );
-	CreateCommandBuffer();
+	CreateCommandPool( g_gfx.device.graphics_queue.queueFamilyIndex, &g_gfx.graphicsCommandPool );
+	CreateSingleUseCommandPool( g_gfx.device.graphics_queue.queueFamilyIndex, &g_gfx.graphicsSingleUseCommandPool );
+	if( !CreateCommandBuffers( g_gfx.graphicsCommandPool, g_graphicsCommandBuffers.data(), static_cast< uint32_t >(g_graphicsCommandBuffers.size()) ) )
+		throw std::runtime_error( "failed to allocate command buffers!" );
 
 	InitSamplers();
 
@@ -107,7 +95,7 @@ static void CompileFrameGraph()
 	_frameGraph = _fFGScriptInitialize( &g_swapchain );
 }
 
-void recreate_swap_chain( VkSurfaceKHR swapchainSurface )
+void recreate_swap_chain( DisplaySurface swapchainSurface )
 {
 	//TODO: find a better way of handling window minimization
 	uint64_t width = 0, height = 0;
@@ -117,7 +105,7 @@ void recreate_swap_chain( VkSurfaceKHR swapchainSurface )
 		//glfwWaitEvents();
 	}
 
-	DeviceWaitIdle( g_vk.device.device );
+	DeviceWaitIdle( g_gfx.device.device );
 
 	cleanup_swap_chain();
 
@@ -141,7 +129,7 @@ void CompileFrameGraph( FG::FrameGraph( *FGScriptInitialize )( const Swapchain* 
 
 void RecordCommandBuffer(uint32_t currentFrame, const SceneFrameData* frameData)
 {
-	VkCommandBuffer graphicsCommandBuffer = g_graphicsCommandBuffers[currentFrame];
+	GfxCommandBuffer graphicsCommandBuffer = g_graphicsCommandBuffers[currentFrame];
 	BeginCommandBufferRecording(graphicsCommandBuffer);
 
 	CmdResetTimeStampSet(graphicsCommandBuffer, currentFrame);
@@ -180,11 +168,11 @@ void draw_frame(uint32_t currentFrame, const SceneFrameData* frameData)
 
 	ResetGfxFences( &inFlightFences[currentFrame], 1);
 
-	if( !QueueSubmit( g_vk.device.graphics_queue.queue, &g_graphicsCommandBuffers[currentFrame], 1, waitSemaphores, waitStages, 1, signalSemaphores, 1, inFlightFences[currentFrame] ) )
+	if( !QueueSubmit( g_gfx.device.graphics_queue.queue, &g_graphicsCommandBuffers[currentFrame], 1, waitSemaphores, waitStages, 1, signalSemaphores, 1, inFlightFences[currentFrame] ) )
 		throw std::runtime_error( "failed to submit draw command buffer!" );
 
 	//Present
-	const GfxSwapchainOperationResult presentResult = QueuePresent( g_vk.device.present_queue.queue, swapchainImage, &renderFinishedSemaphores[currentFrame], 1 );
+	const GfxSwapchainOperationResult presentResult = QueuePresent( g_gfx.device.present_queue.queue, swapchainImage, &renderFinishedSemaphores[currentFrame], 1 );
 	if (!SwapchainImageIsValid( presentResult ))
 	{
 		std::cout << "recreating swap chain " << currentFrame << std::endl;
@@ -195,7 +183,7 @@ void draw_frame(uint32_t currentFrame, const SceneFrameData* frameData)
 void CleanupRenderer() {
 	DestroyImage( &dummyImage );
 
-	vkFreeCommandBuffers(g_vk.device.device, g_vk.graphicsCommandPool, static_cast<uint32_t>(g_graphicsCommandBuffers.size()), g_graphicsCommandBuffers.data());
+	DestroyCommandBuffers( g_gfx.graphicsCommandPool, g_graphicsCommandBuffers.data(), static_cast<uint32_t>(g_graphicsCommandBuffers.size()));
 
 	cleanup_swap_chain();
 
@@ -211,15 +199,15 @@ void CleanupRenderer() {
 		DestroyGfxFence( &inFlightFences[i] );
 	}
 
-	Destroy( &g_vk.graphicsCommandPool );
-	Destroy( &g_vk.graphicsSingleUseCommandPool );
-	Destroy( &g_vk.computeCommandPool );
-	Destroy( &g_vk.transferCommandPool );
+	Destroy( &g_gfx.graphicsCommandPool );
+	Destroy( &g_gfx.graphicsSingleUseCommandPool );
+	Destroy( &g_gfx.computeCommandPool );
+	Destroy( &g_gfx.transferCommandPool );
 
 	DestroyTimeStampsPool();
 }
 
-void CmdBindVertexInputs( VkCommandBuffer commandBuffer, const std::vector<VIBinding>& gpuPipelineVIBindings, const GfxModel& gfxModel )
+void CmdBindVertexInputs( GfxCommandBuffer commandBuffer, const std::vector<VIBinding>& gpuPipelineVIBindings, const GfxModel& gfxModel )
 {
 	const uint32_t maxVertexInputBinding = 16;
 	const uint32_t gpuPipelineVIBingindCount = gpuPipelineVIBindings.size();
@@ -231,7 +219,7 @@ void CmdBindVertexInputs( VkCommandBuffer commandBuffer, const std::vector<VIBin
 	{
 		const GfxModelVertexInput* modelVI = GetVertexInput( gfxModel, ( eVIDataType )gpuPipelineVIBindings[i].desc.dataType );
 		assert( gpuPipelineVIBindings[i].desc == modelVI->desc );
-		//assert( modelVI.vertAttribBuffers != VK_NULL_HANDLE );
+		//TODO: assert( modelVI.vertAttribBuffers is valid );
 		vertexBuffers[i] = modelVI->buffer.buffer;
 		offsets[i] = 0;
 	}
@@ -239,14 +227,14 @@ void CmdBindVertexInputs( VkCommandBuffer commandBuffer, const std::vector<VIBin
 	CmdBindVertexInputs( commandBuffer, vertexBuffers, 0, gpuPipelineVIBingindCount, offsets );
 }
 
-void CmdDrawIndexed( VkCommandBuffer commandBuffer, const std::vector<VIBinding>& gpuPipelineVIBindings, const GfxModel& gfxModel, uint32_t indexCount )
+void CmdDrawIndexed( GfxCommandBuffer commandBuffer, const std::vector<VIBinding>& gpuPipelineVIBindings, const GfxModel& gfxModel, uint32_t indexCount )
 {
 	CmdBindVertexInputs( commandBuffer, gpuPipelineVIBindings, gfxModel );
 	CmdBindIndexBuffer( commandBuffer, gfxModel.indexBuffer.buffer, 0, gfxModel.indexType );
 	CmdDrawIndexed( commandBuffer, indexCount, 1, 0, 0, 0 );
 }
 
-void CmdDrawIndexed( VkCommandBuffer commandBuffer, const std::vector<VIBinding>& gpuPipelineVIBindings, const GfxModel& gfxModel )
+void CmdDrawIndexed( GfxCommandBuffer commandBuffer, const std::vector<VIBinding>& gpuPipelineVIBindings, const GfxModel& gfxModel )
 {
 	CmdDrawIndexed( commandBuffer, gpuPipelineVIBindings, gfxModel, gfxModel.indexCount );
 }
