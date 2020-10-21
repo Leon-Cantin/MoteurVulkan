@@ -146,7 +146,7 @@ bool QueueSubmit( VkQueue queue, GfxCommandBuffer* commandBuffers, uint32_t comm
 	graphicsSubmitInfo.signalSemaphoreCount = signalSemaphoresCount;
 	graphicsSubmitInfo.pSignalSemaphores = pSignalSemaphores;
 
-	return vkQueueSubmit( g_gfx.device.graphics_queue.queue, 1, &graphicsSubmitInfo, signalFence ) == VK_SUCCESS;
+	return vkQueueSubmit( queue, 1, &graphicsSubmitInfo, signalFence ) == VK_SUCCESS;
 }
 
 GfxSwapchainOperationResult AcquireNextSwapchainImage( GfxSwapchain swapchain, GfxSemaphore signalSemaphore, GfxSwapchainImage* swapchainImage )

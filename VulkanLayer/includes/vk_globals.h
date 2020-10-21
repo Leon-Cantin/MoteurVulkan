@@ -461,6 +461,8 @@ void CreateDesciptorTableLayout( const VkDescriptorSetLayoutBinding* bindings, u
 void CreateDescriptorTables( GfxDescriptorPool descriptorPool, uint32_t count, GfxDescriptorTableLayout * descriptorSetLayouts, GfxDescriptorTable* o_descriptorTables );
 void UpdateDescriptorTables( size_t writeDescriptorTableCount, const WriteDescriptorTable* writeDescriptorTable, GfxDescriptorTable* descriptorTable );
 
+void Destroy( GfxDescriptorPool* descriptorPool );
+
 constexpr uint32_t VI_STATE_MAX_DESCRIPTIONS = 5;
 struct VIState
 {
@@ -579,14 +581,18 @@ void DeviceWaitIdle( GfxDevice device );
 bool CreateCommandBuffers( GfxCommandPool commandPool, GfxCommandBuffer* pCommandBuffers, uint32_t count );
 void DestroyCommandBuffers( GfxCommandPool commandPool, GfxCommandBuffer* pCommandBuffers, uint32_t count );
 
+PhysicalDevice PickSuitablePhysicalDevice( DisplaySurface swapchainSurface, GpuInstance& instance );
+Device create_logical_device( DisplaySurface swapchainSurface, PhysicalDevice physicalDevice, bool enableValidationLayers );
+void Destroy( Device* device );
+
+GpuInstance CreateInstance( bool useValidationLayer );
+void Destroy( GpuInstance* gpuInstance );
+
 struct Gfx_Globals {
 	GpuInstance instance = {};
 	PhysicalDevice physicalDevice = VK_NULL_HANDLE;
 	Device device = {};
 	GfxCommandPool graphicsSingleUseCommandPool = VK_NULL_HANDLE;
-	GfxCommandPool graphicsCommandPool = VK_NULL_HANDLE;
-	GfxCommandPool computeCommandPool = VK_NULL_HANDLE;
-	GfxCommandPool transferCommandPool = VK_NULL_HANDLE;
 };
 
 extern Gfx_Globals g_gfx;

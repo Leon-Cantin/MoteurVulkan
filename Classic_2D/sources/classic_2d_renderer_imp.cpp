@@ -2,7 +2,6 @@
 
 #include "frame_graph_script.h"
 #include "renderer.h"
-#include "descriptors.h"
 #include "profile.h"
 #include "console_command.h"
 #include "window_handler.h"
@@ -13,7 +12,7 @@
 #include <glm/vec4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-VkDescriptorPool descriptorPool_scene;
+GfxDescriptorPool descriptorPool_scene;
 
 extern Swapchain g_swapchain;
 
@@ -93,7 +92,7 @@ GfxImageSamplerCombined textTextures[1];
 static void FillInputBuffers( BindlessTexturesState* bindlessTexturesState )
 {
 
-	VkSampler sampler = GetSampler( eSamplers::Trilinear );
+	GfxApiSampler sampler = GetSampler( eSamplers::Trilinear );
 
 	textTextures[0] = { const_cast< GfxImage*>(GetTextImage()), sampler };
 	
@@ -111,7 +110,7 @@ static bool NeedResize()
 	return value;
 }
 
-static VkDescriptorPool CreateDescriptorPool_BAD()
+static GfxDescriptorPool CreateDescriptorPool_BAD()
 {
 	const uint32_t geometryDescriptorSets = 2 * SIMULTANEOUS_FRAMES;
 	const uint32_t geometryBuffersCount = 2 * SIMULTANEOUS_FRAMES;
@@ -131,7 +130,7 @@ static VkDescriptorPool CreateDescriptorPool_BAD()
 
 	const uint32_t maxSets = geometryDescriptorSets + textDescriptorSetsCount + copyDescriptorSetsCount;
 
-	VkDescriptorPool descriptorPool;
+	GfxDescriptorPool descriptorPool;
 	CreateDescriptorPool( uniformBuffersCount, uniformBuffersDynamicCount, imageSamplersCount, storageImageCount, sampledImageCount, maxSets, &descriptorPool );
 
 	return descriptorPool;
@@ -150,7 +149,7 @@ void CompileScene( BindlessTexturesState* bindlessTexturesState )
 	CleanupFrameGraph();
 
 	if( descriptorPool_scene )
-		vkDestroyDescriptorPool( g_gfx.device.device, descriptorPool_scene, nullptr );
+		Destroy( &descriptorPool_scene );
 	descriptorPool_scene = CreateDescriptorPool_BAD();
 
 	MEM::zero( &_inputBuffers );
@@ -165,7 +164,7 @@ void CleanupRendererImp()
 {
 	CleanupTextRenderPass();
 	CleanupRenderer();	
-	vkDestroyDescriptorPool( g_gfx.device.device, descriptorPool_scene, nullptr );
+	Destroy( &descriptorPool_scene );
 }
 
 void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, const std::vector<GfxAssetInstance>& drawList, const std::vector<TextZone>& textZones )

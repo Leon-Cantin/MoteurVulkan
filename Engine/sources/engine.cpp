@@ -44,10 +44,10 @@ namespace Engine
 #else
 		const bool useValidationLayer = true;
 #endif
-		g_gfx.instance = VK::CreateInstance( useValidationLayer );
+		g_gfx.instance = CreateInstance( useValidationLayer );
 		WH::VK::InitializeWindow();
-		g_gfx.physicalDevice = VK::PickSuitablePhysicalDevice( WH::VK::_windowSurface, g_gfx.instance );
-		g_gfx.device = VK::create_logical_device( WH::VK::_windowSurface, g_gfx.physicalDevice, useValidationLayer );
+		g_gfx.physicalDevice = PickSuitablePhysicalDevice( WH::VK::_windowSurface, g_gfx.instance );
+		g_gfx.device = create_logical_device( WH::VK::_windowSurface, g_gfx.physicalDevice, useValidationLayer );
 
 		//Init renderer stuff
 		_engineState._initRendererImp( WH::VK::_windowSurface );
@@ -62,13 +62,13 @@ namespace Engine
 			_engineState._currentSceneScript.updateCallback();
 		}
 
-		vkDeviceWaitIdle( g_gfx.device.device );
+		DeviceWaitIdle( g_gfx.device.device );
 		_engineState._currentSceneScript.destroyCallback();
 		_engineState._destroyRendererImp();
 
 		WH::VK::ShutdownWindow();
-		VK::Destroy( &g_gfx.device );
-		VK::Destroy( &g_gfx.instance );
+		Destroy( &g_gfx.device );
+		Destroy( &g_gfx.instance );
 		WH::ShutdownWindow();
 	}
 }

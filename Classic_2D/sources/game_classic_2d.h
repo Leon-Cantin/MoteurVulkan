@@ -1,7 +1,6 @@
 #pragma once
 
 #include "classic_2d_renderer_imp.h"
-#include "vk_framework.h"
 #include "console_command.h"
 #include "input.h"
 #include "tick_system.h"

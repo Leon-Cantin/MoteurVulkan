@@ -4,13 +4,14 @@
 #include "vk_debug.h"
 #include "vk_commands.h"
 #include "profile.h"
-#include "vk_framework.h"
 #include "gpu_synchronization.h"
 #include "frame_graph.h"
 #include "gfx_heaps_batched_allocator.h"
 
 #include <array>
 #include <iostream>
+
+GfxCommandPool g_graphicsCommandPool;
 
 Swapchain g_swapchain;
 std::array<GfxCommandBuffer, SIMULTANEOUS_FRAMES> g_graphicsCommandBuffers;
@@ -76,9 +77,9 @@ void InitRenderer( DisplaySurface swapchainSurface, bool( *needResize )(), void(
 	_swapchainSurface = swapchainSurface;
 	CreateSwapChain( swapchainSurface, width, height, g_swapchain );
 
-	CreateCommandPool( g_gfx.device.graphics_queue.queueFamilyIndex, &g_gfx.graphicsCommandPool );
+	CreateCommandPool( g_gfx.device.graphics_queue.queueFamilyIndex, &g_graphicsCommandPool );
 	CreateSingleUseCommandPool( g_gfx.device.graphics_queue.queueFamilyIndex, &g_gfx.graphicsSingleUseCommandPool );
-	if( !CreateCommandBuffers( g_gfx.graphicsCommandPool, g_graphicsCommandBuffers.data(), static_cast< uint32_t >(g_graphicsCommandBuffers.size()) ) )
+	if( !CreateCommandBuffers( g_graphicsCommandPool, g_graphicsCommandBuffers.data(), static_cast< uint32_t >(g_graphicsCommandBuffers.size()) ) )
 		throw std::runtime_error( "failed to allocate command buffers!" );
 
 	InitSamplers();
@@ -183,7 +184,7 @@ void draw_frame(uint32_t currentFrame, const SceneFrameData* frameData)
 void CleanupRenderer() {
 	DestroyImage( &dummyImage );
 
-	DestroyCommandBuffers( g_gfx.graphicsCommandPool, g_graphicsCommandBuffers.data(), static_cast<uint32_t>(g_graphicsCommandBuffers.size()));
+	DestroyCommandBuffers( g_graphicsCommandPool, g_graphicsCommandBuffers.data(), static_cast<uint32_t>(g_graphicsCommandBuffers.size()));
 
 	cleanup_swap_chain();
 
@@ -199,10 +200,8 @@ void CleanupRenderer() {
 		DestroyGfxFence( &inFlightFences[i] );
 	}
 
-	Destroy( &g_gfx.graphicsCommandPool );
+	Destroy( &g_graphicsCommandPool );
 	Destroy( &g_gfx.graphicsSingleUseCommandPool );
-	Destroy( &g_gfx.computeCommandPool );
-	Destroy( &g_gfx.transferCommandPool );
 
 	DestroyTimeStampsPool();
 }

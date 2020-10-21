@@ -1,4 +1,4 @@
-#include "descriptors.h"
+#include "vk_globals.h"
 
 #include <stdexcept>
 #include <assert.h>

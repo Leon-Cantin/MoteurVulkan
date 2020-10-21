@@ -1,7 +1,6 @@
 #pragma once
 
 #include "window_handler.h"
-#include "vk_framework.h"
 #include "window_handler_vk.h"
 #include "memory.h"
 #include <unordered_map>

@@ -4,15 +4,15 @@
 
 #include "geometry_renderpass.h"
 #include "text_overlay.h"
-#include "descriptors.h"
+#include "vk_globals.h"
 #include "../shaders/shadersCommon.h"
 
 #include <unordered_map>
 
 std::array< GpuInputData, SIMULTANEOUS_FRAMES>* _pInputBuffers;
-VkDescriptorPool _descriptorPool;
+GfxDescriptorPool _descriptorPool;
 
-void FG_Script_SetInputBuffers( std::array< GpuInputData, SIMULTANEOUS_FRAMES>* pInputBuffers, VkDescriptorPool descriptorPool )
+void FG_Script_SetInputBuffers( std::array< GpuInputData, SIMULTANEOUS_FRAMES>* pInputBuffers, GfxDescriptorPool descriptorPool )
 {
 	_pInputBuffers = pInputBuffers;
 	_descriptorPool = descriptorPool;

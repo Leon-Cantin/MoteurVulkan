@@ -1,7 +1,7 @@
 #include "scene_instance.h"
 
 #include <glm/gtc/matrix_transform.hpp>
-#include "descriptors.h"
+#include "vk_globals.h"
 #include "vk_buffer.h"
 
 static uint32_t instances_count = 0;

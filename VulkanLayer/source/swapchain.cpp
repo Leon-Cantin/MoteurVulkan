@@ -1,5 +1,4 @@
 #include "swapchain.h"
-#include "vk_framework.h"
 
 #include <limits>
 #include <algorithm>

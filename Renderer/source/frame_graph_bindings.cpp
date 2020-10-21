@@ -2,7 +2,7 @@
 #include "frame_graph_common_internal.h"
 #include "gfx_heaps_batched_allocator.h"
 
-#include "descriptors.h"
+#include "vk_globals.h"
 #include "material.h"
 #include <stdexcept>
 

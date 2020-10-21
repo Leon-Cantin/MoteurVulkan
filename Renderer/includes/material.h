@@ -1,6 +1,6 @@
 #pragma once
 
-#include "descriptors.h"
+#include "vk_globals.h"
 #include "bindings.h"
 
 #include <array>
