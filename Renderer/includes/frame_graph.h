@@ -1,12 +1,9 @@
 #pragma once
 #include "vk_globals.h"
 #include "gfx_image.h"
-#include "renderpass.h"
-#include "swapchain.h"
 #include "scene_frame_data.h"
 #include "material.h"
 #include "bindings.h"
-#include "vk_gpu_pipeline.h"
 
 namespace FG
 {

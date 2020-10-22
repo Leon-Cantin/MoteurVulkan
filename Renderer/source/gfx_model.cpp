@@ -1,7 +1,5 @@
 #include "gfx_model.h"
 
-#include "vk_buffer.h"
-
 #include <unordered_map>
 #include <stdexcept>
 

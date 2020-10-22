@@ -1,4 +1,4 @@
-#include "gpu_synchronization.h"
+#include "vk_globals.h"
 
 #include <stdexcept>
 

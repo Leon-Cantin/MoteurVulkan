@@ -89,7 +89,7 @@ void CmdEndLabel(GfxCommandBuffer commandBuffer)
 	vkCmdEndDebugUtilsLabelEXT_func(commandBuffer);
 }
 
-void CmdInsertVkLabel(GfxCommandBuffer commandBuffer, const char * name, const glm::vec4& color)
+void CmdInsertLabel(GfxCommandBuffer commandBuffer, const char * name, const glm::vec4& color)
 {
 	if (vkCmdInsertDebugUtilsLabelEXT_func == VK_NULL_HANDLE)
 		AcquireDebugUtilsFunc< PFN_vkCmdInsertDebugUtilsLabelEXT>(&vkCmdInsertDebugUtilsLabelEXT_func, "vkCmdInsertDebugUtilsLabelEXT");

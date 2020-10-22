@@ -1,6 +1,5 @@
 #pragma once
-
-#include "vk_buffer.h"
+#include "vk_globals.h"
 #include <array>
 
 struct PerFrameBuffer

@@ -14,6 +14,7 @@
 const int SIMULTANEOUS_FRAMES = 2;
 
 #include <vector> //TODO: remove this, used in some structures
+#include "glm/vec4.hpp"
 
 struct GpuInstance
 {
@@ -537,6 +538,9 @@ struct RenderPass {
 	FrameBuffer outputFrameBuffer[SIMULTANEOUS_FRAMES];
 };
 
+FrameBuffer CreateFrameBuffer( GfxImageView* colors, uint32_t colorCount, GfxImageView* opt_depth, VkExtent2D extent, const RenderPass& renderPass );
+void Destroy( FrameBuffer* frameBuffer );
+
 typedef VkPipeline GfxPipeline;
 
 void Destroy( GfxPipeline* pipeline );
@@ -587,6 +591,163 @@ void Destroy( Device* device );
 
 GpuInstance CreateInstance( bool useValidationLayer );
 void Destroy( GpuInstance* gpuInstance );
+
+//TODO: copied from glTF_loader.cpp
+enum class eVIDataElementType : uint8_t
+{
+	BYTE = 0,
+	UNSIGNED_BYTE,
+	SHORT,
+	UNSIGNED_SHORT,
+	UNSIGNED_INT,
+	FLOAT,
+	ELEMENT_TYPE_COUNT
+};
+static const uint8_t COMPONENT_TYPE_SIZES[] = { 1, 1, 2, 2, 4, 4 };
+
+struct VIDesc
+{
+	VIDataType dataType;
+	eVIDataElementType elementType;
+	uint8_t elementsCount;
+
+	inline bool operator==( const VIDesc& other ) const
+	{
+		return this->dataType == other.dataType &&
+			this->elementsCount == other.elementsCount &&
+			this->elementType == other.elementType;
+	}
+};
+
+struct VIBinding
+{
+	VIDesc desc;
+	uint8_t location;
+};
+
+uint32_t GetBindingSize( const VIDesc* binding );
+uint32_t GetBindingDescription( const std::vector<VIBinding>& VIBindings, VIState* o_viState );
+void CreatePipeline( const GpuPipelineStateDesc& gpuPipelineDesc, const RenderPass& renderPass, GfxPipelineLayout pipelineLayout, GfxPipeline* o_pipeline );
+
+void MarkGfxObject( GfxApiImage image, const char * name );
+void MarkGfxObject( GfxImageView imageView, const char * name );
+void MarkGfxObject( GfxApiSampler sampler, const char * name );
+void MarkGfxObject( GfxFence fence, const char * name );
+void MarkGfxObject( GfxSemaphore semaphore, const char * name );
+
+void CmdBeginLabel( GfxCommandBuffer commandBuffer, const char * name, const glm::vec4& color );
+void CmdEndLabel( GfxCommandBuffer commandBuffer );
+void CmdInsertLabel( GfxCommandBuffer commandBuffer, const char * name, const glm::vec4& color );
+
+/************************ Command buffer ************************/
+GfxCommandBuffer beginSingleTimeCommands();
+void endSingleTimeCommands( GfxCommandBuffer commandBuffer );
+void CreateSingleUseCommandPool( uint32_t queueFamilyIndex, GfxCommandPool* o_commandPool );
+void CreateCommandPool( uint32_t queueFamilyIndex, GfxCommandPool* o_commandPool );
+void Destroy( GfxCommandPool* commandPool );
+
+void BeginCommandBufferRecording( GfxCommandBuffer commandBuffer );
+void EndCommandBufferRecording( GfxCommandBuffer commandBuffer );
+
+/****************** Heaps TODO: I think this is redungant with GfxMemAlloc and could be folded into it... maybe**************/
+struct GfxHeap
+{
+	uint32_t memoryTypeIndex;
+	VkMemoryPropertyFlags properties;
+	GfxMemAlloc gfx_mem_alloc;
+};
+
+GfxHeap create_gfx_heap( GfxDeviceSize size, GfxMemoryPropertyFlags properties );
+void destroy( GfxHeap* gfxHeap );
+
+/************** Gpu Synchronization *****************/
+void unsignalSemaphore( VkSemaphore semaphore );
+
+
+/************************ Render passes **************************/
+struct AttachementDescription
+{
+	GfxFormat format;
+	GfxLoadOp loadOp;
+	GfxAccess access;
+	GfxLayout layout;
+
+	GfxAccess oldAccess;
+	GfxLayout oldLayout;
+
+	GfxAccess finalAccess;
+	GfxLayout finalLayout;
+};
+
+//TODO: IF a render pass contains the framebuffers and they are associated with it, maybe we should create and destroy them here too.
+RenderPass CreateRenderPass( const char* name, const AttachementDescription* colorAttachementDescriptions, uint32_t colorAttachementCount, const AttachementDescription* depthStencilAttachement );
+void Destroy( RenderPass* renderPass );
+
+void BeginRenderPass( GfxCommandBuffer commandBuffer, const RenderPass& renderpass, const FrameBuffer& framebuffer );
+void EndRenderPass( GfxCommandBuffer commandBuffer );
+
+
+/******** Swapchain ********/
+
+struct Swapchain {
+	std::vector<GfxImage> images;
+	uint32_t imageCount;
+	GfxSwapchain swapchain;
+	GfxSurfaceFormat surfaceFormat;
+	VkPresentModeKHR presentMode;
+	VkExtent2D extent;
+};
+
+void CreateSwapChain( DisplaySurface vkSurface, uint32_t maxWidth, uint32_t maxHeight, Swapchain& o_swapchain );
+void Destroy( Swapchain* Swapchain );
+
+/******************** memory *********************/
+GfxMemAlloc allocate_gfx_memory( GfxDeviceSize size, GfxMemoryType type );
+GfxMemAlloc suballocate_gfx_memory( const GfxMemAlloc& gfx_mem, GfxDeviceSize size, GfxDeviceSize offset );
+void destroy_gfx_memory( GfxMemAlloc* gfx_mem );
+void UpdateGpuMemory( const GfxMemAlloc* dstMemory, const void* src, GfxDeviceSize size, GfxDeviceSize offset );
+
+inline bool IsValid( const GfxMemAlloc& mem_alloc )
+{
+	return mem_alloc.memory != VK_NULL_HANDLE;
+}
+
+//TODO: Find where this goes in the Vulkan layer. public or not?
+bool IsRequiredMemoryType( GfxMemoryTypeFilter typeFilter, GfxMemoryType memoryType );
+GfxMemoryType findMemoryType( GfxMemoryTypeFilter typeFilter, GfxMemoryPropertyFlags properties );
+
+
+/**************** image *****************/
+void BindMemory( VkImage image, VkDeviceMemory memory );
+void BindMemory( VkImage image, const GfxMemAlloc& gfx_mem_alloc );
+
+void copyBufferToImage( GfxCommandBuffer commandBuffer, VkBuffer buffer, uint32_t bufferOffset, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount );
+
+bool hasStencilComponent( VkFormat format );
+VkFormat findDepthFormat();
+VkFormat findSupportedFormat( const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features );
+
+inline bool IsValid( const GfxImage& image )
+{
+	return IsValid( image.gfx_mem_alloc );
+}
+
+GfxImage CreateImage( uint32_t width, uint32_t height, uint32_t mipLevels, GfxFormat format, GfxImageUsageFlags usage );
+GfxImage CreateCubeImage( uint32_t width, uint32_t height, uint32_t mipLevels, GfxFormat format, GfxImageUsageFlags usage );
+GfxImageView CreateCubeImageView( const GfxImage& parentImage );
+GfxImageView CreateImageView( const GfxImage& parentImage );
+
+void DestroyImage( GfxImage* image );
+void Destroy( GfxImageView* imageView );
+
+
+/********************** Buffer *********************/
+
+GfxApiBuffer create_buffer( GfxDeviceSize size, GfxBufferUsageFlags bufferUsageFlags );
+void BindMemory( GfxApiBuffer buffer, const GfxMemAlloc& gfx_mem_alloc );
+
+void copy_buffer( GfxCommandBuffer commandBuffer, GfxApiBuffer dstBuffer, GfxApiBuffer srcBuffer, GfxDeviceSize dst_offset, GfxDeviceSize src_offset, GfxDeviceSize size );
+void copy_buffer( GfxCommandBuffer commandBuffer, GfxApiBuffer dstBuffer, GfxApiBuffer srcBuffer, GfxDeviceSize size );
 
 struct Gfx_Globals {
 	GpuInstance instance = {};

@@ -1,10 +1,6 @@
 #include "renderer.h"
 
-#include "vk_buffer.h"
-#include "vk_debug.h"
-#include "vk_commands.h"
 #include "profile.h"
-#include "gpu_synchronization.h"
 #include "frame_graph.h"
 #include "gfx_heaps_batched_allocator.h"
 

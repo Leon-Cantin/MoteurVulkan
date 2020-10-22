@@ -1,5 +1,6 @@
-#include "framebuffer.h"
+#include "vk_globals.h"
 #include <stdexcept>
+#include <array>
 
 FrameBuffer CreateFrameBuffer( GfxImageView* colors, uint32_t colorCount, GfxImageView* opt_depth, VkExtent2D extent, const RenderPass& renderPass )
 {

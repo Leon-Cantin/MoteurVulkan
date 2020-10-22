@@ -1,5 +1,4 @@
 #include "gfx_samplers.h"
-#include "vk_debug.h"
 
 #include <algorithm>
 #include <array>

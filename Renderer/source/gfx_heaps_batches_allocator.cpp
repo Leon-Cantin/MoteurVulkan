@@ -1,6 +1,5 @@
 #include "gfx_heaps_batched_allocator.h"
 
-#include "vk_commands.h"
 #include <cassert>
 
 GfxHeaps_BatchedAllocator::GfxHeaps_BatchedAllocator( GfxHeap* heap )

@@ -1,9 +1,7 @@
 #pragma once
 
-#include "gfx_heaps.h"
+#include "vk_globals.h"
 #include "gfx_image.h"
-#include "vk_image.h"
-#include "vk_buffer.h"
 #include "allocators.h"
 
 class GfxHeaps_BatchedAllocator : public I_ImageAlloctor, public I_BufferAllocator

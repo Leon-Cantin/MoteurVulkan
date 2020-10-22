@@ -1,4 +1,5 @@
-#include "vk_gpu_pipeline.h"
+#include "vk_globals.h"
+#include "vk_vertex_input.h"
 #include "vk_shader.h"
 #include <assert.h>
 

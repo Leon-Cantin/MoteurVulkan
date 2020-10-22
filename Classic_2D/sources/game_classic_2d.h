@@ -6,7 +6,6 @@
 #include "tick_system.h"
 #include "asset_library.h"
 #include "window_handler_vk.h"
-#include "gfx_heaps.h"
 #include "gfx_heaps_batched_allocator.h"
 #include "classic_2d_gfx_asset.h"
 #include "terrain.h"

@@ -3,7 +3,6 @@
 #include <vector>
 #include <array>
 #include "gfx_image.h"
-#include "gfx_heaps.h"
 
 namespace FG
 {

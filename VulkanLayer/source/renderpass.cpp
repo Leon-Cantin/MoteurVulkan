@@ -1,4 +1,4 @@
-#include "renderpass.h"
+#include "vk_globals.h"
 #include "vk_debug.h"
 
 void BeginRenderPass(GfxCommandBuffer commandBuffer, const RenderPass& renderpass, const FrameBuffer& framebuffer)

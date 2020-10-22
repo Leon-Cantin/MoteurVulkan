@@ -6,7 +6,7 @@ uint32_t GetBindingSize( const VIDesc* binding )
 	return COMPONENT_TYPE_SIZES[( uint8_t )binding->elementType] * binding->elementsCount;
 }
 
-VkFormat GetBindingFormat( const VIDesc* binding )
+static VkFormat GetBindingFormat( const VIDesc* binding )
 {
 	if( binding->elementType == eVIDataElementType::FLOAT )
 	{

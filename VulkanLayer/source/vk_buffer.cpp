@@ -1,4 +1,4 @@
-#include "vk_buffer.h"
+#include "vk_globals.h"
 
 #include <cassert>
 #include <stdexcept>
@@ -13,7 +13,7 @@ VkBufferUsageFlags ToVkBufferUsageFlags( GfxBufferUsageFlags bufferUsageFlags )
 	return static_cast< VkBufferUsageFlags >(bufferUsageFlags);
 }
 
-VkBuffer create_buffer( GfxDeviceSize size, GfxBufferUsageFlags bufferUsageFlags )
+GfxApiBuffer create_buffer( GfxDeviceSize size, GfxBufferUsageFlags bufferUsageFlags )
 {
 	VkBufferCreateInfo bufferInfo = {};
 	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;

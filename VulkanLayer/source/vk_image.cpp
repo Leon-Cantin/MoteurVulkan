@@ -1,6 +1,5 @@
-#include "vk_image.h"
-#include "vk_buffer.h"
-#include "vk_debug.h"
+
+#include "vk_globals.h"
 #include <glm/vec4.hpp>
 
 #include <assert.h>

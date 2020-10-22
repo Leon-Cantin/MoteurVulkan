@@ -2,7 +2,6 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include "vk_globals.h"
-#include "vk_buffer.h"
 
 static uint32_t instances_count = 0;
 

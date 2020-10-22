@@ -162,7 +162,6 @@ GfxDescriptorTableDesc copyPassSet =
 	}
 };
 
-#include "vk_debug.h"
 #include "file_system.h"
 void CopyRecordDrawCommandsBuffer( uint32_t currentFrame, const SceneFrameData* frameData, GfxCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique )
 {

@@ -1,9 +1,5 @@
 #include "gfx_image.h"
 
-#include "vk_debug.h"
-#include "vk_commands.h"
-#include "vk_buffer.h"
-
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #include "ktx_loader.h"
