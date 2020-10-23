@@ -7,7 +7,7 @@ void DestroyGfxModel(GfxModel& gfxModel)
 {
 	for( uint8_t i = 0; i < ( VIDataType )eVIDataType::VI_DATA_TYPE_COUNT; ++i )
 	{
-		if( isValid( gfxModel.vertAttribBuffers[i].buffer ) )
+		if( IsValid( gfxModel.vertAttribBuffers[i].buffer ) )
 			Destroy( &gfxModel.vertAttribBuffers[i].buffer );
 	}
 	Destroy( &gfxModel.indexBuffer );

@@ -18,9 +18,13 @@ namespace FG
 	public:
 		GfxImage _output_buffers[SIMULTANEOUS_FRAMES];
 #define MAX_RENDERTARGETS 32
+#define MAX_BUFFERS 32
 
 		GfxImage _render_targets[MAX_RENDERTARGETS];
 		uint32_t _render_targets_count;
+
+		GpuBuffer _buffers[MAX_BUFFERS][SIMULTANEOUS_FRAMES];
+		uint32_t _buffers_count;
 
 		const GfxImage* GetImage( uint32_t render_target_id ) const
 		{
@@ -41,9 +45,9 @@ namespace FG
 		FrameGraphCreationData creationData;
 
 		GfxHeap _gfx_mem_heap;
+		GfxHeap _gfx_mem_heap_host_visible;
 
 		//hack
-		std::array<PerFrameBuffer, 32> allbuffers;
 		std::array<GfxImageSamplerCombined, 32> allImages;
 	};
 }

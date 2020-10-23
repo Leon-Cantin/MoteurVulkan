@@ -41,22 +41,6 @@ namespace FG
 		CreateDescriptorTables( descriptorPool, 1, &descriptorSetLayout, o_descriptorSet );
 	}
 
-	static void CreatePerFrameBuffer( const FG::FrameGraph* frameGraph, const FG::DataEntry* techniqueDataEntry, const GfxDataBinding* dataBinding, PerFrameBuffer* o_buffer )
-	{
-		GfxDeviceSize size;
-		switch( techniqueDataEntry->descriptorType )
-		{
-		case eDescriptorType::BUFFER:
-			size = techniqueDataEntry->resourceDesc.extent.width;
-			break;
-		case eDescriptorType::BUFFER_DYNAMIC:
-			size = techniqueDataEntry->resourceDesc.extent.width * techniqueDataEntry->resourceDesc.extent.height;
-		}
-
-		//TODO: could have to change VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT if we write (store). Will have to check all bindings to know.
-		CreatePerFrameBuffer( size, GFX_BUFFER_USAGE_UNIFORM_BUFFER_BIT, GFX_MEMORY_PROPERTY_HOST_VISIBLE_BIT | GFX_MEMORY_PROPERTY_HOST_COHERENT_BIT, o_buffer );
-	}
-
 	static void SetOrCreateDataIfNeeded( FG::FrameGraph* frameGraph, std::array< GpuInputData, SIMULTANEOUS_FRAMES>* inputBuffers, const GfxDescriptorTableDesc* descriptorSetDesc )
 	{
 		for( uint32_t i = 0; i < descriptorSetDesc->dataBindings.size(); ++i )
@@ -69,12 +53,12 @@ namespace FG
 
 			if( IsBufferType( dataEntry->descriptorType ) )
 			{
-				PerFrameBuffer* buffer = &frameGraph->imp->allbuffers[dataEntry->id];
-				if( !IsValid( buffer->gfx_mem_alloc ) )
+				for( size_t frameIndex = 0; frameIndex < SIMULTANEOUS_FRAMES; ++frameIndex )
 				{
-					CreatePerFrameBuffer( frameGraph, dataEntry, dataBinding, buffer );
-					for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
-						SetBuffers( &(*inputBuffers)[i], dataEntry->id, &buffer->buffers[i], 1 );
+					GpuBuffer* buffer = &frameGraph->imp->_buffers[dataEntry->id][frameIndex];
+					assert( IsValid( buffer->gpuMemory ) );
+					SetBuffers( &(*inputBuffers)[frameIndex], dataEntry->id, buffer, 1 );
+					//CreatePerFrameBuffer( frameGraph, dataEntry, dataBinding, buffer );
 				}
 			}
 			else
@@ -84,8 +68,8 @@ namespace FG
 				if( imageInfo->image == nullptr )
 				{
 					*imageInfo = { const_cast< GfxImage* >(image), GetSampler( dataEntry->sampler ) };
-					for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
-						SetImages( &(*inputBuffers)[i], dataEntry->id, imageInfo, 1 );
+					for( size_t frameIndex = 0; frameIndex < SIMULTANEOUS_FRAMES; ++frameIndex )
+						SetImages( &(*inputBuffers)[frameIndex], dataEntry->id, imageInfo, 1 );
 				}
 			}
 		}

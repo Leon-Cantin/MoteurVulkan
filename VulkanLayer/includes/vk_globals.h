@@ -434,9 +434,26 @@ struct GfxImageSamplerCombined
 
 struct GpuBuffer
 {
-	GfxApiBuffer buffer;
+	GfxApiBuffer buffer = VK_NULL_HANDLE;
 	GfxMemAlloc gpuMemory;
 };
+
+class I_BufferAllocator
+{
+public:
+	virtual bool Allocate( GfxApiBuffer buffer, GfxMemAlloc* o_gfx_mem_alloc ) = 0;
+	virtual bool UploadData( const GpuBuffer& buffer, const void* data ) = 0;
+};
+
+void CreateCommitedGpuBuffer( GfxDeviceSize size, GfxBufferUsageFlags bufferUsageFlags, GfxMemoryPropertyFlags memoryProperties, GpuBuffer* o_buffer );
+void Destroy( GpuBuffer* buffer );
+
+void UpdateGpuBuffer( const GpuBuffer* buffer, const void* src, GfxDeviceSize size, GfxDeviceSize offset );
+
+inline bool IsValid( const GpuBuffer& buffer )
+{
+	return buffer.buffer != VK_NULL_HANDLE;
+}
 
 class BatchDescriptorsUpdater
 {

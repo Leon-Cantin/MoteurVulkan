@@ -42,7 +42,7 @@ namespace FG
 	{
 		assert(resource.attachmentCount < MAX_ATTACHMENTS_COUNT);
 
-		const uint32_t attachement_id = resource.attachmentCount;
+		const uint32_t attachement_id = resource.attachmentCount++;
 		AttachementDescription& description = resource.descriptions[attachement_id];
 		description.format = format;
 		description.access = GfxAccess::WRITE;
@@ -50,11 +50,10 @@ namespace FG
 		description.finalAccess = GfxAccess::WRITE;
 		description.finalLayout = optimalLayout;
 		description.loadOp = GfxLoadOp::DONT_CARE;
+		description.oldAccess = GfxAccess::WRITE;//TODO: old access isn't changed anywhere if old access is read we are boned
 		description.oldLayout = GfxLayout::UNDEFINED;
 
 		resource.e_render_targets[attachement_id] = render_target;
-
-		++resource.attachmentCount;
 	}
 
 	void RenderColor(RenderPassCreationData& resource, GfxFormat format, uint32_t render_target)
@@ -67,17 +66,21 @@ namespace FG
 		CreateRTCommon(resource, format, render_target, GfxLayout::DEPTH_STENCIL );
 	}
 
-	void ClearLast(RenderPassCreationData& resource)
+	void ClearTarget(RenderPassCreationData& resource )
 	{
 		assert(resource.attachmentCount > 0);
 
-		resource.descriptions[resource.attachmentCount - 1].loadOp = GfxLoadOp::CLEAR;
+		resource.descriptions[resource.attachmentCount-1].loadOp = GfxLoadOp::CLEAR;
 	}
 
 	void ReadResource(RenderPassCreationData& resource, uint32_t render_target)
 	{
 		assert(resource.read_targets_count < MAX_READ_TARGETS);
 		resource.read_targets[resource.read_targets_count++] = render_target;
+		/*
+		const uint32_t attachement_id = resource.attachmentCount++;
+		resource.read_targets[attachement_id] = render_target;
+		resource.e_render_targets[attachement_id] = render_target;*/
 	}
 
 	static int32_t FindResourceIndex(const RenderPassCreationData& pass, uint32_t render_target)
@@ -91,11 +94,41 @@ namespace FG
 		return -1;
 	}
 
+	static void CreateBuffer( const FG::DataEntry& techniqueDataEntry, I_BufferAllocator* bufferAllocator, GpuBuffer* o_buffer )
+	{
+		GfxDeviceSize size;
+		switch( techniqueDataEntry.descriptorType )
+		{
+		case eDescriptorType::BUFFER:
+			size = techniqueDataEntry.resourceDesc.extent.width;
+			break;
+		case eDescriptorType::BUFFER_DYNAMIC:
+			size = techniqueDataEntry.resourceDesc.extent.width * techniqueDataEntry.resourceDesc.extent.height;
+		}
+
+		//TODO: could have to change VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT if we write (store). Will have to check all bindings to know.
+		o_buffer->buffer = create_buffer( size, GFX_BUFFER_USAGE_UNIFORM_BUFFER_BIT );
+		bufferAllocator->Allocate( o_buffer->buffer, &o_buffer->gpuMemory );
+	}
+
 	static void ComposeGraph( FrameGraphCreationData& creationData, FrameGraphInternal* o_frameGraph )
 	{
 		o_frameGraph->_gfx_mem_heap = create_gfx_heap( 8 * 1024 * 1024, GFX_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
 		GfxHeaps_BatchedAllocator image_allocator( &o_frameGraph->_gfx_mem_heap );
+		o_frameGraph->_gfx_mem_heap_host_visible = create_gfx_heap( 8 * 1024 * 1024, GFX_MEMORY_PROPERTY_HOST_VISIBLE_BIT | GFX_MEMORY_PROPERTY_HOST_COHERENT_BIT );
+		GfxHeaps_BatchedAllocator buffer_allocator( &o_frameGraph->_gfx_mem_heap_host_visible );
+
 		image_allocator.Prepare();
+
+		//TODO: only creating buffers here, can do better. Images and buffers should get the same treatment
+		for( uint32_t i = 0; i < creationData.resources.size(); ++i )
+		{
+			if( IsBufferType( creationData.resources[i].descriptorType ) )
+			{
+				for( uint32_t frameIndex = 0; frameIndex < SIMULTANEOUS_FRAMES; ++frameIndex )
+					CreateBuffer( creationData.resources[i], &buffer_allocator, &o_frameGraph->_buffers[creationData.resources[i].id][frameIndex] );
+			}
+		}
 
 		o_frameGraph->_render_targets_count = creationData.resources.size();
 		std::map< uint32_t, RenderPassCreationData*> lastPass;
@@ -211,6 +244,31 @@ namespace FG
 
 	static void CreateResourceCreationData( const Swapchain* swapchain, FrameGraphCreationData* creationData, FrameGraphInternal* o_frameGraph )
 	{
+		for( uint32_t i = 0; i < creationData->renderPasses.size(); ++i )
+		{
+			RenderPassCreationData& rpCreationData = creationData->renderPasses[i];
+			for( uint32_t rtIndex = 0; rtIndex < rpCreationData.frame_graph_node.renderTargetRefs.size(); ++rtIndex )
+			{
+				RenderTargetRef& rtRef = rpCreationData.frame_graph_node.renderTargetRefs[rtIndex];
+				GfxFormat format = creationData->resources[rtRef.id].resourceDesc.format;
+
+				if( rtRef.flags & FG_RENDERTARGET_REF_READ_BIT )
+				{
+					ReadResource( rpCreationData, rtRef.id );
+				}
+				else
+				{
+					if( creationData->resources[rtRef.id].resourceDesc.usage_flags & DEPTH_STENCIL_ATTACHMENT )
+						RenderDepth( rpCreationData, format, rtRef.id );
+					else
+						RenderColor( rpCreationData, format, rtRef.id );
+
+					if( rtRef.flags & FG_RENDERTARGET_REF_CLEAR_BIT )
+						ClearTarget( rpCreationData );
+				}
+			}
+		}
+
 		//setup hacks for outside resources
 		o_frameGraph->_render_targets[creationData->RT_OUTPUT_TARGET] = swapchain->images[0];
 		for (uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
@@ -231,10 +289,11 @@ namespace FG
 		//Setup resources
 		creationData.RT_OUTPUT_TARGET = backbufferId;
 		creationData.resources = *inRtCreationData;
+		creationData.renderPasses = *inRpCreationData;
+
 		CreateResourceCreationData( swapchain, &creationData, frameGraph );
 
-		//Setup passes
-		creationData.renderPasses = *inRpCreationData;
+
 
 		ComposeGraph( creationData, frameGraph );
 
@@ -262,6 +321,14 @@ namespace FG
 				DestroyImage( &image );
 		}
 		frameGraph->_render_targets_count = 0;
+		for( uint32_t i = 0; i < frameGraph->creationData.resources.size(); ++i )
+		{
+			for( uint32_t frameIndex = 0; frameIndex < SIMULTANEOUS_FRAMES; ++frameIndex )
+			{
+				if( IsValid( frameGraph->_buffers[i][frameIndex] ) )
+					Destroy( &frameGraph->_buffers[i][frameIndex] );
+			}
+		}
 
 		for (uint32_t i = 0; i < frameGraph->_render_passes_count; ++i)
 		{
@@ -283,14 +350,10 @@ namespace FG
 		}
 		frameGraph->_techniques_count = 0;
 
-		for( uint32_t i = 0; i < frameGraph->creationData.resources.size(); ++i )
-		{
-			if( frameGraph->allbuffers[i].gfx_mem_alloc.memory )
-				DestroyPerFrameBuffer( &frameGraph->allbuffers[i] );
-		}
 		frameGraph->allImages = {};
 
 		destroy( &frameGraph->_gfx_mem_heap );
+		destroy( &frameGraph->_gfx_mem_heap_host_visible );
 
 		delete frameGraph;
 		frameGraphExternal->imp = nullptr;

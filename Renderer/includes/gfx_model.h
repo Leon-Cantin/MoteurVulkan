@@ -1,6 +1,5 @@
 #pragma once
 #include "vk_globals.h"
-#include "gfx_buffer.h"
 
 #include <glm/vec3.hpp>
 #include <glm/vec2.hpp>

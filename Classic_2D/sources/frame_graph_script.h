@@ -102,18 +102,10 @@ GfxDescriptorTableDesc geoInstanceSetDesc =
 	}
 };
 
-
 static FG::RenderPassCreationData FG_Geometry_CreateGraphNode( const Swapchain* swapchain, eTechniqueDataEntryImageName sceneColor, eTechniqueDataEntryImageName sceneDepth)
 {
 	FG::RenderPassCreationData renderPassCreationData;
 	renderPassCreationData.name = "geometry_pass";
-
-	GfxFormat swapchainFormat = static_cast<GfxFormat>(swapchain->surfaceFormat.format);
-
-	FG::RenderColor( renderPassCreationData, swapchainFormat, ( uint32_t )sceneColor );
-	FG::ClearLast( renderPassCreationData );
-	FG::RenderDepth( renderPassCreationData, GfxFormat::D32_SFLOAT, ( uint32_t )sceneDepth );
-	FG::ClearLast( renderPassCreationData );
 
 	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData.frame_graph_node;
 	frameGraphNode->RecordDrawCommands = GeometryRecordDrawCommandsBuffer;
@@ -122,6 +114,8 @@ static FG::RenderPassCreationData FG_Geometry_CreateGraphNode( const Swapchain* 
 	frameGraphNode->gpuPipelineStateDesc = GetGeoPipelineState();
 	frameGraphNode->descriptorSets.push_back( geoPassSetDesc );
 	frameGraphNode->descriptorSets.push_back( geoInstanceSetDesc );
+	frameGraphNode->renderTargetRefs.push_back( { static_cast<uint32_t>(sceneColor), FG::FG_RENDERTARGET_REF_CLEAR_BIT } );
+	frameGraphNode->renderTargetRefs.push_back( { static_cast< uint32_t >(sceneDepth), FG::FG_RENDERTARGET_REF_CLEAR_BIT } );
 
 	return renderPassCreationData;
 }
@@ -141,8 +135,6 @@ static FG::RenderPassCreationData FG_TextOverlay_CreateGraphNode( const Swapchai
 
 	GfxFormat swapchainFormat = static_cast< GfxFormat >(swapchain->surfaceFormat.format);
 
-	FG::RenderColor( renderPassCreationData, swapchainFormat, ( uint32_t )sceneColor );
-
 	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData.frame_graph_node;
 	frameGraphNode->RecordDrawCommands = TextRecordDrawCommandsBuffer;
 
@@ -150,6 +142,7 @@ static FG::RenderPassCreationData FG_TextOverlay_CreateGraphNode( const Swapchai
 	frameGraphNode->gpuPipelineStateDesc = GetTextPipelineState();
 	//TODO: we don't need one set per frame for this one
 	frameGraphNode->descriptorSets.push_back( textPassSet );
+	frameGraphNode->renderTargetRefs.push_back( { static_cast< uint32_t >(sceneColor), 0 } );
 
 	return renderPassCreationData;
 }
@@ -212,9 +205,6 @@ static FG::RenderPassCreationData FG_Copy_CreateGraphNode( const Swapchain* swap
 
 	GfxFormat swapchainFormat = static_cast< GfxFormat >(swapchain->surfaceFormat.format);
 
-	FG::RenderColor( renderPassCreationData, swapchainFormat, ( uint32_t )dst );
-	FG::ReadResource( renderPassCreationData, ( uint32_t )src );
-
 	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData.frame_graph_node;
 	frameGraphNode->RecordDrawCommands = CopyRecordDrawCommandsBuffer;
 
@@ -222,6 +212,8 @@ static FG::RenderPassCreationData FG_Copy_CreateGraphNode( const Swapchain* swap
 	frameGraphNode->gpuPipelineStateDesc = GetCopyPipelineState();
 	//TODO: generalize instance and pass set into an array of binding point and set
 	frameGraphNode->descriptorSets.push_back( copyPassSet );
+	frameGraphNode->renderTargetRefs.push_back( { static_cast< uint32_t >(dst), 0 } );
+	frameGraphNode->renderTargetRefs.push_back( { static_cast< uint32_t >(src), FG::FG_RENDERTARGET_REF_READ_BIT } );
 
 	return renderPassCreationData;
 }
@@ -237,7 +229,7 @@ FG::FrameGraph InitializeScript( const Swapchain* swapchain )
 	std::vector<FG::DataEntry> dataEntries ( techniqueDataEntries, techniqueDataEntries + sizeof( techniqueDataEntries ) / sizeof( techniqueDataEntries[0] ) );
 	//TODO: get rid of this, when format is 0, just set it to swapchain format in frame graph
 	dataEntries[( uint32_t )eTechniqueDataEntryImageName::SCENE_COLOR].resourceDesc.format = swapchainFormat;
-	//dataEntries[( uint32_t )eTechniqueDataEntryImageName::BACKBUFFER].resourceDesc.format = swapchainFormat;
+	dataEntries[( uint32_t )eTechniqueDataEntryImageName::BACKBUFFER].resourceDesc.format = swapchainFormat;
 	//dataEntries[( uint32_t )eTechniqueDataEntryImageName::BACKBUFFER].resourceDesc.extent = swapchainExtent; // maybe not needed because FG does it
 
 	//Setup passes

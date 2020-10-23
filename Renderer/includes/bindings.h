@@ -1,6 +1,6 @@
 #pragma once
-#include "gfx_buffer.h"
 #include "gfx_image.h"
+#include <array>
 
 constexpr size_t MAX_DATA_ENTRIES = 16;
 

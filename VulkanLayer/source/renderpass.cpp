@@ -34,7 +34,7 @@ void EndRenderPass(GfxCommandBuffer commandBuffer)
 RenderPass CreateRenderPass( const char* name, const AttachementDescription* colorAttachementDescriptions, uint32_t colorAttachementCount, const AttachementDescription* depthStencilAttachement )
 {
 	const uint32_t MAX_ATTACHEMENT = 16;
-	assert( colorAttachementCount - 1 < MAX_ATTACHEMENT );
+	assert( colorAttachementCount + 1 < MAX_ATTACHEMENT );
 
 	VkAttachmentReference references[MAX_ATTACHEMENT];
 	VkAttachmentDescription attachements[MAX_ATTACHEMENT];

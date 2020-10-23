@@ -28,10 +28,17 @@ namespace FG
 	constexpr uint32_t MAX_ATTACHMENTS_COUNT = 8;
 	constexpr uint32_t MAX_READ_TARGETS = 4;
 
+	struct RenderTargetRef
+	{
+		uint32_t id;
+		uint32_t flags;
+	};
+
 	struct FrameGraphNode
 	{
 		void( *RecordDrawCommands )(uint32_t currentFrame, const SceneFrameData* frameData, GfxCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique);
 		std::vector<GfxDescriptorTableDesc> descriptorSets;
+		std::vector<RenderTargetRef> renderTargetRefs;
 		GpuPipelineLayout gpuPipelineLayout;
 		GpuPipelineStateDesc gpuPipelineStateDesc;
 	};
@@ -67,6 +74,12 @@ namespace FG
 		eSamplers sampler;
 	};
 
+	enum RenderTargetRefFlags
+	{
+		FG_RENDERTARGET_REF_CLEAR_BIT = 1 << 0,
+		FG_RENDERTARGET_REF_READ_BIT = 1 << 1,
+	};
+
 	class FrameGraph
 	{
 	public:
@@ -81,11 +94,6 @@ namespace FG
 	FrameGraph CreateGraph( const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<DataEntry> *inRtCreationData, uint32_t backbufferId );
 	void Cleanup( FrameGraph* frameGraph );
 
-	//Graph creation
-	void RenderColor( RenderPassCreationData& resource, GfxFormat format, uint32_t render_target );
-	void RenderDepth( RenderPassCreationData& resource, GfxFormat format, uint32_t render_target );
-	void ReadResource(RenderPassCreationData& resource, uint32_t render_target);
-	void ClearLast(RenderPassCreationData& resource);
 
 	//Frame graph stuff
 	void RecordDrawCommands( uint32_t currentFrame, const SceneFrameData* frameData, GfxCommandBuffer graphicsCommandBuffer, VkExtent2D extent, FrameGraph* frameGraphExternal );
