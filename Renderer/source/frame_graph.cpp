@@ -14,7 +14,7 @@ namespace FG
 		return imp->GetRenderPass( id );
 	}
 
-	const GfxImage* FrameGraph::GetImageFromId( uint32_t render_target_id )
+	const GfxImage* FrameGraph::GetImageFromId( user_id_t render_target_id )
 	{
 		return imp->GetImageFromId( render_target_id );
 	}

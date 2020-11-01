@@ -29,6 +29,7 @@ namespace FG
 	constexpr uint32_t MAX_READ_TARGETS = 4;
 
 	typedef uint32_t fg_handle_t;
+	typedef uint32_t user_id_t;
 
 	struct RenderTargetRef
 	{
@@ -68,7 +69,7 @@ namespace FG
 
 	struct DataEntry
 	{
-		uint32_t id;
+		user_id_t user_id;
 		eDescriptorType descriptorType;
 		uint32_t count;
 		uint32_t flags;
@@ -89,7 +90,7 @@ namespace FG
 		FrameGraph( class FrameGraphInternal* );
 		FrameGraph();
 		const RenderPass* GetRenderPass( uint32_t id );
-		const GfxImage* GetImageFromId( uint32_t render_target_id );
+		const GfxImage* GetImageFromId( user_id_t render_target_id );
 	};
 
 	//Compilation

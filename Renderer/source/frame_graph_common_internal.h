@@ -28,10 +28,10 @@ namespace FG
 
 		FrameGraphCreationData creationData;
 
-		const GfxImage* GetImageFromId( uint32_t render_target_id ) const
+		const GfxImage* GetImageFromId( user_id_t user_id ) const
 		{
 			for( fg_handle_t handle = 0; handle < creationData.resources.size(); ++handle )
-				if( creationData.resources[handle].id == render_target_id )
+				if( creationData.resources[handle].user_id == user_id )
 					return GetImageFromHandle( handle );
 
 			return nullptr;
@@ -42,10 +42,10 @@ namespace FG
 			return &_render_targets[handle];
 		}
 
-		const GpuBuffer* GetBufferFromId( uint32_t user_id, uint32_t frame ) const
+		const GpuBuffer* GetBufferFromId( user_id_t user_id, uint32_t frame ) const
 		{
 			for( fg_handle_t handle = 0; handle < creationData.resources.size(); ++handle )
-				if( creationData.resources[handle].id == user_id )
+				if( creationData.resources[handle].user_id == user_id )
 					return GetBufferFromHandle( handle, frame );
 
 			return nullptr;

@@ -8,14 +8,14 @@
 
 namespace FG
 {	
-	static const FG::DataEntry* GetDataEntryFromId( const FG::FrameGraph* frameGraph, uint32_t entryId )
+	static const FG::DataEntry* GetDataEntryFromId( const FG::FrameGraph* frameGraph, user_id_t user_id )
 	{
 		/*const FG::DataEntry* dataEntry = &frameGraph->imp->creationData.resources[entryId];
 		assert( dataEntry->id == entryId );
 		return dataEntry;*/
 		const FG::DataEntry* dataEntry;
 		for( uint32_t i = 0; i < frameGraph->imp->creationData.resources.size(); ++i )
-			if( frameGraph->imp->creationData.resources[i].id == entryId )
+			if( frameGraph->imp->creationData.resources[i].user_id == user_id )
 				return &frameGraph->imp->creationData.resources[i];
 
 		return nullptr;
@@ -61,21 +61,21 @@ namespace FG
 			{
 				for( size_t frameIndex = 0; frameIndex < SIMULTANEOUS_FRAMES; ++frameIndex )
 				{
-					const GpuBuffer* buffer = frameGraph->imp->GetBufferFromId( dataEntry->id, frameIndex );
+					const GpuBuffer* buffer = frameGraph->imp->GetBufferFromId( dataEntry->user_id, frameIndex );
 					assert( IsValid( buffer->gpuMemory ) );
-					SetBuffers( &(*inputBuffers)[frameIndex], dataEntry->id, const_cast<GpuBuffer*>(buffer), 1 );
+					SetBuffers( &(*inputBuffers)[frameIndex], dataEntry->user_id, const_cast<GpuBuffer*>(buffer), 1 );
 					//CreatePerFrameBuffer( frameGraph, dataEntry, dataBinding, buffer );
 				}
 			}
 			else
 			{
-				const GfxImage* image = frameGraph->imp->GetImageFromId( dataEntry->id ); //TODO: GetResource( (uint32_t) id ) --------------------
-				GfxImageSamplerCombined* imageInfo = &frameGraph->imp->allImages[dataEntry->id];
+				const GfxImage* image = frameGraph->imp->GetImageFromId( dataEntry->user_id ); //TODO: GetResource( (uint32_t) id ) --------------------
+				GfxImageSamplerCombined* imageInfo = &frameGraph->imp->allImages[dataEntry->user_id];
 				if( imageInfo->image == nullptr )
 				{
 					*imageInfo = { const_cast< GfxImage* >(image), GetSampler( dataEntry->sampler ) };
 					for( size_t frameIndex = 0; frameIndex < SIMULTANEOUS_FRAMES; ++frameIndex )
-						SetImages( &(*inputBuffers)[frameIndex], dataEntry->id, imageInfo, 1 );
+						SetImages( &(*inputBuffers)[frameIndex], dataEntry->user_id, imageInfo, 1 );
 				}
 			}
 		}

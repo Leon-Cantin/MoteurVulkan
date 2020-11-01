@@ -47,24 +47,6 @@ enum class eTechniqueDataEntryImageName
 // Render pass and techniques are as one here, use that idea to define them.
 // Have a list of descriptor sets instead of instance and pass to keep things generic. Check the binding point to know to which (instance or pass) it belongs.
 
-const uint32_t maxModelsCount = 256;
-const VkExtent2D screenSize = { 224, 384 };
-static FG::DataEntry techniqueDataEntries[static_cast< size_t >(eTechniqueDataEntryImageName::COUNT)] =
-{
-	//Buffers	
-	CREATE_BUFFER( eTechniqueDataEntryName::SCENE_DATA, sizeof( SceneMatricesUniform ) ),
-	CREATE_BUFFER_DYNAMIC( eTechniqueDataEntryName::INSTANCE_DATA, sizeof( GfxInstanceData ),  maxModelsCount ),
-
-	//images
-	CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::BINDLESS_TEXTURES, BINDLESS_TEXTURES_MAX ),
-	CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::TEXT, 1 ),
-
-
-	CREATE_IMAGE_DEPTH( eTechniqueDataEntryImageName::SCENE_DEPTH, GfxFormat::D32_SFLOAT, screenSize, 0, false ),
-	CREATE_IMAGE_COLOR_SAMPLER( eTechniqueDataEntryImageName::SCENE_COLOR, GfxFormat::UNDEFINED, screenSize, GfxImageUsageFlagBits::SAMPLED, false, eSamplers::Point ),
-	CREATE_IMAGE_COLOR( eTechniqueDataEntryImageName::BACKBUFFER, GfxFormat::UNDEFINED, FG::SWAPCHAIN_SIZED, 0, true ),
-};
-
 inline void SetBuffers( GpuInputData* buffers, eTechniqueDataEntryName id, GpuBuffer* input, uint32_t count )
 {
 	SetBuffers( buffers, static_cast< uint32_t >(id), input, count );
@@ -215,6 +197,19 @@ static FG::RenderPassCreationData FG_Copy_CreateGraphNode( FG::fg_handle_t dst, 
 	return renderPassCreationData;
 }
 
+class ResourceGatherer
+{
+public:
+	std::vector<FG::DataEntry> m_resources;
+
+	FG::fg_handle_t AddResource( const FG::DataEntry& resourceDesc )
+	{
+		FG::fg_handle_t resourceHandle = m_resources.size();
+		m_resources.push_back( resourceDesc );
+		return resourceHandle;
+	}
+};
+
 FG::FrameGraph InitializeScript( const Swapchain* swapchain )
 {
 	//Setup resources
@@ -223,20 +218,25 @@ FG::FrameGraph InitializeScript( const Swapchain* swapchain )
 
 	uint32_t backBufferId = (uint32_t) eTechniqueDataEntryImageName::BACKBUFFER;
 
-	std::vector<FG::DataEntry> dataEntries ( techniqueDataEntries, techniqueDataEntries + sizeof( techniqueDataEntries ) / sizeof( techniqueDataEntries[0] ) );
-	//TODO: get rid of this, when format is 0, just set it to swapchain format in frame graph
-	dataEntries[( uint32_t )eTechniqueDataEntryImageName::SCENE_COLOR + 1].resourceDesc.format = swapchainFormat;
-	dataEntries[( uint32_t )eTechniqueDataEntryImageName::BACKBUFFER].resourceDesc.format = swapchainFormat;
-	//dataEntries[( uint32_t )eTechniqueDataEntryImageName::BACKBUFFER].resourceDesc.extent = swapchainExtent; // maybe not needed because FG does it
+	const uint32_t maxModelsCount = 256;
+	const VkExtent2D screenSize = { 224, 384 };
+	ResourceGatherer resourceGatherer;
+	resourceGatherer.AddResource( CREATE_BUFFER( eTechniqueDataEntryName::SCENE_DATA, sizeof( SceneMatricesUniform ) ) );
+	resourceGatherer.AddResource( CREATE_BUFFER_DYNAMIC( eTechniqueDataEntryName::INSTANCE_DATA, sizeof( GfxInstanceData ), maxModelsCount ) );
+	resourceGatherer.AddResource( CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::BINDLESS_TEXTURES, BINDLESS_TEXTURES_MAX ) );
+	resourceGatherer.AddResource( CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::TEXT, 1 ) );
+	FG::fg_handle_t scene_depth_h = resourceGatherer.AddResource( CREATE_IMAGE_DEPTH( eTechniqueDataEntryImageName::SCENE_DEPTH, GfxFormat::D32_SFLOAT, screenSize, 0, false ) );
+	FG::fg_handle_t scene_color_h = resourceGatherer.AddResource( CREATE_IMAGE_COLOR_SAMPLER( eTechniqueDataEntryImageName::SCENE_COLOR, swapchainFormat, screenSize, GfxImageUsageFlagBits::SAMPLED, false, eSamplers::Point ) );
+	FG::fg_handle_t backbuffer_h = resourceGatherer.AddResource( CREATE_IMAGE_COLOR( eTechniqueDataEntryImageName::BACKBUFFER, swapchainFormat, FG::SWAPCHAIN_SIZED, 0, true ) );
 
 	//Setup passes
 	//TODO: get rid of passing the swapchain
 	std::vector<FG::RenderPassCreationData> rpCreationData;
-	rpCreationData.push_back( FG_Geometry_CreateGraphNode( static_cast<FG::fg_handle_t>( eTechniqueDataEntryImageName::SCENE_COLOR ) + 1, static_cast< FG::fg_handle_t >( eTechniqueDataEntryImageName::SCENE_DEPTH ) -1 ) );
-	rpCreationData.push_back( FG_TextOverlay_CreateGraphNode( static_cast< FG::fg_handle_t >( eTechniqueDataEntryImageName::SCENE_COLOR ) +1 ) );
-	rpCreationData.push_back( FG_Copy_CreateGraphNode( static_cast< FG::fg_handle_t >( eTechniqueDataEntryImageName::BACKBUFFER ), static_cast< FG::fg_handle_t >( eTechniqueDataEntryImageName::SCENE_COLOR ) +1) );
+	rpCreationData.push_back( FG_Geometry_CreateGraphNode( scene_color_h, scene_depth_h ) );
+	rpCreationData.push_back( FG_TextOverlay_CreateGraphNode( scene_color_h ) );
+	rpCreationData.push_back( FG_Copy_CreateGraphNode( backbuffer_h, scene_color_h ) );
 
-	FG::FrameGraph fg = FG::CreateGraph( swapchain, &rpCreationData, &dataEntries, backBufferId );
+	FG::FrameGraph fg = FG::CreateGraph( swapchain, &rpCreationData, &resourceGatherer.m_resources, backBufferId );
 
 	FG::SetupInputBuffers( &fg, *_pInputBuffers );
 	FG::CreateTechniques( &fg, _descriptorPool );
