@@ -10,7 +10,7 @@ namespace FG
 	{
 		std::vector<DataEntry> resources;
 		std::vector<RenderPassCreationData> renderPasses;
-		uint32_t RT_OUTPUT_TARGET;
+		fg_handle_t RT_OUTPUT_TARGET;
 	};
 
 	class FrameGraphInternal
@@ -26,9 +26,34 @@ namespace FG
 		GpuBuffer _buffers[MAX_BUFFERS][SIMULTANEOUS_FRAMES];
 		uint32_t _buffers_count;
 
-		const GfxImage* GetImage( uint32_t render_target_id ) const
+		FrameGraphCreationData creationData;
+
+		const GfxImage* GetImageFromId( uint32_t render_target_id ) const
 		{
-			return &_render_targets[render_target_id];
+			for( fg_handle_t handle = 0; handle < creationData.resources.size(); ++handle )
+				if( creationData.resources[handle].id == render_target_id )
+					return GetImageFromHandle( handle );
+
+			return nullptr;
+		}
+
+		const GfxImage* GetImageFromHandle( fg_handle_t handle ) const
+		{
+			return &_render_targets[handle];
+		}
+
+		const GpuBuffer* GetBufferFromId( uint32_t user_id, uint32_t frame ) const
+		{
+			for( fg_handle_t handle = 0; handle < creationData.resources.size(); ++handle )
+				if( creationData.resources[handle].id == user_id )
+					return GetBufferFromHandle( handle, frame );
+
+			return nullptr;
+		}
+
+		const GpuBuffer* GetBufferFromHandle( fg_handle_t handle, uint32_t frame ) const
+		{
+			return &_buffers[handle][frame];
 		}
 
 		std::array<RenderPass, 8> _render_passes;
@@ -41,8 +66,6 @@ namespace FG
 		{
 			return &_render_passes[id];
 		}
-
-		FrameGraphCreationData creationData;
 
 		GfxHeap _gfx_mem_heap;
 		GfxHeap _gfx_mem_heap_host_visible;

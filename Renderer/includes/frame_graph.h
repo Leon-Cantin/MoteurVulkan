@@ -28,9 +28,11 @@ namespace FG
 	constexpr uint32_t MAX_ATTACHMENTS_COUNT = 8;
 	constexpr uint32_t MAX_READ_TARGETS = 4;
 
+	typedef uint32_t fg_handle_t;
+
 	struct RenderTargetRef
 	{
-		uint32_t id;
+		fg_handle_t resourceHandle;
 		uint32_t flags;
 	};
 
@@ -45,7 +47,7 @@ namespace FG
 
 	struct RenderPassCreationData
 	{
-		uint32_t e_render_targets[MAX_ATTACHMENTS_COUNT];
+		fg_handle_t fgHandleAttachement[MAX_ATTACHMENTS_COUNT];
 		AttachementDescription descriptions[MAX_ATTACHMENTS_COUNT];
 		uint32_t attachmentCount = 0;
 
@@ -87,11 +89,11 @@ namespace FG
 		FrameGraph( class FrameGraphInternal* );
 		FrameGraph();
 		const RenderPass* GetRenderPass( uint32_t id );
-		const GfxImage* GetImage( uint32_t render_target_id );
+		const GfxImage* GetImageFromId( uint32_t render_target_id );
 	};
 
 	//Compilation
-	FrameGraph CreateGraph( const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<DataEntry> *inRtCreationData, uint32_t backbufferId );
+	FrameGraph CreateGraph( const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<DataEntry> *inRtCreationData, fg_handle_t backbuffer_fg_handle );
 	void Cleanup( FrameGraph* frameGraph );
 
 

@@ -8,11 +8,17 @@
 
 namespace FG
 {	
-	static const FG::DataEntry* GetDataEntry( const FG::FrameGraph* frameGraph, uint32_t entryId )
+	static const FG::DataEntry* GetDataEntryFromId( const FG::FrameGraph* frameGraph, uint32_t entryId )
 	{
-		const FG::DataEntry* dataEntry = &frameGraph->imp->creationData.resources[entryId];
+		/*const FG::DataEntry* dataEntry = &frameGraph->imp->creationData.resources[entryId];
 		assert( dataEntry->id == entryId );
-		return dataEntry;
+		return dataEntry;*/
+		const FG::DataEntry* dataEntry;
+		for( uint32_t i = 0; i < frameGraph->imp->creationData.resources.size(); ++i )
+			if( frameGraph->imp->creationData.resources[i].id == entryId )
+				return &frameGraph->imp->creationData.resources[i];
+
+		return nullptr;
 	}
 
 	static GfxDescriptorTableLayoutBinding CreateDescriptorTableLayoutBinding( const GfxDataBinding* dataBinding, const FG::DataEntry* dataEntry )
@@ -28,7 +34,7 @@ namespace FG
 		for( uint32_t i = 0; i < desc->dataBindings.size(); ++i, ++count )
 		{
 			const GfxDataBinding* dataBinding = &desc->dataBindings[i];
-			const FG::DataEntry* dataEntry = GetDataEntry( frameGraph, dataBinding->id );
+			const FG::DataEntry* dataEntry = GetDataEntryFromId( frameGraph, dataBinding->id );
 
 			tempBindings[count] = CreateDescriptorTableLayoutBinding( dataBinding, dataEntry );
 		}
@@ -46,7 +52,7 @@ namespace FG
 		for( uint32_t i = 0; i < descriptorSetDesc->dataBindings.size(); ++i )
 		{
 			const GfxDataBinding* dataBinding = &descriptorSetDesc->dataBindings[i];
-			const FG::DataEntry* dataEntry = GetDataEntry( frameGraph, dataBinding->id );
+			const FG::DataEntry* dataEntry = GetDataEntryFromId( frameGraph, dataBinding->id );
 
 			if( dataEntry->flags & eDataEntryFlags::EXTERNAL )
 				continue;
@@ -55,15 +61,15 @@ namespace FG
 			{
 				for( size_t frameIndex = 0; frameIndex < SIMULTANEOUS_FRAMES; ++frameIndex )
 				{
-					GpuBuffer* buffer = &frameGraph->imp->_buffers[dataEntry->id][frameIndex];
+					const GpuBuffer* buffer = frameGraph->imp->GetBufferFromId( dataEntry->id, frameIndex );
 					assert( IsValid( buffer->gpuMemory ) );
-					SetBuffers( &(*inputBuffers)[frameIndex], dataEntry->id, buffer, 1 );
+					SetBuffers( &(*inputBuffers)[frameIndex], dataEntry->id, const_cast<GpuBuffer*>(buffer), 1 );
 					//CreatePerFrameBuffer( frameGraph, dataEntry, dataBinding, buffer );
 				}
 			}
 			else
 			{
-				const GfxImage* image = frameGraph->imp->GetImage( dataEntry->id ); //TODO: GetResource( (uint32_t) id ) --------------------
+				const GfxImage* image = frameGraph->imp->GetImageFromId( dataEntry->id ); //TODO: GetResource( (uint32_t) id ) --------------------
 				GfxImageSamplerCombined* imageInfo = &frameGraph->imp->allImages[dataEntry->id];
 				if( imageInfo->image == nullptr )
 				{
@@ -141,7 +147,7 @@ namespace FG
 		for( uint32_t dataBindingIndex = 0; dataBindingIndex < descriptorSetDesc->dataBindings.size(); ++dataBindingIndex )
 		{
 			const GfxDataBinding* dataBinding = &descriptorSetDesc->dataBindings[dataBindingIndex];
-			const FG::DataEntry* techniqueDataEntry = GetDataEntry( frameGraph, dataBinding->id );
+			const FG::DataEntry* techniqueDataEntry = GetDataEntryFromId( frameGraph, dataBinding->id );
 			uint32_t buffersCount = GetDataCount( inputData, dataBinding->id );
 			assert( buffersCount <= techniqueDataEntry->count );
 
@@ -167,7 +173,7 @@ namespace FG
 		for( uint32_t dataBindingIndex = 0; dataBindingIndex < descriptorSetDesc.dataBindings.size(); ++dataBindingIndex )
 		{
 			const GfxDataBinding* dataBinding = &descriptorSetDesc.dataBindings[dataBindingIndex];
-			const FG::DataEntry* techniqueDataEntry = GetDataEntry( frameGraph, dataBinding->id );
+			const FG::DataEntry* techniqueDataEntry = GetDataEntryFromId( frameGraph, dataBinding->id );
 			uint32_t buffersCount = GetDataCount( inputData, dataBinding->id );
 			if( IsBufferType( techniqueDataEntry->descriptorType ) )//Buffers
 			{

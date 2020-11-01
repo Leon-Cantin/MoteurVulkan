@@ -51,16 +51,17 @@ const uint32_t maxModelsCount = 256;
 const VkExtent2D screenSize = { 224, 384 };
 static FG::DataEntry techniqueDataEntries[static_cast< size_t >(eTechniqueDataEntryImageName::COUNT)] =
 {
-	//Buffers
-	CREATE_BUFFER_DYNAMIC( eTechniqueDataEntryName::INSTANCE_DATA, sizeof( GfxInstanceData ),  maxModelsCount ),
+	//Buffers	
 	CREATE_BUFFER( eTechniqueDataEntryName::SCENE_DATA, sizeof( SceneMatricesUniform ) ),
+	CREATE_BUFFER_DYNAMIC( eTechniqueDataEntryName::INSTANCE_DATA, sizeof( GfxInstanceData ),  maxModelsCount ),
 
 	//images
 	CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::BINDLESS_TEXTURES, BINDLESS_TEXTURES_MAX ),
 	CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::TEXT, 1 ),
 
-	CREATE_IMAGE_COLOR_SAMPLER( eTechniqueDataEntryImageName::SCENE_COLOR, GfxFormat::UNDEFINED, screenSize, GfxImageUsageFlagBits::SAMPLED, false, eSamplers::Point ),
+
 	CREATE_IMAGE_DEPTH( eTechniqueDataEntryImageName::SCENE_DEPTH, GfxFormat::D32_SFLOAT, screenSize, 0, false ),
+	CREATE_IMAGE_COLOR_SAMPLER( eTechniqueDataEntryImageName::SCENE_COLOR, GfxFormat::UNDEFINED, screenSize, GfxImageUsageFlagBits::SAMPLED, false, eSamplers::Point ),
 	CREATE_IMAGE_COLOR( eTechniqueDataEntryImageName::BACKBUFFER, GfxFormat::UNDEFINED, FG::SWAPCHAIN_SIZED, 0, true ),
 };
 
@@ -102,7 +103,7 @@ GfxDescriptorTableDesc geoInstanceSetDesc =
 	}
 };
 
-static FG::RenderPassCreationData FG_Geometry_CreateGraphNode( const Swapchain* swapchain, eTechniqueDataEntryImageName sceneColor, eTechniqueDataEntryImageName sceneDepth)
+static FG::RenderPassCreationData FG_Geometry_CreateGraphNode( FG::fg_handle_t sceneColor, FG::fg_handle_t sceneDepth)
 {
 	FG::RenderPassCreationData renderPassCreationData;
 	renderPassCreationData.name = "geometry_pass";
@@ -114,8 +115,8 @@ static FG::RenderPassCreationData FG_Geometry_CreateGraphNode( const Swapchain* 
 	frameGraphNode->gpuPipelineStateDesc = GetGeoPipelineState();
 	frameGraphNode->descriptorSets.push_back( geoPassSetDesc );
 	frameGraphNode->descriptorSets.push_back( geoInstanceSetDesc );
-	frameGraphNode->renderTargetRefs.push_back( { static_cast<uint32_t>(sceneColor), FG::FG_RENDERTARGET_REF_CLEAR_BIT } );
-	frameGraphNode->renderTargetRefs.push_back( { static_cast< uint32_t >(sceneDepth), FG::FG_RENDERTARGET_REF_CLEAR_BIT } );
+	frameGraphNode->renderTargetRefs.push_back( { sceneColor, FG::FG_RENDERTARGET_REF_CLEAR_BIT } );
+	frameGraphNode->renderTargetRefs.push_back( { sceneDepth, FG::FG_RENDERTARGET_REF_CLEAR_BIT } );
 
 	return renderPassCreationData;
 }
@@ -128,12 +129,10 @@ GfxDescriptorTableDesc textPassSet =
 	}
 };
 
-static FG::RenderPassCreationData FG_TextOverlay_CreateGraphNode( const Swapchain* swapchain, eTechniqueDataEntryImageName sceneColor )
+static FG::RenderPassCreationData FG_TextOverlay_CreateGraphNode( FG::fg_handle_t sceneColor )
 {
 	FG::RenderPassCreationData renderPassCreationData;
 	renderPassCreationData.name = "text_pass";
-
-	GfxFormat swapchainFormat = static_cast< GfxFormat >(swapchain->surfaceFormat.format);
 
 	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData.frame_graph_node;
 	frameGraphNode->RecordDrawCommands = TextRecordDrawCommandsBuffer;
@@ -198,12 +197,10 @@ GpuPipelineStateDesc GetCopyPipelineState()
 	return gpuPipelineState;
 }
 
-static FG::RenderPassCreationData FG_Copy_CreateGraphNode( const Swapchain* swapchain, eTechniqueDataEntryImageName dst, eTechniqueDataEntryImageName src )
+static FG::RenderPassCreationData FG_Copy_CreateGraphNode( FG::fg_handle_t dst, FG::fg_handle_t src )
 {
 	FG::RenderPassCreationData renderPassCreationData;
 	renderPassCreationData.name = "copy_pass";
-
-	GfxFormat swapchainFormat = static_cast< GfxFormat >(swapchain->surfaceFormat.format);
 
 	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData.frame_graph_node;
 	frameGraphNode->RecordDrawCommands = CopyRecordDrawCommandsBuffer;
@@ -228,16 +225,16 @@ FG::FrameGraph InitializeScript( const Swapchain* swapchain )
 
 	std::vector<FG::DataEntry> dataEntries ( techniqueDataEntries, techniqueDataEntries + sizeof( techniqueDataEntries ) / sizeof( techniqueDataEntries[0] ) );
 	//TODO: get rid of this, when format is 0, just set it to swapchain format in frame graph
-	dataEntries[( uint32_t )eTechniqueDataEntryImageName::SCENE_COLOR].resourceDesc.format = swapchainFormat;
+	dataEntries[( uint32_t )eTechniqueDataEntryImageName::SCENE_COLOR + 1].resourceDesc.format = swapchainFormat;
 	dataEntries[( uint32_t )eTechniqueDataEntryImageName::BACKBUFFER].resourceDesc.format = swapchainFormat;
 	//dataEntries[( uint32_t )eTechniqueDataEntryImageName::BACKBUFFER].resourceDesc.extent = swapchainExtent; // maybe not needed because FG does it
 
 	//Setup passes
 	//TODO: get rid of passing the swapchain
 	std::vector<FG::RenderPassCreationData> rpCreationData;
-	rpCreationData.push_back( FG_Geometry_CreateGraphNode( swapchain, eTechniqueDataEntryImageName::SCENE_COLOR, eTechniqueDataEntryImageName::SCENE_DEPTH ) );
-	rpCreationData.push_back( FG_TextOverlay_CreateGraphNode( swapchain, eTechniqueDataEntryImageName::SCENE_COLOR ) );
-	rpCreationData.push_back( FG_Copy_CreateGraphNode( swapchain, eTechniqueDataEntryImageName::BACKBUFFER, eTechniqueDataEntryImageName::SCENE_COLOR ) );
+	rpCreationData.push_back( FG_Geometry_CreateGraphNode( static_cast<FG::fg_handle_t>( eTechniqueDataEntryImageName::SCENE_COLOR ) + 1, static_cast< FG::fg_handle_t >( eTechniqueDataEntryImageName::SCENE_DEPTH ) -1 ) );
+	rpCreationData.push_back( FG_TextOverlay_CreateGraphNode( static_cast< FG::fg_handle_t >( eTechniqueDataEntryImageName::SCENE_COLOR ) +1 ) );
+	rpCreationData.push_back( FG_Copy_CreateGraphNode( static_cast< FG::fg_handle_t >( eTechniqueDataEntryImageName::BACKBUFFER ), static_cast< FG::fg_handle_t >( eTechniqueDataEntryImageName::SCENE_COLOR ) +1) );
 
 	FG::FrameGraph fg = FG::CreateGraph( swapchain, &rpCreationData, &dataEntries, backBufferId );
 
