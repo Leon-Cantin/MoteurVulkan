@@ -67,13 +67,14 @@ static void CmdDrawModelAsset( GfxCommandBuffer commandBuffer, const DrawListEnt
 	CmdDrawIndexed(commandBuffer, VIBindings_PosColUV, *modelAsset);
 }
 
-void GeometryRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, GfxCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique )
+void GeometryRecordDrawCommandsBuffer( GfxCommandBuffer graphicsCommandBuffer, const FG::TaskInputData& inputData )
 {
-	CmdBeginGeometryRenderPass(graphicsCommandBuffer, extent, currentFrame, renderpass, technique);
+	const SceneFrameData* frameData = static_cast< const SceneFrameData*>( inputData.userData );
+	CmdBeginGeometryRenderPass(graphicsCommandBuffer, inputData.extent, inputData.currentFrame, inputData.renderpass, inputData.technique);
 	for (size_t i = 0; i < frameData->drawList.size(); ++i)
 	{
 		const DrawListEntry* drawModel = &frameData->drawList[i];
-		CmdDrawModelAsset(graphicsCommandBuffer, drawModel, currentFrame, technique);
+		CmdDrawModelAsset(graphicsCommandBuffer, drawModel, inputData.currentFrame, inputData.technique);
 	}
 	CmdEndGeometryRenderPass(graphicsCommandBuffer);
 }

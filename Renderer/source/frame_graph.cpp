@@ -19,6 +19,11 @@ namespace FG
 		return imp->GetImageFromId( render_target_id );
 	}
 
+	void FrameGraph::AddExternalImage( fg_handle_t handle, uint32_t frameIndex, const GfxImage& image )
+	{
+		imp->_render_targets[handle][frameIndex] = image;
+	}
+
 	FrameGraph::FrameGraph()
 		: imp( nullptr ) {}
 
@@ -113,23 +118,6 @@ namespace FG
 
 	static void ComposeGraph( FrameGraphCreationData& creationData, FrameGraphInternal* o_frameGraph )
 	{
-		o_frameGraph->_gfx_mem_heap = create_gfx_heap( 8 * 1024 * 1024, GFX_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
-		GfxHeaps_BatchedAllocator image_allocator( &o_frameGraph->_gfx_mem_heap );
-		o_frameGraph->_gfx_mem_heap_host_visible = create_gfx_heap( 8 * 1024 * 1024, GFX_MEMORY_PROPERTY_HOST_VISIBLE_BIT | GFX_MEMORY_PROPERTY_HOST_COHERENT_BIT );
-		GfxHeaps_BatchedAllocator buffer_allocator( &o_frameGraph->_gfx_mem_heap_host_visible );
-
-		image_allocator.Prepare();
-
-		//TODO: only creating buffers here, can do better. Images and buffers should get the same treatment
-		for( uint32_t fg_Handle = 0; fg_Handle < creationData.resources.size(); ++fg_Handle )
-		{
-			if( IsBufferType( creationData.resources[fg_Handle].descriptorType ) )
-			{
-				for( uint32_t frameIndex = 0; frameIndex < SIMULTANEOUS_FRAMES; ++frameIndex )
-					CreateBuffer( creationData.resources[fg_Handle], &buffer_allocator, &o_frameGraph->_buffers[fg_Handle][frameIndex] );
-			}
-		}
-
 		o_frameGraph->_render_targets_count = creationData.resources.size();
 		std::map< fg_handle_t, RenderPassCreationData*> lastPass;
 
@@ -147,13 +135,6 @@ namespace FG
 				if (it_found == lastPass.end())
 				{
 					lastPass[renderTargetFgHandle] = &pass;
-
-					//Create a new image when we encounter it for the first time.
-					ResourceDesc* resourceDesc = &creationData.resources[renderTargetFgHandle].resourceDesc;
-					if ( renderTargetFgHandle != creationData.RT_OUTPUT_TARGET)
-					{
-						o_frameGraph->_render_targets[renderTargetFgHandle] = CreateImage( resourceDesc->format, resourceDesc->extent, resourceDesc->usage_flags, &image_allocator);
-					}
 				}
 				else
 				{
@@ -202,8 +183,6 @@ namespace FG
 			}
 		}
 
-		image_allocator.Commit();
-
 		//Transition the last pass with RT_OUTPUT_TARGET to present
 		auto it_found = lastPass.find( creationData.RT_OUTPUT_TARGET );
 		RenderPassCreationData* lastPassWithResource = it_found->second;
@@ -211,25 +190,60 @@ namespace FG
 		lastPassWithResource->descriptions[otherPassReferenceIndex].finalLayout = GfxLayout::PRESENT;
 	}
 
-	//TODO: probably doesn't need the frame graph
-	static void CreateFrameBuffer( RenderPass* renderpass, const RenderPassCreationData& passCreationData, uint32_t outputTargetIndex, uint32_t colorCount, bool containsDepth, FrameGraphInternal* frameGraph )
+	static void CreateResources( FrameGraphCreationData& creationData, FrameGraphInternal* o_frameGraph )
 	{
-		int32_t outputBufferIndex = FindResourceIndex( passCreationData, outputTargetIndex );
-		VkExtent2D extent = frameGraph->_render_targets[passCreationData.fgHandleAttachement[0]].extent;
-		GfxImageView colorImages[MAX_ATTACHMENTS_COUNT];
-		for (uint32_t i = 0; i < colorCount; ++i)
-			colorImages[i] = frameGraph->_render_targets[passCreationData.fgHandleAttachement[i]].imageView;
-		GfxImageView* depthImage = containsDepth ? &frameGraph->_render_targets[passCreationData.fgHandleAttachement[colorCount]].imageView : nullptr;
+		o_frameGraph->_gfx_mem_heap = create_gfx_heap( 8 * 1024 * 1024, GFX_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
+		GfxHeaps_BatchedAllocator image_allocator( &o_frameGraph->_gfx_mem_heap );
+		o_frameGraph->_gfx_mem_heap_host_visible = create_gfx_heap( 8 * 1024 * 1024, GFX_MEMORY_PROPERTY_HOST_VISIBLE_BIT | GFX_MEMORY_PROPERTY_HOST_COHERENT_BIT );
+		GfxHeaps_BatchedAllocator buffer_allocator( &o_frameGraph->_gfx_mem_heap_host_visible );
 
-		for( uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
+		image_allocator.Prepare();
+
+		for( uint32_t fg_Handle = 0; fg_Handle < creationData.resources.size(); ++fg_Handle )
 		{
-			if( outputBufferIndex >= 0 ) //If this pass uses( writes? ) to the backbuffer could probably be generalized to passes that can output to multiple targets (temporal stuff)
-				colorImages[outputBufferIndex] = frameGraph->_output_buffers[i].imageView;
-			renderpass->outputFrameBuffer[i] = CreateFrameBuffer( colorImages, colorCount, depthImage, extent, *renderpass );
+			if( !(creationData.resources[fg_Handle].flags & eDataEntryFlags::EXTERNAL) )
+			{
+				if( IsBufferType( creationData.resources[fg_Handle].descriptorType ) )
+				{
+					for( uint32_t frameIndex = 0; frameIndex < SIMULTANEOUS_FRAMES; ++frameIndex )
+						CreateBuffer( creationData.resources[fg_Handle], &buffer_allocator, &o_frameGraph->_buffers[fg_Handle][frameIndex] );
+				}
+				else if( creationData.resources[fg_Handle].descriptorType == eDescriptorType::SAMPLER )
+				{
+				}
+				else
+				{
+					ResourceDesc* resourceDesc = &creationData.resources[fg_Handle].resourceDesc;
+					o_frameGraph->_render_targets[fg_Handle][0] = CreateImage( resourceDesc->format, resourceDesc->extent, resourceDesc->usage_flags, &image_allocator );
+					for( uint32_t frameIndex = 1; frameIndex < SIMULTANEOUS_FRAMES; ++frameIndex )
+						o_frameGraph->_render_targets[fg_Handle][frameIndex] = o_frameGraph->_render_targets[fg_Handle][0];
+				}
+			}
+		}
+
+		image_allocator.Commit();
+	}
+
+	//TODO: probably doesn't need the frame graph
+	static void CreateFrameBuffer( RenderPass* renderpass, const RenderPassCreationData& passCreationData, uint32_t colorCount, bool containsDepth, FrameGraphInternal* frameGraph )
+	{
+		VkExtent2D extent = frameGraph->_render_targets[passCreationData.fgHandleAttachement[0]][0].extent;
+		for( uint32_t frameIndex = 0; frameIndex < SIMULTANEOUS_FRAMES; frameIndex++ )
+		{
+			GfxImageView colorImages[MAX_ATTACHMENTS_COUNT];
+			for( uint32_t colorIndex = 0; colorIndex < colorCount; ++colorIndex )
+			{
+				const fg_handle_t resourceHandle = passCreationData.fgHandleAttachement[colorIndex];
+				colorImages[colorIndex] = frameGraph->_render_targets[resourceHandle][frameIndex].imageView;
+			}
+			GfxImageView* depthImage = containsDepth ? &frameGraph->_render_targets[passCreationData.fgHandleAttachement[colorCount]][frameIndex].imageView : nullptr;
+
+
+			renderpass->outputFrameBuffer[frameIndex] = CreateFrameBuffer( colorImages, colorCount, depthImage, extent, *renderpass );
 		}
 	}
 
-	static void CreateRenderPass(const RenderPassCreationData& passCreationData, uint32_t outputBufferIndex, const char* name, RenderPass* o_renderPass, FrameGraphInternal* frameGraph)
+	static void CreateRenderPass(const RenderPassCreationData& passCreationData, const char* name, RenderPass* o_renderPass, FrameGraphInternal* frameGraph)
 	{
 		assert(passCreationData.attachmentCount > 0);
 		bool containsDepth = passCreationData.descriptions[passCreationData.attachmentCount - 1].layout == GfxLayout::DEPTH_STENCIL;
@@ -239,10 +253,22 @@ namespace FG
 		*o_renderPass = CreateRenderPass( name, passCreationData.descriptions, colorCount, ptrDepthStencilAttachement );
 
 		//Create the frame buffer of the render pass
-		CreateFrameBuffer( o_renderPass, passCreationData, outputBufferIndex, colorCount, containsDepth, frameGraph );
+		CreateFrameBuffer( o_renderPass, passCreationData, colorCount, containsDepth, frameGraph );
 	}
 
-	static void CreateResourceCreationData( const Swapchain* swapchain, FrameGraphCreationData* creationData, FrameGraphInternal* o_frameGraph )
+	void CreateRenderPasses( FrameGraph* frameGraphExternal )
+	{
+		FrameGraphInternal* frameGraph = frameGraphExternal->imp;
+		const FrameGraphCreationData& creationData = frameGraph->creationData;
+		for( uint32_t i = 0; i < creationData.renderPasses.size(); ++i )
+		{
+			//Create the pass
+			const RenderPassCreationData* rpCreationData = &creationData.renderPasses[i];
+			CreateRenderPass( *rpCreationData, rpCreationData->name, &frameGraph->_render_passes[frameGraph->_render_passes_count++], frameGraph );
+		}
+	}
+
+	static void CreateResourceCreationData( FrameGraphCreationData* creationData, FrameGraphInternal* o_frameGraph )
 	{
 		for( uint32_t i = 0; i < creationData->renderPasses.size(); ++i )
 		{
@@ -268,20 +294,9 @@ namespace FG
 				}
 			}
 		}
-
-		//setup hacks for outside resources
-		o_frameGraph->_render_targets[creationData->RT_OUTPUT_TARGET] = swapchain->images[0];
-		for (uint32_t i = 0; i < SIMULTANEOUS_FRAMES; ++i)
-			o_frameGraph->_output_buffers[i] = swapchain->images[i];
-
-		for (uint32_t i = 0; i < o_frameGraph->_render_targets_count; ++i)
-		{
-			if ( creationData->resources[i].resourceDesc.swapChainSized)
-				creationData->resources[i].resourceDesc.extent = swapchain->extent;
-		}
 	}
 
-	FrameGraph CreateGraph(const Swapchain* swapchain, std::vector<RenderPassCreationData> *inRpCreationData, std::vector<DataEntry> *inRtCreationData, fg_handle_t backbuffer_fg_handle )
+	FrameGraph CreateGraph( std::vector<RenderPassCreationData> *inRpCreationData, std::vector<DataEntry> *inRtCreationData, fg_handle_t backbuffer_fg_handle )
 	{
 		FrameGraphInternal* frameGraph = new FrameGraphInternal();
 		FrameGraph frameGraphExternal( frameGraph );
@@ -291,16 +306,11 @@ namespace FG
 		creationData.resources = *inRtCreationData;
 		creationData.renderPasses = *inRpCreationData;
 
-		CreateResourceCreationData( swapchain, &creationData, frameGraph );
+		CreateResourceCreationData( &creationData, frameGraph );
 
 		ComposeGraph( creationData, frameGraph );
 
-		for (uint32_t i = 0; i < creationData.renderPasses.size(); ++i)
-		{
-			//Create the pass
-			RenderPassCreationData* rpCreationData = &creationData.renderPasses[i];
-			CreateRenderPass( *rpCreationData, creationData.RT_OUTPUT_TARGET, rpCreationData->name, &frameGraph->_render_passes[frameGraph->_render_passes_count++], frameGraph );
-		}
+		CreateResources( creationData, frameGraph );
 
 		return frameGraphExternal;
 	}
@@ -314,8 +324,9 @@ namespace FG
 
 		for (uint32_t i = 0; i < frameGraph->_render_targets_count; ++i)
 		{
-			GfxImage& image = frameGraph->_render_targets[i];
-			if( image.image && i != frameGraph->creationData.RT_OUTPUT_TARGET )
+			//TODO: So far only the external stuff is multi buffered
+			GfxImage& image = frameGraph->_render_targets[i][0];
+			if( image.image && !( frameGraph->creationData.resources[i].flags & eDataEntryFlags::EXTERNAL ) )
 				DestroyImage( &image );
 		}
 		frameGraph->_render_targets_count = 0;
@@ -357,13 +368,13 @@ namespace FG
 		frameGraphExternal->imp = nullptr;
 	}
 
-	void RecordDrawCommands(uint32_t currentFrame, const SceneFrameData* frameData, GfxCommandBuffer graphicsCommandBuffer, VkExtent2D extent, FrameGraph* frameGraphExternal)
+	void RecordDrawCommands(uint32_t currentFrame, void* userData, GfxCommandBuffer graphicsCommandBuffer, VkExtent2D extent, FrameGraph* frameGraphExternal)
 	{
 		FrameGraphInternal* frameGraph = frameGraphExternal->imp;
 		for (uint32_t i = 0; i < frameGraph->_render_passes_count; ++i)
 		{
-			//TODO: _render_passes[i] _techniques[i] doesn't mean is the right one
-			frameGraph->creationData.renderPasses[i].frame_graph_node.RecordDrawCommands(currentFrame, frameData, graphicsCommandBuffer, extent, &frameGraph->_render_passes[i], &frameGraph->_techniques[i]);
+			TaskInputData taskInputData = { userData, currentFrame, extent, &frameGraph->_render_passes[i], &frameGraph->_techniques[i] };
+			frameGraph->creationData.renderPasses[i].frame_graph_node.RecordDrawCommands( graphicsCommandBuffer, taskInputData );
 		}
 	}
 }

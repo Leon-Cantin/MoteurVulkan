@@ -133,7 +133,7 @@ void RecordCommandBuffer(uint32_t currentFrame, const SceneFrameData* frameData)
 
 	CmdWriteTimestamp(graphicsCommandBuffer, GFX_PIPELINE_STAGE_TOP_OF_PIPE_BIT, Timestamp::COMMAND_BUFFER_START, currentFrame);
 
-	FG::RecordDrawCommands(currentFrame, frameData, graphicsCommandBuffer, g_swapchain.extent, &_frameGraph );
+	FG::RecordDrawCommands(currentFrame, const_cast< SceneFrameData*>(frameData), graphicsCommandBuffer, g_swapchain.extent, &_frameGraph );
 
 	CmdWriteTimestamp(graphicsCommandBuffer, GFX_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, Timestamp::COMMAND_BUFFER_END, currentFrame);
 

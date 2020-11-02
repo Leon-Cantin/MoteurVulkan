@@ -176,7 +176,7 @@ void CleanupTextRenderPass()
 	DestroyGfxModel( textModel );
 }
 
-void TextRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, GfxCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique )
+void TextRecordDrawCommandsBuffer( GfxCommandBuffer graphicsCommandBuffer, const FG::TaskInputData& inputData )
 {
-	CmdDrawText(graphicsCommandBuffer, extent, currentFrame, renderpass, technique);
+	CmdDrawText(graphicsCommandBuffer, inputData.extent, inputData.currentFrame, inputData.renderpass, inputData.technique);
 }

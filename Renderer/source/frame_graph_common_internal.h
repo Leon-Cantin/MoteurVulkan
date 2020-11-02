@@ -16,11 +16,10 @@ namespace FG
 	class FrameGraphInternal
 	{
 	public:
-		GfxImage _output_buffers[SIMULTANEOUS_FRAMES];
 #define MAX_RENDERTARGETS 32
 #define MAX_BUFFERS 32
 
-		GfxImage _render_targets[MAX_RENDERTARGETS];
+		GfxImage _render_targets[MAX_RENDERTARGETS][SIMULTANEOUS_FRAMES];
 		uint32_t _render_targets_count;
 
 		GpuBuffer _buffers[MAX_BUFFERS][SIMULTANEOUS_FRAMES];
@@ -39,7 +38,8 @@ namespace FG
 
 		const GfxImage* GetImageFromHandle( fg_handle_t handle ) const
 		{
-			return &_render_targets[handle];
+			//TODO: temporal stuff
+			return &_render_targets[handle][0];
 		}
 
 		const GpuBuffer* GetBufferFromId( user_id_t user_id, uint32_t frame ) const

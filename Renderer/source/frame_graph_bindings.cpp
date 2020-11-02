@@ -47,7 +47,7 @@ namespace FG
 		CreateDescriptorTables( descriptorPool, 1, &descriptorSetLayout, o_descriptorSet );
 	}
 
-	static void SetOrCreateDataIfNeeded( FG::FrameGraph* frameGraph, std::array< GpuInputData, SIMULTANEOUS_FRAMES>* inputBuffers, const GfxDescriptorTableDesc* descriptorSetDesc )
+	static void SetDataToInputBuffer( FG::FrameGraph* frameGraph, std::array< GpuInputData, SIMULTANEOUS_FRAMES>* inputBuffers, const GfxDescriptorTableDesc* descriptorSetDesc )
 	{
 		for( uint32_t i = 0; i < descriptorSetDesc->dataBindings.size(); ++i )
 		{
@@ -134,7 +134,7 @@ namespace FG
 			const FG::RenderPassCreationData* passCreationData = &frameGraph->imp->creationData.renderPasses[i];
 
 			for( const GfxDescriptorTableDesc& set : passCreationData->frame_graph_node.descriptorSets )
-				SetOrCreateDataIfNeeded( frameGraph, &inputBuffers, &set );
+				SetDataToInputBuffer( frameGraph, &inputBuffers, &set );
 		}
 	}
 

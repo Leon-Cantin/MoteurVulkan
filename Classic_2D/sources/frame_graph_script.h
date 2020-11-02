@@ -12,6 +12,9 @@
 std::array< GpuInputData, SIMULTANEOUS_FRAMES>* _pInputBuffers;
 GfxDescriptorPool _descriptorPool;
 
+const uint32_t maxModelsCount = 256;
+const VkExtent2D screenSize = { 224, 384 };
+
 void FG_Script_SetInputBuffers( std::array< GpuInputData, SIMULTANEOUS_FRAMES>* pInputBuffers, GfxDescriptorPool descriptorPool )
 {
 	_pInputBuffers = pInputBuffers;
@@ -137,16 +140,16 @@ GfxDescriptorTableDesc copyPassSet =
 };
 
 #include "file_system.h"
-void CopyRecordDrawCommandsBuffer( uint32_t currentFrame, const SceneFrameData* frameData, GfxCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique )
+void CopyRecordDrawCommandsBuffer( GfxCommandBuffer graphicsCommandBuffer, const FG::TaskInputData& inputData )
 {
 	//TODO: we don't need extent, it's implicit by the framebuffer
 	//TODO: don't let this code choose with "currentFrame" it doesn't need to know that.
 	CmdBeginLabel( graphicsCommandBuffer, "Copy Renderpass", glm::vec4( 0.8f, 0.8f, 0.8f, 1.0f ) );
-	const FrameBuffer& frameBuffer = renderpass->outputFrameBuffer[currentFrame];
-	BeginRenderPass( graphicsCommandBuffer, *renderpass, frameBuffer );
+	const FrameBuffer& frameBuffer = inputData.renderpass->outputFrameBuffer[inputData.currentFrame];
+	BeginRenderPass( graphicsCommandBuffer, *inputData.renderpass, frameBuffer );
 
-	vkCmdBindPipeline( graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipeline );
-	vkCmdBindDescriptorSets( graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, 0, 1, &technique->descriptor_sets[RENDERPASS_SET].hw_descriptorSets[currentFrame], 0, nullptr );
+	vkCmdBindPipeline( graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, inputData.technique->pipeline );
+	vkCmdBindDescriptorSets( graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, inputData.technique->pipelineLayout, 0, 1, &inputData.technique->descriptor_sets[RENDERPASS_SET].hw_descriptorSets[inputData.currentFrame], 0, nullptr );
 
 	vkCmdDraw( graphicsCommandBuffer, 4, 1, 0, 0 );
 
@@ -216,28 +219,26 @@ FG::FrameGraph InitializeScript( const Swapchain* swapchain )
 	GfxFormat swapchainFormat = GetFormat( swapchain->surfaceFormat );
 	VkExtent2D swapchainExtent = swapchain->extent;
 
-	uint32_t backBufferId = (uint32_t) eTechniqueDataEntryImageName::BACKBUFFER;
-
-	const uint32_t maxModelsCount = 256;
-	const VkExtent2D screenSize = { 224, 384 };
 	ResourceGatherer resourceGatherer;
 	resourceGatherer.AddResource( CREATE_BUFFER( eTechniqueDataEntryName::SCENE_DATA, sizeof( SceneMatricesUniform ) ) );
 	resourceGatherer.AddResource( CREATE_BUFFER_DYNAMIC( eTechniqueDataEntryName::INSTANCE_DATA, sizeof( GfxInstanceData ), maxModelsCount ) );
+	//TODO: Remove external resources that don't need to be managed
 	resourceGatherer.AddResource( CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::BINDLESS_TEXTURES, BINDLESS_TEXTURES_MAX ) );
 	resourceGatherer.AddResource( CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::TEXT, 1 ) );
-	FG::fg_handle_t scene_depth_h = resourceGatherer.AddResource( CREATE_IMAGE_DEPTH( eTechniqueDataEntryImageName::SCENE_DEPTH, GfxFormat::D32_SFLOAT, screenSize, 0, false ) );
-	FG::fg_handle_t scene_color_h = resourceGatherer.AddResource( CREATE_IMAGE_COLOR_SAMPLER( eTechniqueDataEntryImageName::SCENE_COLOR, swapchainFormat, screenSize, GfxImageUsageFlagBits::SAMPLED, false, eSamplers::Point ) );
-	FG::fg_handle_t backbuffer_h = resourceGatherer.AddResource( CREATE_IMAGE_COLOR( eTechniqueDataEntryImageName::BACKBUFFER, swapchainFormat, FG::SWAPCHAIN_SIZED, 0, true ) );
+	FG::fg_handle_t scene_depth_h = resourceGatherer.AddResource( CREATE_IMAGE_DEPTH( eTechniqueDataEntryImageName::SCENE_DEPTH, GfxFormat::D32_SFLOAT, screenSize, 0 ) );
+	FG::fg_handle_t scene_color_h = resourceGatherer.AddResource( CREATE_IMAGE_COLOR_SAMPLER( eTechniqueDataEntryImageName::SCENE_COLOR, swapchainFormat, screenSize, GfxImageUsageFlagBits::SAMPLED, eSamplers::Point ) );
+	FG::fg_handle_t backbuffer_h = resourceGatherer.AddResource( CREATE_IMAGE_COLOR( eTechniqueDataEntryImageName::BACKBUFFER, swapchainFormat, swapchainExtent, 0, FG::eDataEntryFlags::EXTERNAL ) );
 
 	//Setup passes
-	//TODO: get rid of passing the swapchain
 	std::vector<FG::RenderPassCreationData> rpCreationData;
 	rpCreationData.push_back( FG_Geometry_CreateGraphNode( scene_color_h, scene_depth_h ) );
 	rpCreationData.push_back( FG_TextOverlay_CreateGraphNode( scene_color_h ) );
 	rpCreationData.push_back( FG_Copy_CreateGraphNode( backbuffer_h, scene_color_h ) );
 
-	FG::FrameGraph fg = FG::CreateGraph( swapchain, &rpCreationData, &resourceGatherer.m_resources, backBufferId );
-
+	FG::FrameGraph fg = FG::CreateGraph( &rpCreationData, &resourceGatherer.m_resources, backbuffer_h );
+	for( uint32_t frameIndex = 0; frameIndex < SIMULTANEOUS_FRAMES; ++frameIndex )
+		fg.AddExternalImage( backbuffer_h, frameIndex, swapchain->images[frameIndex] );
+	FG::CreateRenderPasses( &fg );
 	FG::SetupInputBuffers( &fg, *_pInputBuffers );
 	FG::CreateTechniques( &fg, _descriptorPool );
 	FG::UpdateTechniqueDescriptorSets( &fg, *_pInputBuffers );
