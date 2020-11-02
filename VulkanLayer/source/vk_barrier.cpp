@@ -5,6 +5,7 @@ VkAccessFlags ToVkAccess( GfxLayout layout, GfxAccess access )
 {
 	switch( layout )
 	{
+	case GfxLayout::PRESENT:
 	case GfxLayout::UNDEFINED:
 		return 0;
 	case GfxLayout::TRANSFER :
@@ -12,7 +13,7 @@ VkAccessFlags ToVkAccess( GfxLayout layout, GfxAccess access )
 	case GfxLayout::COLOR:
 		return access == GfxAccess::READ ? VK_ACCESS_SHADER_READ_BIT : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; // Maybe read could use VK_ACCESS_COLOR_ATTACHMENT_READ_BIT and write VK_ACCESS_SHADER_WRITE_BIT
 	default:
-		assert( true );
+		assert( false );
 		return VK_ACCESS_FLAG_BITS_MAX_ENUM;
 	}
 }
@@ -22,14 +23,15 @@ VkPipelineStageFlags ToPipelineStage( GfxLayout layout )
 	//TODO: muchos is missing here
 	switch( layout )
 	{
+	case GfxLayout::PRESENT:
 	case GfxLayout::UNDEFINED:
 		return VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 	case GfxLayout::TRANSFER:
 		return VK_PIPELINE_STAGE_TRANSFER_BIT;
 	case GfxLayout::COLOR:
-		return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; //TODO: Too much stuff at once
 	default:
-		assert( true );
+		assert( false );
 		return VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
 	}
 }

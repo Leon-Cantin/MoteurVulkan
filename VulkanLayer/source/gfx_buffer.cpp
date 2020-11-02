@@ -1,4 +1,4 @@
-#include "gfx_buffer.h"
+#include "vk_globals.h"
 
 #include <cassert>
 #include <stdexcept>

@@ -10,7 +10,6 @@ namespace FG
 	{
 		std::vector<DataEntry> resources;
 		std::vector<RenderPassCreationData> renderPasses;
-		fg_handle_t RT_OUTPUT_TARGET;
 	};
 
 	class FrameGraphInternal

@@ -182,12 +182,6 @@ namespace FG
 				}
 			}
 		}
-
-		//Transition the last pass with RT_OUTPUT_TARGET to present
-		auto it_found = lastPass.find( creationData.RT_OUTPUT_TARGET );
-		RenderPassCreationData* lastPassWithResource = it_found->second;
-		int32_t otherPassReferenceIndex = FindResourceIndex(*lastPassWithResource, creationData.RT_OUTPUT_TARGET );
-		lastPassWithResource->descriptions[otherPassReferenceIndex].finalLayout = GfxLayout::PRESENT;
 	}
 
 	static void CreateResources( FrameGraphCreationData& creationData, FrameGraphInternal* o_frameGraph )
@@ -296,13 +290,12 @@ namespace FG
 		}
 	}
 
-	FrameGraph CreateGraph( std::vector<RenderPassCreationData> *inRpCreationData, std::vector<DataEntry> *inRtCreationData, fg_handle_t backbuffer_fg_handle )
+	FrameGraph CreateGraph( std::vector<RenderPassCreationData> *inRpCreationData, std::vector<DataEntry> *inRtCreationData )
 	{
 		FrameGraphInternal* frameGraph = new FrameGraphInternal();
 		FrameGraph frameGraphExternal( frameGraph );
 		FrameGraphCreationData& creationData = frameGraph->creationData;
 		//Setup resources
-		creationData.RT_OUTPUT_TARGET = backbuffer_fg_handle;
 		creationData.resources = *inRtCreationData;
 		creationData.renderPasses = *inRpCreationData;
 

@@ -235,7 +235,7 @@ FG::FrameGraph InitializeScript( const Swapchain* swapchain )
 	rpCreationData.push_back( FG_TextOverlay_CreateGraphNode( scene_color_h ) );
 	rpCreationData.push_back( FG_Copy_CreateGraphNode( backbuffer_h, scene_color_h ) );
 
-	FG::FrameGraph fg = FG::CreateGraph( &rpCreationData, &resourceGatherer.m_resources, backbuffer_h );
+	FG::FrameGraph fg = FG::CreateGraph( &rpCreationData, &resourceGatherer.m_resources );
 	for( uint32_t frameIndex = 0; frameIndex < SIMULTANEOUS_FRAMES; ++frameIndex )
 		fg.AddExternalImage( backbuffer_h, frameIndex, swapchain->images[frameIndex] );
 	FG::CreateRenderPasses( &fg );

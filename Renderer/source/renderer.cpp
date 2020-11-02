@@ -135,6 +135,9 @@ void RecordCommandBuffer(uint32_t currentFrame, const SceneFrameData* frameData)
 
 	FG::RecordDrawCommands(currentFrame, const_cast< SceneFrameData*>(frameData), graphicsCommandBuffer, g_swapchain.extent, &_frameGraph );
 
+	//TODO: Maybe make a present task so it changes the final layout in the frame graph?
+	GfxImageBarrier( graphicsCommandBuffer, g_swapchain.images[currentFrame].image, GfxLayout::COLOR, GfxAccess::WRITE, GfxLayout::PRESENT, GfxAccess::READ );
+
 	CmdWriteTimestamp(graphicsCommandBuffer, GFX_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, Timestamp::COMMAND_BUFFER_END, currentFrame);
 
 	EndCommandBufferRecording(graphicsCommandBuffer);

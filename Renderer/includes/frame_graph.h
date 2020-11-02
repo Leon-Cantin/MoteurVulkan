@@ -101,7 +101,7 @@ namespace FG
 	};
 
 	//Compilation
-	FrameGraph CreateGraph( std::vector<RenderPassCreationData> *inRpCreationData, std::vector<DataEntry> *inRtCreationData, fg_handle_t backbuffer_fg_handle );
+	FrameGraph CreateGraph( std::vector<RenderPassCreationData> *inRpCreationData, std::vector<DataEntry> *inRtCreationData );
 	void Cleanup( FrameGraph* frameGraph );
 	void CreateRenderPasses( FrameGraph* frameGraphExternal );
 
