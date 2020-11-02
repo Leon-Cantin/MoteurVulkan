@@ -44,10 +44,22 @@ namespace FG
 		const Technique * technique;
 	};
 
+	struct DataBinding
+	{
+		fg_handle_t resourceHandle;
+		GfxDataBinding desc;
+	};
+
+	struct DescriptorTableDesc
+	{
+		uint32_t binding;
+		std::vector<DataBinding> dataBindings;
+	};
+
 	struct FrameGraphNode
 	{
 		void( *RecordDrawCommands )( GfxCommandBuffer graphicsCommandBuffer, const TaskInputData& inputData );
-		std::vector<GfxDescriptorTableDesc> descriptorSets;
+		std::vector<DescriptorTableDesc> descriptorSets;
 		std::vector<RenderTargetRef> renderTargetRefs;
 		GpuPipelineLayout gpuPipelineLayout;
 		GpuPipelineStateDesc gpuPipelineStateDesc;

@@ -24,8 +24,8 @@ void CreateGfxPipelineLayout( const GfxDescriptorTableDesc* descriptorTablesDesc
 	for( uint32_t i = 0; i < descriptorTablesDescsCount; ++i )
 	{
 		const GfxDescriptorTableDesc& setDesc = descriptorTablesDescs[i];
-		assert( i == setDesc.id ); //We can't leave any hole in the pilpeline layout
-		orderedDescriptorTablesLayouts[i] = descriptorTableLayouts[setDesc.id];
+		assert( i == setDesc.binding ); //We can't leave any hole in the pilpeline layout
+		orderedDescriptorTablesLayouts[i] = descriptorTableLayouts[setDesc.binding];
 	}
 
 	VkPipelineLayoutCreateInfo pipeline_layout_info = {};

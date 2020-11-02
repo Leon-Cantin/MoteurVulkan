@@ -369,7 +369,6 @@ struct GfxRootConstantRange {
 
 struct GfxDataBinding
 {
-	uint32_t id;
 	uint32_t binding;
 	eDescriptorAccess descriptorAccess;
 	GfxShaderStageFlags stageFlags;
@@ -377,7 +376,7 @@ struct GfxDataBinding
 
 struct GfxDescriptorTableDesc
 {
-	uint32_t id;
+	uint32_t binding;
 	std::vector<GfxDataBinding> dataBindings;
 };
 

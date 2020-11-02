@@ -70,26 +70,25 @@ inline GfxImageSamplerCombined* GetImage( const GpuInputData* buffers, eTechniqu
 	return GetImage( buffers, static_cast< uint32_t >(id) );
 }
 
-GfxDescriptorTableDesc geoPassSetDesc =
+static FG::RenderPassCreationData FG_Geometry_CreateGraphNode( FG::fg_handle_t sceneColor, FG::fg_handle_t sceneDepth, FG::fg_handle_t sceneData, FG::fg_handle_t bindlessTextures, FG::fg_handle_t instanceData )
 {
-	RENDERPASS_SET,
+	FG::DescriptorTableDesc geoPassSetDesc =
 	{
-		{ static_cast< uint32_t >(eTechniqueDataEntryName::SCENE_DATA), 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_VERTEX_BIT | GFX_SHADER_STAGE_FRAGMENT_BIT },
+		RENDERPASS_SET,
+		{
+			{ sceneData, { 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_VERTEX_BIT | GFX_SHADER_STAGE_FRAGMENT_BIT } },
+			{ bindlessTextures, { 2, eDescriptorAccess::READ, GFX_SHADER_STAGE_FRAGMENT_BIT } },
+		}
+	};
 
-		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::BINDLESS_TEXTURES), 2, eDescriptorAccess::READ, GFX_SHADER_STAGE_FRAGMENT_BIT },
-	}
-};
-
-GfxDescriptorTableDesc geoInstanceSetDesc =
-{
-	INSTANCE_SET,
+	FG::DescriptorTableDesc geoInstanceSetDesc =
 	{
-		{ static_cast< uint32_t >(eTechniqueDataEntryName::INSTANCE_DATA), 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_VERTEX_BIT | GFX_SHADER_STAGE_FRAGMENT_BIT }
-	}
-};
+		INSTANCE_SET,
+		{
+			{ instanceData, { 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_VERTEX_BIT | GFX_SHADER_STAGE_FRAGMENT_BIT } }
+		}
+	};
 
-static FG::RenderPassCreationData FG_Geometry_CreateGraphNode( FG::fg_handle_t sceneColor, FG::fg_handle_t sceneDepth)
-{
 	FG::RenderPassCreationData renderPassCreationData;
 	renderPassCreationData.name = "geometry_pass";
 
@@ -106,16 +105,17 @@ static FG::RenderPassCreationData FG_Geometry_CreateGraphNode( FG::fg_handle_t s
 	return renderPassCreationData;
 }
 
-GfxDescriptorTableDesc textPassSet =
+static FG::RenderPassCreationData FG_TextOverlay_CreateGraphNode( FG::fg_handle_t sceneColor, FG::fg_handle_t textTexture )
 {
-	RENDERPASS_SET,
+	FG::DescriptorTableDesc textPassSet =
 	{
-		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::TEXT), 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_FRAGMENT_BIT }
-	}
-};
+		RENDERPASS_SET,
+		{
+			{ textTexture, { 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_FRAGMENT_BIT } }
+		}
+	};
 
-static FG::RenderPassCreationData FG_TextOverlay_CreateGraphNode( FG::fg_handle_t sceneColor )
-{
+
 	FG::RenderPassCreationData renderPassCreationData;
 	renderPassCreationData.name = "text_pass";
 
@@ -130,14 +130,6 @@ static FG::RenderPassCreationData FG_TextOverlay_CreateGraphNode( FG::fg_handle_
 
 	return renderPassCreationData;
 }
-
-GfxDescriptorTableDesc copyPassSet =
-{
-	RENDERPASS_SET,
-	{
-		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::SCENE_COLOR), 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_FRAGMENT_BIT }
-	}
-};
 
 #include "file_system.h"
 void CopyRecordDrawCommandsBuffer( GfxCommandBuffer graphicsCommandBuffer, const FG::TaskInputData& inputData )
@@ -184,6 +176,14 @@ GpuPipelineStateDesc GetCopyPipelineState()
 
 static FG::RenderPassCreationData FG_Copy_CreateGraphNode( FG::fg_handle_t dst, FG::fg_handle_t src )
 {
+	FG::DescriptorTableDesc copyPassSet =
+	{
+		RENDERPASS_SET,
+		{
+			{ src, { 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_FRAGMENT_BIT } }
+		}
+	};
+
 	FG::RenderPassCreationData renderPassCreationData;
 	renderPassCreationData.name = "copy_pass";
 
@@ -220,19 +220,19 @@ FG::FrameGraph InitializeScript( const Swapchain* swapchain )
 	VkExtent2D swapchainExtent = swapchain->extent;
 
 	ResourceGatherer resourceGatherer;
-	resourceGatherer.AddResource( CREATE_BUFFER( eTechniqueDataEntryName::SCENE_DATA, sizeof( SceneMatricesUniform ) ) );
-	resourceGatherer.AddResource( CREATE_BUFFER_DYNAMIC( eTechniqueDataEntryName::INSTANCE_DATA, sizeof( GfxInstanceData ), maxModelsCount ) );
+	FG::fg_handle_t scene_data_h = resourceGatherer.AddResource( CREATE_BUFFER( eTechniqueDataEntryName::SCENE_DATA, sizeof( SceneMatricesUniform ) ) );
+	FG::fg_handle_t instance_data_h = resourceGatherer.AddResource( CREATE_BUFFER_DYNAMIC( eTechniqueDataEntryName::INSTANCE_DATA, sizeof( GfxInstanceData ), maxModelsCount ) );
 	//TODO: Remove external resources that don't need to be managed
-	resourceGatherer.AddResource( CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::BINDLESS_TEXTURES, BINDLESS_TEXTURES_MAX ) );
-	resourceGatherer.AddResource( CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::TEXT, 1 ) );
+	FG::fg_handle_t bindless_textures_h = resourceGatherer.AddResource( CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::BINDLESS_TEXTURES, BINDLESS_TEXTURES_MAX ) );
+	FG::fg_handle_t text_texture_h = resourceGatherer.AddResource( CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::TEXT, 1 ) );
 	FG::fg_handle_t scene_depth_h = resourceGatherer.AddResource( CREATE_IMAGE_DEPTH( eTechniqueDataEntryImageName::SCENE_DEPTH, GfxFormat::D32_SFLOAT, screenSize, 0 ) );
 	FG::fg_handle_t scene_color_h = resourceGatherer.AddResource( CREATE_IMAGE_COLOR_SAMPLER( eTechniqueDataEntryImageName::SCENE_COLOR, swapchainFormat, screenSize, GfxImageUsageFlagBits::SAMPLED, eSamplers::Point ) );
 	FG::fg_handle_t backbuffer_h = resourceGatherer.AddResource( CREATE_IMAGE_COLOR( eTechniqueDataEntryImageName::BACKBUFFER, swapchainFormat, swapchainExtent, 0, FG::eDataEntryFlags::EXTERNAL ) );
 
 	//Setup passes
 	std::vector<FG::RenderPassCreationData> rpCreationData;
-	rpCreationData.push_back( FG_Geometry_CreateGraphNode( scene_color_h, scene_depth_h ) );
-	rpCreationData.push_back( FG_TextOverlay_CreateGraphNode( scene_color_h ) );
+	rpCreationData.push_back( FG_Geometry_CreateGraphNode( scene_color_h, scene_depth_h, scene_data_h, bindless_textures_h, instance_data_h ) );
+	rpCreationData.push_back( FG_TextOverlay_CreateGraphNode( scene_color_h, text_texture_h ) );
 	rpCreationData.push_back( FG_Copy_CreateGraphNode( backbuffer_h, scene_color_h ) );
 
 	FG::FrameGraph fg = FG::CreateGraph( &rpCreationData, &resourceGatherer.m_resources );
