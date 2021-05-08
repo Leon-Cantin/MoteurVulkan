@@ -12,6 +12,7 @@ target_include_directories( ${TARGET_NAME} PRIVATE sources )
 
 set_target_properties( ${TARGET_NAME} PROPERTIES OUTPUT_NAME ${TARGET_NAME}_$<CONFIG> )
 
+target_link_libraries( ${TARGET_NAME} PRIVATE Engine )
 target_link_libraries( ${TARGET_NAME} PRIVATE Renderer )
 target_link_libraries( ${TARGET_NAME} PRIVATE WindowHandler )
 target_link_libraries( ${TARGET_NAME} PRIVATE Utils )

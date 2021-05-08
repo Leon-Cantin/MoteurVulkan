@@ -10,5 +10,5 @@ EXIT /B %ERRORLEVEL%
 
 :Compile
 @echo off
-D:\Programme\VulkanSDK\1.1.92.1\Bin\glslc.exe --target-env=vulkan1.1 .\%~1 -o ..\..\Classic_2D_output\shaders\%~1.spv
+D:\Programme\VulkanSDK\1.2.148.1\Bin\glslc.exe --target-env=vulkan1.1 .\%~1 -o ..\..\Classic_2D_output\shaders\%~1.spv
 @echo on

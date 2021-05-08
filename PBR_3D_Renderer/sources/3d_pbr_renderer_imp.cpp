@@ -2,7 +2,6 @@
 
 #include "frame_graph_script.h"
 #include "renderer.h"
-#include "descriptors.h"
 #include "profile.h"
 #include "console_command.h"
 #include "window_handler.h"
@@ -12,7 +11,7 @@
 #include <glm/vec4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-VkDescriptorPool descriptorPool;
+GfxDescriptorPool descriptorPool;
 
 extern Swapchain g_swapchain;
 
@@ -139,6 +138,12 @@ void InitRendererImp( VkSurfaceKHR swapchainSurface )
 {
 	InitRenderer( swapchainSurface, NeedResize, WH::GetFramebufferSize );
 
+	LoadFontTexture();
+	CreateTextVertexBuffer( 256 );
+}
+
+static GfxDescriptorPool CreateDescriptorPool_BAD()
+{
 	const uint32_t geometryDescriptorSets = 2 * SIMULTANEOUS_FRAMES;
 	const uint32_t geometryBuffersCount = 2 * SIMULTANEOUS_FRAMES;
 	const uint32_t geometryImageCount = 20 * SIMULTANEOUS_FRAMES;
@@ -159,17 +164,24 @@ void InitRendererImp( VkSurfaceKHR swapchainSurface )
 	const uint32_t imageSamplersCount = geometryImageCount + skyboxImageCount + textImageCount;
 	const uint32_t storageImageCount = 1;
 	const uint32_t uniformBuffersDynamicCount = geomtryDynamicBuffersCount + shadowDynamicBuffersCount;
-	const uint32_t sampledImageCount = 0;
+	const uint32_t sampledImageCount = 6;
 
 	const uint32_t maxSets = geometryDescriptorSets + shadowDescriptorSets + skyboxDescriptorSetsCount + textDescriptorSetsCount;
 
-	createDescriptorPool(uniformBuffersCount, uniformBuffersDynamicCount, imageSamplersCount, storageImageCount, sampledImageCount, maxSets, &descriptorPool);
+	GfxDescriptorPool descriptorPool;
+	CreateDescriptorPool( uniformBuffersCount, uniformBuffersDynamicCount, imageSamplersCount, storageImageCount, sampledImageCount, maxSets, &descriptorPool );
 
-	LoadFontTexture();
+	return descriptorPool;
 }
 
 void CompileScene( BindlessTexturesState* bindlessTexturesState, const GfxImage* skyboxImage )
 {
+	CleanupFrameGraph();
+
+	if( descriptorPool )
+		Destroy( &descriptorPool );
+	descriptorPool = CreateDescriptorPool_BAD();
+
 	CreateBuffers( bindlessTexturesState, skyboxImage );
 	FG_Script_SetInputBuffers( &_inputBuffers, descriptorPool );
 	CompileFrameGraph( InitializeScript );
@@ -179,7 +191,7 @@ void CleanupRendererImp()
 {
 	CleanupTextRenderPass();
 	CleanupRenderer();	
-	vkDestroyDescriptorPool(g_vk.device, descriptorPool, nullptr);
+	Destroy( &descriptorPool );
 }
 
 void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<GfxAssetInstance>& drawList )

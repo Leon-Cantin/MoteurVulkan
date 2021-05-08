@@ -1,14 +1,13 @@
 #pragma once
 
 #include "vk_globals.h"
-#include "renderpass.h"
 #include "scene_frame_data.h"
 #include "material.h"
-
+#include "frame_graph.h"
 
 GpuPipelineLayout GetSkyboxPipelineLayout();
-GpuPipelineState GetSkyboxPipelineState();
-void SkyboxRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique );
+GpuPipelineStateDesc GetSkyboxPipelineState();
+void SkyboxRecordDrawCommandsBuffer( GfxCommandBuffer graphicsCommandBuffer, const FG::TaskInputData& inputData );
 
 #include "glm/mat4x4.hpp"
 //TODO the .h doesn't need to know about this struct

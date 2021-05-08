@@ -16,9 +16,9 @@ void Load3DTexture( const char* filename, GfxImage* o_image, I_ImageAlloctor* al
 
 	assert( textureType == TextureType::Cube );
 
-	int texWidth = header.pixelwidth, texHeight = header.pixelheight;
+	uint32_t texWidth = header.pixelwidth, texHeight = header.pixelheight;
 
-	*o_image = CreateCubeImage( ( uint32_t )texWidth, ( uint32_t )texHeight, 1, format, GfxImageUsageFlagBits::TRANSFER_SRC | GfxImageUsageFlagBits::TRANSFER_DST | GfxImageUsageFlagBits::SAMPLED );
+	*o_image = CreateCubeImage( texWidth, texHeight, 1, format, GfxImageUsageFlagBits::TRANSFER_SRC | GfxImageUsageFlagBits::TRANSFER_DST | GfxImageUsageFlagBits::SAMPLED );
 
 	MarkGfxObject( o_image->image, filename );
 

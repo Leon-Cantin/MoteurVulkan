@@ -226,7 +226,7 @@ GfxImage CreateImage( uint32_t width, uint32_t height, uint32_t mipLevels, GfxFo
 	create_image( width, height, mipLevels, ToVkFormat( format ), usage, &image.image );
 	image.extent = { width, height };
 	image.format = format;
-	image.layers = 0;
+	image.layers = 1;
 	image.mipLevels = mipLevels;
 
 	return image;

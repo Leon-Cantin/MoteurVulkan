@@ -6,7 +6,7 @@
 #include "shadow_renderpass.h"
 #include "skybox.h"
 #include "text_overlay.h"
-#include "descriptors.h"
+#include "../shaders/shadersCommon.h"
 
 #include <unordered_map>
 
@@ -53,26 +53,7 @@ enum class eTechniqueDataEntryImageName
 // Have a list of descriptor sets instead of instance and pass to keep things generic. Check the binding point to know to which (instance or pass) it belongs.
 
 const uint32_t maxModelsCount = 5;
-constexpr VkFormat RT_FORMAT_SHADOW_DEPTH = VK_FORMAT_D32_SFLOAT;
 constexpr VkExtent2D RT_EXTENT_SHADOW = { 1024, 1024 };
-static FG::DataEntry techniqueDataEntries[static_cast< size_t >(eTechniqueDataEntryImageName::COUNT)] =
-{
-	//Buffers
-	CREATE_BUFFER_DYNAMIC( eTechniqueDataEntryName::INSTANCE_DATA, sizeof( GfxInstanceData ),  maxModelsCount ),
-	CREATE_BUFFER( eTechniqueDataEntryName::SHADOW_DATA, sizeof( SceneMatricesUniform ) ),
-	CREATE_BUFFER( eTechniqueDataEntryName::SCENE_DATA, sizeof( SceneMatricesUniform ) ),
-	CREATE_BUFFER( eTechniqueDataEntryName::LIGHT_DATA, sizeof( LightUniform ) ),
-	CREATE_BUFFER( eTechniqueDataEntryName::SKYBOX_DATA, sizeof( SkyboxUniformBufferObject ) ),
-
-	//images
-	CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::BINDLESS_TEXTURES, 5 ),
-	CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::TEXT, 1 ),
-	CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::SKYBOX, 1 ),
-
-	CREATE_IMAGE_COLOR( eTechniqueDataEntryImageName::SCENE_COLOR, VkFormat( 0 ), FG::SWAPCHAIN_SIZED, 0, true ),
-	CREATE_IMAGE_DEPTH( eTechniqueDataEntryImageName::SCENE_DEPTH, VK_FORMAT_D32_SFLOAT, FG::SWAPCHAIN_SIZED, 0, true ),
-	CREATE_IMAGE_DEPTH_SAMPLER( eTechniqueDataEntryImageName::SHADOW_MAP, RT_FORMAT_SHADOW_DEPTH, RT_EXTENT_SHADOW, VK_IMAGE_USAGE_SAMPLED_BIT, false, eSamplers::Shadow ),
-};
 
 inline void SetBuffers( GpuInputData* buffers, eTechniqueDataEntryName id, GpuBuffer* input, uint32_t count )
 {
@@ -94,161 +75,177 @@ inline GfxImageSamplerCombined* GetImage( const GpuInputData* buffers, eTechniqu
 	return GetImage( buffers, static_cast< uint32_t >(id) );
 }
 
-GfxDescriptorSetDesc geoPassSetDesc =
+
+static FG::RenderPassCreationData FG_Geometry_CreateGraphNode( FG::fg_handle_t sceneColor, FG::fg_handle_t sceneDepth, FG::fg_handle_t bindlessTextures, FG::fg_handle_t shadowMap, FG::fg_handle_t shadowData,
+	FG::fg_handle_t instanceData, FG::fg_handle_t lightData, FG::fg_handle_t sceneData )
 {
+	FG::DescriptorTableDesc geoPassSetDesc =
 	{
-		{ static_cast< uint32_t >(eTechniqueDataEntryName::SCENE_DATA), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
-		{ static_cast< uint32_t >(eTechniqueDataEntryName::LIGHT_DATA), 1, eDescriptorAccess::READ, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
+		RENDERPASS_SET,
+		{
+			{ sceneData, 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_VERTEX_BIT | GFX_SHADER_STAGE_FRAGMENT_BIT },
+			{ lightData, 1, eDescriptorAccess::READ, GFX_SHADER_STAGE_VERTEX_BIT | GFX_SHADER_STAGE_FRAGMENT_BIT },
+			{ bindlessTextures, 2, eDescriptorAccess::READ, GFX_SHADER_STAGE_FRAGMENT_BIT },
+			{ shadowMap, 4, eDescriptorAccess::READ, GFX_SHADER_STAGE_FRAGMENT_BIT },
+		}
+	};
 
-		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::BINDLESS_TEXTURES), 2, eDescriptorAccess::READ, VK_SHADER_STAGE_FRAGMENT_BIT },
-		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::SHADOW_MAP), 4, eDescriptorAccess::READ, VK_SHADER_STAGE_FRAGMENT_BIT },
-	}
-};
-
-GfxDescriptorSetDesc geoInstanceSetDesc =
-{
+	FG::DescriptorTableDesc geoInstanceSetDesc =
 	{
-		{ static_cast< uint32_t >(eTechniqueDataEntryName::INSTANCE_DATA), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
-	}
-};
+		INSTANCE_SET,
+		{
+			{ instanceData, 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_VERTEX_BIT | GFX_SHADER_STAGE_FRAGMENT_BIT }
+		}
+	};
 
-
-static FG::RenderPassCreationData FG_Geometry_CreateGraphNode( const Swapchain* swapchain )
-{
 	FG::RenderPassCreationData renderPassCreationData;
 	renderPassCreationData.name = "geometry_pass";
-
-	VkFormat swapchainFormat = swapchain->surfaceFormat.format;
-
-	FG::RenderColor( renderPassCreationData, swapchainFormat, ( uint32_t )eTechniqueDataEntryImageName::SCENE_COLOR );
-	FG::RenderDepth( renderPassCreationData, VK_FORMAT_D32_SFLOAT, ( uint32_t )eTechniqueDataEntryImageName::SCENE_DEPTH );
-	FG::ClearLast( renderPassCreationData );
-	FG::ReadResource( renderPassCreationData, ( uint32_t )eTechniqueDataEntryImageName::SHADOW_MAP );
 
 	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData.frame_graph_node;
 	frameGraphNode->RecordDrawCommands = GeometryRecordDrawCommandsBuffer;
 
 	frameGraphNode->gpuPipelineLayout = GetGeoPipelineLayout();
-	frameGraphNode->gpuPipelineState = GetGeoPipelineState();
-	frameGraphNode->instanceSet = &geoInstanceSetDesc;
-	frameGraphNode->passSet = &geoPassSetDesc;
+	frameGraphNode->gpuPipelineStateDesc = GetGeoPipelineState();
+	frameGraphNode->descriptorSets.push_back( geoPassSetDesc );
+	frameGraphNode->descriptorSets.push_back( geoInstanceSetDesc );
+	frameGraphNode->renderTargetRefs.push_back( { sceneColor, FG::FG_RENDERTARGET_REF_CLEAR_BIT } );
+	frameGraphNode->renderTargetRefs.push_back( { sceneDepth, FG::FG_RENDERTARGET_REF_CLEAR_BIT } );
+	frameGraphNode->renderTargetRefs.push_back( { shadowMap, FG::FG_RENDERTARGET_REF_READ_BIT } );
 
 	return renderPassCreationData;
 }
 
-GfxDescriptorSetDesc shadowPassSet =
-{
-	{
-		{ static_cast< uint32_t >(eTechniqueDataEntryName::SHADOW_DATA), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_VERTEX_BIT }
-	}
-};
 
-GfxDescriptorSetDesc shadowInstanceSet =
+static FG::RenderPassCreationData FG_Shadow_CreateGraphNode( FG::fg_handle_t shadowMap, FG::fg_handle_t shadowData, FG::fg_handle_t instanceData )
 {
+	FG::DescriptorTableDesc shadowPassSet =
 	{
-		{ static_cast< uint32_t >(eTechniqueDataEntryName::INSTANCE_DATA), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_VERTEX_BIT }
-	}
-};
+		RENDERPASS_SET,
+		{
+			{ shadowData, 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_VERTEX_BIT }
+		}
+	};
 
-static FG::RenderPassCreationData FG_Shadow_CreateGraphNode( const Swapchain* swapchain )
-{
+	FG::DescriptorTableDesc shadowInstanceSet =
+	{
+		INSTANCE_SET,
+		{
+			{ instanceData, 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_VERTEX_BIT }
+		}
+	};
 	FG::RenderPassCreationData renderPassCreationData;
 	renderPassCreationData.name = "shadow_pass";
-
-	FG::RenderDepth(renderPassCreationData, VK_FORMAT_D32_SFLOAT, ( uint32_t )eTechniqueDataEntryImageName::SHADOW_MAP );
-	FG::ClearLast(renderPassCreationData);
 
 	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData.frame_graph_node;
 	frameGraphNode->RecordDrawCommands = ShadowRecordDrawCommandsBuffer;
 
 	frameGraphNode->gpuPipelineLayout = GetShadowPipelineLayout();
-	frameGraphNode->gpuPipelineState = GetShadowPipelineState();
-	frameGraphNode->instanceSet = &shadowInstanceSet;
-	frameGraphNode->passSet = &shadowPassSet;
+	frameGraphNode->gpuPipelineStateDesc = GetShadowPipelineState();
+	frameGraphNode->descriptorSets.push_back( shadowPassSet );
+	frameGraphNode->descriptorSets.push_back( shadowInstanceSet );
+	frameGraphNode->renderTargetRefs.push_back( { shadowMap, FG::FG_RENDERTARGET_REF_CLEAR_BIT } );
 
 	return renderPassCreationData;
 }
 
-GfxDescriptorSetDesc skyboxPassSetDesc =
+static FG::RenderPassCreationData FG_Skybox_CreateGraphNode( FG::fg_handle_t sceneColor, FG::fg_handle_t sceneDepth, FG::fg_handle_t skyboxTexture, FG::fg_handle_t skyboxData )
 {
+	FG::DescriptorTableDesc skyboxPassSetDesc =
 	{
-		{ static_cast< uint32_t >(eTechniqueDataEntryName::SKYBOX_DATA), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_VERTEX_BIT },
+		RENDERPASS_SET,
+		{
+			{ skyboxData, 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_VERTEX_BIT },
+			{ skyboxTexture, 1, eDescriptorAccess::READ, GFX_SHADER_STAGE_FRAGMENT_BIT },
+		}
+	};
 
-		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::SKYBOX), 1, eDescriptorAccess::READ, VK_SHADER_STAGE_FRAGMENT_BIT },
-	}
-};
-
-static FG::RenderPassCreationData FG_Skybox_CreateGraphNode( const Swapchain* swapchain )
-{
 	FG::RenderPassCreationData renderPassCreationData;
 	renderPassCreationData.name = "skybox_pass";
-
-	VkFormat swapchainFormat = swapchain->surfaceFormat.format;
-
-	FG::RenderColor( renderPassCreationData, swapchainFormat, ( uint32_t )eTechniqueDataEntryImageName::SCENE_COLOR );
-	FG::RenderDepth( renderPassCreationData, VK_FORMAT_D32_SFLOAT, ( uint32_t )eTechniqueDataEntryImageName::SCENE_DEPTH );
 
 	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData.frame_graph_node;
 	frameGraphNode->RecordDrawCommands = SkyboxRecordDrawCommandsBuffer;
 
 	frameGraphNode->gpuPipelineLayout = GetSkyboxPipelineLayout();
-	frameGraphNode->gpuPipelineState = GetSkyboxPipelineState();
-	frameGraphNode->instanceSet = nullptr;
-	frameGraphNode->passSet = &skyboxPassSetDesc;
+	frameGraphNode->gpuPipelineStateDesc = GetSkyboxPipelineState();
+	frameGraphNode->descriptorSets.push_back( skyboxPassSetDesc );
+	frameGraphNode->renderTargetRefs.push_back( { sceneColor, 0 } );
+	frameGraphNode->renderTargetRefs.push_back( { sceneDepth, FG::FG_RENDERTARGET_REF_DEPTH_READ } );
 
 	return renderPassCreationData;
 }
 
-GfxDescriptorSetDesc textPassSet =
+static FG::RenderPassCreationData FG_TextOverlay_CreateGraphNode( FG::fg_handle_t sceneColor, FG::fg_handle_t textTexture )
 {
+	FG::DescriptorTableDesc textPassSet =
 	{
-		{ static_cast< uint32_t >(eTechniqueDataEntryImageName::TEXT), 0, eDescriptorAccess::READ, VK_SHADER_STAGE_FRAGMENT_BIT }
-	}
-};
+		RENDERPASS_SET,
+		{
+			{ textTexture, 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_FRAGMENT_BIT }
+		}
+	};
 
-static FG::RenderPassCreationData FG_TextOverlay_CreateGraphNode( const Swapchain* swapchain )
-{
 	FG::RenderPassCreationData renderPassCreationData;
-	renderPassCreationData.name = "skybox_pass";
-
-	VkFormat swapchainFormat = swapchain->surfaceFormat.format;
-
-	FG::RenderColor( renderPassCreationData, swapchainFormat, ( uint32_t )eTechniqueDataEntryImageName::SCENE_COLOR );
+	renderPassCreationData.name = "text_pass";
 
 	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData.frame_graph_node;
 	frameGraphNode->RecordDrawCommands = TextRecordDrawCommandsBuffer;
 
 	frameGraphNode->gpuPipelineLayout = GetTextPipelineLayout();
-	frameGraphNode->gpuPipelineState = GetTextPipelineState();
-	frameGraphNode->instanceSet = nullptr;
+	frameGraphNode->gpuPipelineStateDesc = GetTextPipelineState();
 	//TODO: we don't need one set per frame for this one
-	frameGraphNode->passSet = &textPassSet;
+	frameGraphNode->descriptorSets.push_back( textPassSet );
+	frameGraphNode->renderTargetRefs.push_back( { sceneColor, 0 } );
 
 	return renderPassCreationData;
 }
 
+class ResourceGatherer
+{
+public:
+	std::vector<FG::DataEntry> m_resources;
+
+	FG::fg_handle_t AddResource( const FG::DataEntry& resourceDesc )
+	{
+		FG::fg_handle_t resourceHandle = m_resources.size();
+		m_resources.push_back( resourceDesc );
+		return resourceHandle;
+	}
+};
+
 FG::FrameGraph InitializeScript( const Swapchain* swapchain )
 {
 	//Setup resources
-	VkFormat swapchainFormat = swapchain->surfaceFormat.format;
+	GfxFormat swapchainFormat = GetFormat( swapchain->surfaceFormat );
 	VkExtent2D swapchainExtent = swapchain->extent;
 
-	uint32_t backBufferId = (uint32_t) eTechniqueDataEntryImageName::SCENE_COLOR;
+	ResourceGatherer resourceGatherer;
+	FG::fg_handle_t instance_data_h = resourceGatherer.AddResource( CREATE_BUFFER_DYNAMIC( eTechniqueDataEntryName::INSTANCE_DATA, sizeof( GfxInstanceData ), maxModelsCount ) );
+	FG::fg_handle_t scene_data_h = resourceGatherer.AddResource( CREATE_BUFFER( eTechniqueDataEntryName::SCENE_DATA, sizeof( SceneMatricesUniform ) ) );
+	FG::fg_handle_t shadow_data_h = resourceGatherer.AddResource( CREATE_BUFFER( eTechniqueDataEntryName::SHADOW_DATA, sizeof( SceneMatricesUniform ) ) );
+	FG::fg_handle_t light_data_h = resourceGatherer.AddResource( CREATE_BUFFER( eTechniqueDataEntryName::LIGHT_DATA, sizeof( LightUniform ) ) );
+	FG::fg_handle_t skybox_data_h = resourceGatherer.AddResource( CREATE_BUFFER( eTechniqueDataEntryName::SKYBOX_DATA, sizeof( SkyboxUniformBufferObject ) ) );
 
-	std::vector<FG::DataEntry> dataEntries ( techniqueDataEntries, techniqueDataEntries + sizeof( techniqueDataEntries ) / sizeof( techniqueDataEntries[0] ) );
-	dataEntries[( uint32_t )eTechniqueDataEntryImageName::SCENE_COLOR].resourceDesc.format = swapchainFormat;
-	dataEntries[( uint32_t )eTechniqueDataEntryImageName::SCENE_COLOR].resourceDesc.extent = swapchainExtent; // maybe not needed because FG does it
-	dataEntries[( uint32_t )eTechniqueDataEntryImageName::SCENE_DEPTH].resourceDesc.extent = swapchainExtent;
+	//TODO: Remove external resources that don't need to be managed
+	FG::fg_handle_t bindless_textures_h = resourceGatherer.AddResource( CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::BINDLESS_TEXTURES, BINDLESS_TEXTURES_MAX ) );
+	FG::fg_handle_t text_texture_h = resourceGatherer.AddResource( CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::TEXT, 1 ) );
+	FG::fg_handle_t skybox_texture_h = resourceGatherer.AddResource( CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::SKYBOX, 1 ) );
 
-	//Setup passes	
+	//TODO: I shouldn't have to specify usage such as "sampled" should be implicit
+	FG::fg_handle_t scene_depth_h = resourceGatherer.AddResource( CREATE_IMAGE_DEPTH( eTechniqueDataEntryImageName::SCENE_DEPTH, GfxFormat::D32_SFLOAT, swapchainExtent, 0 ) );
+	FG::fg_handle_t shadow_map_h = resourceGatherer.AddResource( CREATE_IMAGE_DEPTH_SAMPLER( eTechniqueDataEntryImageName::SHADOW_MAP, GfxFormat::D32_SFLOAT, RT_EXTENT_SHADOW, GfxImageUsageFlagBits::SAMPLED, eSamplers::Shadow ) );
+	FG::fg_handle_t scene_color_h = resourceGatherer.AddResource( CREATE_IMAGE_COLOR( eTechniqueDataEntryImageName::SCENE_COLOR, swapchainFormat, swapchainExtent, 0, FG::eDataEntryFlags::EXTERNAL ) );
+
+	//Setup passes
 	std::vector<FG::RenderPassCreationData> rpCreationData;
-	rpCreationData.push_back( FG_Shadow_CreateGraphNode( swapchain ) );
-	rpCreationData.push_back( FG_Geometry_CreateGraphNode( swapchain ) );
-	rpCreationData.push_back( FG_Skybox_CreateGraphNode( swapchain ) );
-	rpCreationData.push_back( FG_TextOverlay_CreateGraphNode( swapchain ) );
+	rpCreationData.push_back( FG_Shadow_CreateGraphNode( shadow_map_h, shadow_data_h, instance_data_h ) );
+	rpCreationData.push_back( FG_Geometry_CreateGraphNode( scene_color_h, scene_depth_h, bindless_textures_h, shadow_map_h, shadow_data_h, instance_data_h, light_data_h, scene_data_h ) );
+	rpCreationData.push_back( FG_Skybox_CreateGraphNode( scene_color_h, scene_depth_h, skybox_texture_h, skybox_data_h ) );
+	rpCreationData.push_back( FG_TextOverlay_CreateGraphNode( scene_color_h, text_texture_h ) );
 
-	FG::FrameGraph fg = FG::CreateGraph( swapchain, &rpCreationData, &dataEntries, backBufferId, _descriptorPool );
-
+	FG::FrameGraph fg = FG::CreateGraph( &rpCreationData, &resourceGatherer.m_resources );
+	for( uint32_t frameIndex = 0; frameIndex < SIMULTANEOUS_FRAMES; ++frameIndex )
+		fg.AddExternalImage( scene_color_h, frameIndex, swapchain->images[frameIndex] );
+	FG::CreateRenderPasses( &fg );
 	FG::SetupInputBuffers( &fg, *_pInputBuffers );
 	FG::CreateTechniques( &fg, _descriptorPool );
 	FG::UpdateTechniqueDescriptorSets( &fg, *_pInputBuffers );

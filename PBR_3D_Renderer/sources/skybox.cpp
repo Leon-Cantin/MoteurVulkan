@@ -2,8 +2,6 @@
 
 #include "file_system.h"
 #include "renderer.h"
-#include "vk_commands.h"
-#include "vk_debug.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -12,22 +10,22 @@ GpuPipelineLayout GetSkyboxPipelineLayout()
 	return GpuPipelineLayout();
 }
 
-GpuPipelineState GetSkyboxPipelineState()
+GpuPipelineStateDesc GetSkyboxPipelineState()
 {
-	GpuPipelineState gpuPipelineState = {};
+	GpuPipelineStateDesc gpuPipelineState = {};
 	gpuPipelineState.shaders = {
-		{ FS::readFile( "shaders/skybox.vert.spv" ), "main", VK_SHADER_STAGE_VERTEX_BIT },
-		{ FS::readFile( "shaders/skybox.frag.spv" ), "main", VK_SHADER_STAGE_FRAGMENT_BIT } };
+		{ FS::readFile( "shaders/skybox.vert.spv" ), "main", GFX_SHADER_STAGE_VERTEX_BIT },
+		{ FS::readFile( "shaders/skybox.frag.spv" ), "main", GFX_SHADER_STAGE_FRAGMENT_BIT } };
 
 	gpuPipelineState.rasterizationState.backFaceCulling = false;
 	gpuPipelineState.rasterizationState.depthBiased = false;
 
 	gpuPipelineState.depthStencilState.depthRead = true;
 	gpuPipelineState.depthStencilState.depthWrite = false;
-	gpuPipelineState.depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+	gpuPipelineState.depthStencilState.depthCompareOp = GfxCompareOp::LESS_OR_EQUAL;
 
 	gpuPipelineState.blendEnabled = false;
-	gpuPipelineState.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+	gpuPipelineState.primitiveTopology = GfxPrimitiveTopology::TRIANGLE_STRIP;
 
 	return gpuPipelineState;
 }
@@ -40,20 +38,16 @@ void UpdateSkyboxUniformBuffers( GpuBuffer* skyboxUniformBuffer, const glm::mat4
 	UpdateGpuBuffer( skyboxUniformBuffer, &subo, sizeof( subo ), 0 );
 }
 
-static void CmdDrawSkybox(VkCommandBuffer commandBuffer, VkExtent2D extent, size_t currentFrame, const RenderPass * renderpass, const Technique * technique )
+void SkyboxRecordDrawCommandsBuffer( GfxCommandBuffer commandBuffer, const FG::TaskInputData& inputData )
 {
-	CmdBeginVkLabel( commandBuffer, "Skybox Renderpass", glm::vec4( 0.2f, 0.2f, 0.9f, 1.0f ) );
-	BeginRenderPass( commandBuffer, *renderpass, renderpass->outputFrameBuffer[currentFrame].frameBuffer, extent );
+	CmdBeginLabel( commandBuffer, "Skybox Renderpass", glm::vec4( 0.2f, 0.2f, 0.9f, 1.0f ) );
+	const FrameBuffer& frameBuffer = inputData.renderpass->outputFrameBuffer[inputData.currentFrame];
+	BeginRenderPass( commandBuffer, *inputData.renderpass, frameBuffer );
 
-	vkCmdBindPipeline( commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipeline );
-	vkCmdBindDescriptorSets( commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, 0, 1, &technique->renderPass_descriptor[currentFrame], 0, nullptr );
+	BeginTechnique( commandBuffer, inputData.technique, inputData.currentFrame );
 
-	vkCmdDraw(commandBuffer, 4, 1, 0, 0);
-	EndRenderPass(commandBuffer);
-	CmdEndVkLabel(commandBuffer);
-}
+	vkCmdDraw( commandBuffer, 4, 1, 0, 0 );
 
-void SkyboxRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique )
-{
-	CmdDrawSkybox( graphicsCommandBuffer, extent, currentFrame, renderpass, technique );
+	EndRenderPass( commandBuffer );
+	CmdEndLabel( commandBuffer );
 }

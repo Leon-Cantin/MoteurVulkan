@@ -1,12 +1,12 @@
 #pragma once
 
 #include "3d_pbr_renderer_imp.h"
-#include "vk_framework.h"
 #include "console_command.h"
 #include "input.h"
 #include "tick_system.h"
 #include "asset_library.h"
 #include "window_handler_vk.h"
+#include "gfx_heaps_batched_allocator.h"
 
 #include <glm/glm.hpp>
 #include <glm/vec4.hpp>
@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <assert.h>
 
-namespace Scene2DGame
+namespace Scene3DGame
 {
 	uint32_t current_frame = 0;
 
@@ -39,6 +39,8 @@ namespace Scene2DGame
 	LightUniform g_light;
 
 	float frameDeltaTime = 0.0f;
+
+	GfxHeap gfx_heap_device_local;
 
 	void LightCallback(const std::string* params, uint32_t paramsCount)
 	{
@@ -97,29 +99,22 @@ namespace Scene2DGame
 	}
 
 	void mainLoop() {
-		while (!WH::shouldClose())
-		{
-			//TODO: thread this
-			WH::ProcessMessages();
-			size_t currentTime = WH::GetTime();
-			static size_t lastTime = currentTime;
+		size_t currentTime = WH::GetTime();
+		static size_t lastTime = currentTime;
 			
-			frameDeltaTime = static_cast<float>(currentTime - lastTime);
-			lastTime = currentTime;
+		frameDeltaTime = static_cast<float>(currentTime - lastTime);
+		lastTime = currentTime;
 
-			//Input
-			IH::DoCommands();
+		//Input
+		IH::DoCommands();
 
-			//Update objects
-			TickUpdate(frameDeltaTime);
+		//Update objects
+		TickUpdate(frameDeltaTime);
 
-			std::vector<GfxAssetInstance> drawList = { {&planeRenderable, planeSceneInstance}, { &cubeRenderable, shipSceneInstance} };
-			DrawFrame( current_frame, &cameraSceneInstance, &g_light, drawList);
+		std::vector<GfxAssetInstance> drawList = { {&planeRenderable, planeSceneInstance}, { &cubeRenderable, shipSceneInstance} };
+		DrawFrame( current_frame, &cameraSceneInstance, &g_light, drawList);
 
-			current_frame = (++current_frame) % SIMULTANEOUS_FRAMES;
-		}
-
-		vkDeviceWaitIdle(g_vk.device);
+		current_frame = (++current_frame) % SIMULTANEOUS_FRAMES;
 	}
 
 	void CreateGfxAsset(const GfxModel* modelAsset, uint32_t albedoIndex, uint32_t normalIndex, GfxAsset* o_renderable)
@@ -129,23 +124,18 @@ namespace Scene2DGame
 
 	void Init()
 	{
-		WH::InitializeWindow( VIEWPORT_WIDTH, VIEWPORT_HEIGHT, "2D game" );
-		VK::Initialize();
-		WH::VK::InitializeWindow();
-		VK::PickSuitablePhysicalDevice( WH::VK::_windowSurface );
-
 		//Input callbacks
 		IH::InitInputs();
-		IH::RegisterAction( "console", IH::Pressed, &ConCom::OpenConsole );
-		IH::BindInputToAction( "console", IH::TILD );
-		IH::RegisterAction( "forward", IH::Pressed, &ForwardCallback );
-		IH::BindInputToAction( "forward", IH::W );
-		IH::RegisterAction( "backward", IH::Pressed, &BackwardCallback );
-		IH::BindInputToAction( "backward", IH::S );
-		IH::RegisterAction( "left", IH::Pressed, &MoveLeftCallback );
-		IH::BindInputToAction( "left", IH::A );
-		IH::RegisterAction( "right", IH::Pressed, &MoveRightCallback );
-		IH::BindInputToAction( "right", IH::D );
+		IH::RegisterAction( "console", IH::TILD );
+		IH::BindAction( "console", IH::Pressed, &ConCom::OpenConsole );
+		IH::RegisterAction( "forward", IH::W );
+		IH::BindAction( "forward", IH::Pressed, &ForwardCallback );
+		IH::RegisterAction( "backward", IH::S );
+		IH::BindAction( "backward", IH::Pressed, &BackwardCallback );
+		IH::RegisterAction( "left", IH::A );
+		IH::BindAction( "left", IH::Pressed, &MoveLeftCallback );
+		IH::RegisterAction( "right", IH::D );
+		IH::BindAction( "right", IH::Pressed, &MoveRightCallback );
 
 		//Console commands callback (need IH)
 		ConCom::Init();
@@ -155,20 +145,23 @@ namespace Scene2DGame
 		//Objects update callbacks
 		RegisterTickFunction( &TickObjectCallback );
 
-		//Init renderer stuff
-		InitRendererImp( WH::VK::_windowSurface );
+		gfx_heap_device_local = create_gfx_heap( 16 * 1024 * 1024, GFX_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
+		GfxHeaps_BatchedAllocator gfx_device_local_mem_allocator( &gfx_heap_device_local );
+		gfx_device_local_mem_allocator.Prepare();
 
 		//LoadAssets
-		GfxImage* skyboxTexture = AL::LoadCubeTexture( "SkyboxTexture", "assets/mountaincube.ktx" );
+		GfxImage* skyboxTexture = AL::LoadCubeTexture( "SkyboxTexture", "assets/mountaincube.ktx", &gfx_device_local_mem_allocator );
 
-		GfxImage* albedoTexture = AL::CreateSolidColorTexture( "ModelAlbedoTexture", glm::vec4( 0.8f, 0.8f, 0.8f, 1.0f ) );
-		GfxImage* normalTexture = AL::CreateSolidColorTexture( "ModelNormalTexture", glm::vec4( 0.0f, 0.0f, 1.0f, 0.0f ) );
+		GfxImage* albedoTexture = AL::CreateSolidColorTexture( "ModelAlbedoTexture", glm::vec4( 0.8f, 0.8f, 0.8f, 1.0f ), &gfx_device_local_mem_allocator );
+		GfxImage* normalTexture = AL::CreateSolidColorTexture( "ModelNormalTexture", glm::vec4( 0.0f, 0.0f, 1.0f, 0.0f ), &gfx_device_local_mem_allocator );
 
-		GfxModel* planeModelAsset = AL::Load3DModel( "Plane", "assets/plane.obj", 0 );
-		GfxModel* cubeModelAsset = AL::LoadglTf3DModel( "Cube", "assets/cube2.glb" );
+		GfxModel* planeModelAsset = AL::Load3DModel( "Plane", "assets/plane.obj", 0, &gfx_device_local_mem_allocator );
+		GfxModel* cubeModelAsset = AL::LoadglTf3DModel( "Cube", "assets/cube2.glb", &gfx_device_local_mem_allocator );
 
 		uint32_t albedoIndex = RegisterBindlessTexture( &bindlessTexturesState, albedoTexture, eSamplers::Trilinear );
 		uint32_t normalIndex = RegisterBindlessTexture( &bindlessTexturesState, normalTexture, eSamplers::Trilinear );
+
+		gfx_device_local_mem_allocator.Commit();
 
 		CreateGfxAsset( planeModelAsset, albedoIndex, normalIndex, &planeRenderable );
 		CreateGfxAsset( cubeModelAsset, albedoIndex, normalIndex, &cubeRenderable );
@@ -183,18 +176,11 @@ namespace Scene2DGame
 
 	void cleanup() 
 	{
+		IH::CleanupInputs();
+		ConCom::Cleanup();
 		CleanupRendererImp();
 
 		AL::Cleanup();
-	}
-
-	void run() 
-	{
-		Init();
-		mainLoop();
-		cleanup();
-		WH::VK::ShutdownWindow();
-		VK::Shutdown();
-		WH::ShutdownWindow();
+		destroy( &gfx_heap_device_local );
 	}
 }

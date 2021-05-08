@@ -3,8 +3,6 @@
 
 #include "file_system.h"
 #include "renderer.h"
-#include "vk_commands.h"
-#include "vk_debug.h"
 
 #include "glm/gtc/matrix_transform.hpp"
 
@@ -31,23 +29,23 @@ GpuPipelineLayout GetShadowPipelineLayout()
 	return GpuPipelineLayout();
 }
 
-GpuPipelineState GetShadowPipelineState()
+GpuPipelineStateDesc GetShadowPipelineState()
 {
-	GpuPipelineState gpuPipelineState = {};
+	GpuPipelineStateDesc gpuPipelineState = {};
 	uint32_t bindingCount = GetBindingDescription( VIBindingsMeshOnly, &gpuPipelineState.viState );
 
 	gpuPipelineState.shaders = {
-		{ FS::readFile( "shaders/shadows.vert.spv" ), "main", VK_SHADER_STAGE_VERTEX_BIT } };
+		{ FS::readFile( "shaders/shadows.vert.spv" ), "main", GFX_SHADER_STAGE_VERTEX_BIT }, };
 
 	gpuPipelineState.rasterizationState.backFaceCulling = true;
 	gpuPipelineState.rasterizationState.depthBiased = true;
 
 	gpuPipelineState.depthStencilState.depthRead = true;
 	gpuPipelineState.depthStencilState.depthWrite = true;
-	gpuPipelineState.depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS;
+	gpuPipelineState.depthStencilState.depthCompareOp = GfxCompareOp::LESS;
 
 	gpuPipelineState.blendEnabled = false;
-	gpuPipelineState.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	gpuPipelineState.primitiveTopology = GfxPrimitiveTopology::TRIANGLE_LIST;
 
 	return gpuPipelineState;
 }
@@ -56,34 +54,41 @@ GpuPipelineState GetShadowPipelineState()
 	Draw stuff
 */
 
-static void CmdBeginShadowPass( VkCommandBuffer commandBuffer, size_t currentFrame, const RenderPass * renderpass, const Technique * technique )
+static void CmdBeginShadowPass( GfxCommandBuffer commandBuffer, size_t currentFrame, const RenderPass * renderpass, const Technique * technique )
 {
-	CmdBeginVkLabel( commandBuffer, "Shadow Renderpass", glm::vec4( 0.5f, 0.2f, 0.4f, 1.0f ) );
-	BeginRenderPass( commandBuffer, *renderpass, renderpass->outputFrameBuffer[currentFrame].frameBuffer, renderpass->outputFrameBuffer[currentFrame].extent );
+	CmdBeginLabel( commandBuffer, "Shadow Renderpass", glm::vec4( 0.5f, 0.2f, 0.4f, 1.0f ) );
+
+	const FrameBuffer& frameBuffer = renderpass->outputFrameBuffer[currentFrame];
+	BeginRenderPass( commandBuffer, *renderpass, frameBuffer );
 
 	BeginTechnique( commandBuffer, technique, currentFrame );
 }
 
-static void CmdDrawModel( VkCommandBuffer commandBuffer, const SceneInstanceSet* instanceSet, const GfxModel* modelAsset, uint32_t currentFrame, const Technique * technique )
+static void CmdDrawModel( GfxCommandBuffer commandBuffer, const DrawListEntry* drawModel, uint32_t currentFrame, const Technique * technique )
 {
-	vkCmdBindDescriptorSets( commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, INSTANCE_SET, 1,
-		&technique->instance_descriptor[currentFrame], 1, &instanceSet->geometryBufferOffsets );
+	const SceneInstanceSet* instanceSet = &drawModel->descriptorSet;
+	const GfxModel* modelAsset = drawModel->asset->modelAsset;
+	CmdBindRootDescriptor( commandBuffer, GfxPipelineBindPoint::GRAPHICS, technique->pipelineLayout, INSTANCE_SET, technique->descriptor_sets[INSTANCE_SET].hw_descriptorSets[currentFrame],
+		instanceSet->geometryBufferOffsets );
+
 	CmdDrawIndexed( commandBuffer, VIBindingsMeshOnly, *modelAsset );
 }
 
-static void CmdEndShadowPass( VkCommandBuffer commandBuffer )
+static void CmdEndShadowPass( GfxCommandBuffer commandBuffer )
 {
 	EndRenderPass( commandBuffer );
-	CmdEndVkLabel( commandBuffer );
+	CmdEndLabel( commandBuffer );
 }
 
-void ShadowRecordDrawCommandsBuffer(uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique )
+void ShadowRecordDrawCommandsBuffer( GfxCommandBuffer graphicsCommandBuffer, const FG::TaskInputData& inputData )
 {
-	CmdBeginShadowPass(graphicsCommandBuffer, currentFrame, renderpass, technique);
+	const SceneFrameData* frameData = static_cast< const SceneFrameData* >(inputData.userData);
+	CmdBeginShadowPass( graphicsCommandBuffer, inputData.currentFrame, inputData.renderpass, inputData.technique );
+
 	for (size_t i = 0; i < frameData->drawList.size(); ++i)
 	{
 		const DrawListEntry* renderable = &frameData->drawList[i];
-		CmdDrawModel(graphicsCommandBuffer, &renderable->descriptorSet, renderable->asset->modelAsset, currentFrame, technique);
+		CmdDrawModel(graphicsCommandBuffer, renderable, inputData.currentFrame, inputData.technique);
 	}
 	CmdEndShadowPass(graphicsCommandBuffer);
 }

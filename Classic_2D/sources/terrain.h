@@ -6,6 +6,25 @@
 #include "scene_instance.h"
 #include "asset_library.h"
 
+//TODO: Double buffer otherwise we'll have problems!
+
+/*
+Terrain
+	3________2
+	|  |  |  |
+	|  |  |  |
+	|__|__|__|
+	0		 1
+
+
+Cell
+	3______2
+	|	   |
+	|	   |
+	|______|
+	0      1
+*/
+
 struct BackgroundInstance
 {
 	SceneInstance instance;
@@ -15,15 +34,7 @@ struct BackgroundInstance
 	int screen_height;
 };
 
-void UpdateBackgroundScrolling( BackgroundInstance* background_instance, float frame_delta_time)
-{
-	const float movement_speed = 200.0f;
-	background_instance->instance.location.y -= movement_speed * (frame_delta_time / 1000.0f);
-	if( background_instance->instance.location.y < (-background_instance->screen_height / 2.0f - 20.0f) )
-		background_instance->instance.location.y = -background_instance->screen_height / 2.0f;
-}
-
-static void GenerateQuadMegaTextureUVs( const uint32_t x_index, const uint32_t y_index, const uint32_t num_sprites_x, const uint32_t num_sprites_y,
+static void GenerateQuadUVsFromMegaTexture( const uint32_t x_index, const uint32_t y_index, const uint32_t num_sprites_x, const uint32_t num_sprites_y,
 	glm::vec2* ll, glm::vec2* lr, glm::vec2* ur, glm::vec2* ul )
 {
 	float left = 1.0f / ( float )num_sprites_x * ( float )x_index;
@@ -34,6 +45,61 @@ static void GenerateQuadMegaTextureUVs( const uint32_t x_index, const uint32_t y
 	*lr = { right, lower };
 	*ur = { right, upper };
 	*ul = { left, upper };
+}
+
+static void UpdateQuadUVs( glm::vec2* dst, const unsigned int index_x, const unsigned int index_y, const unsigned int num_sprites_width, const unsigned int num_sprites_height )
+{
+	GenerateQuadUVsFromMegaTexture( index_x, index_y, num_sprites_width, num_sprites_height,
+		&dst[0],
+		&dst[1],
+		&dst[2],
+		&dst[3]
+	);
+}
+
+static void MoveTerrainUVs( glm::vec2* dst, const unsigned int terrain_width, const unsigned int terrain_height )
+{
+	const unsigned int num_sprites_x = 2;
+	const unsigned int num_sprites_y = 2;
+
+	/* Copies everything in one call, but might not be safe since we write where we read.
+	glm::vec2* source = &dst[( 1 * terrain_width ) * 4];
+	glm::vec2* uv_dst = &dst[0];
+	memcpy( uv_dst, source, sizeof( glm::vec2 ) * 4 * (terrain_height - 1) * terrain_width );
+	*/
+	for( unsigned int row = 0; row < terrain_height - 1; ++row )
+	{
+		for( unsigned int collumn = 0; collumn < terrain_width; ++collumn )
+		{
+			glm::vec2* source = &dst[((row + 1) * terrain_width + collumn) * 4];
+			glm::vec2* uv_dst = &dst[(( row )* terrain_width + collumn) * 4];
+			memcpy( uv_dst, source, sizeof( glm::vec2 ) * 4 );
+		}
+	}
+
+	const unsigned int last_row = terrain_height - 1;
+	for( unsigned int collumn = 0; collumn < terrain_width; ++collumn )
+	{
+		glm::vec2* uv_dst = &dst[(( last_row )* terrain_width + collumn) * 4];
+		UpdateQuadUVs( uv_dst, 0, 1, num_sprites_x, num_sprites_y );
+	}
+}
+
+void UpdateBackgroundScrolling( BackgroundInstance* background_instance, float frame_delta_time )
+{
+	const float movement_speed = 50.0f;
+	background_instance->instance.location.y -= movement_speed * (frame_delta_time / 1000.0f);
+	if( background_instance->instance.location.y < (-background_instance->screen_height / 2.0f - 20.0f) )
+	{
+		//Move the grid back up
+		background_instance->instance.location.y = -background_instance->screen_height / 2.0f;
+
+		//Move all UVs so tiles end up one row below
+		const GfxModelVertexInput* uvVI = GetVertexInput( *background_instance->asset.modelAsset, static_cast< eVIDataType >(( VIDataType )eVIDataType::TEX_COORD) );
+		void* uvMemory = MapGpuMemory( uvVI->buffer.gpuMemory, uvVI->buffer.gpuMemory.size, 0 );
+		MoveTerrainUVs( reinterpret_cast< glm::vec2* >(uvMemory), 12, 21 );
+		UnmapMemory( uvVI->buffer.gpuMemory );
+	}
 }
 
 typedef uint32_t Index_t;
@@ -89,12 +155,7 @@ BackgroundInstance CreateBackgroundGfxModel( const int screen_width, const int s
 			vertices_color[vertices_array_offset + 2] = { 0.0f, 0.0f, 1.0f };
 			vertices_color[vertices_array_offset + 3] = { 1.0f, 1.0f, 1.0f };
 
-			GenerateQuadMegaTextureUVs( mega_texture_x_index, mega_texture_y_index, num_sprites_x, num_sprites_y,
-				&vertices_uv[vertices_array_offset + 0],
-				&vertices_uv[vertices_array_offset + 1],
-				&vertices_uv[vertices_array_offset + 2],
-				&vertices_uv[vertices_array_offset + 3]
-			);
+			UpdateQuadUVs( &vertices_uv[vertices_array_offset], mega_texture_x_index, mega_texture_y_index, num_sprites_x, num_sprites_y );
 
 			const unsigned int index_array_offset = array_offset * index_per_quad;
 			indices[index_array_offset + 0] = vertices_array_offset + 0;

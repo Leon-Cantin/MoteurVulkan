@@ -30,10 +30,12 @@ namespace WildWeasel_Game
 	SceneInstance shipSceneInstance;
 	SceneInstance cameraSceneInstance;
 
-	GfxAsset shipRenderable;
+	GfxAsset shipAsset;
 	GfxAsset bulletRenderable;
 	GfxAsset cloudAsset;
 	GfxAsset mig19Asset;
+	GfxAsset rescueAsset;
+	GfxAsset enemySoldierAsset;
 
 	BindlessTexturesState bindlessTexturesState;
 
@@ -41,8 +43,10 @@ namespace WildWeasel_Game
 	uint32_t _score = 0;
 
 	GfxHeap gfx_heap;
+	GfxHeap gfx_heap_host_visible;
 
 	constexpr float shipSize = 21.0f;
+	constexpr float soldierSize = 9.0f;
 
 	struct HealthComponent
 	{
@@ -294,6 +298,51 @@ namespace WildWeasel_Game
 		}
 	}
 
+	void CreateEnemySoldierScript( ECS::Entity* entity, ECS::EntityComponentSystem* ecs )
+	{
+		const TimeComponent* timeComponent = ecs->GetSingletonComponent<TimeComponent>();
+		EnemyShipSpawnerComponent* spawnerComponent = entity->GetComponent<EnemyShipSpawnerComponent>();
+
+		if( (spawnerComponent->timeUntilNextSpawn -= static_cast< int >(timeComponent->deltaTime)) < 0 )
+		{
+			const float x = (( float )std::rand() / RAND_MAX) * 150.0f - 75.0f;
+			constexpr float y = 190.0f;
+
+			auto hLifetimeComp = ecs->CreateComponent<LifeTimeComponent>( 0.0f, 10.0f );
+			auto hHealthComp = ecs->CreateComponent<HealthComponent>( 2.0f, 2.0f );
+			auto hRenderableComp = ecs->CreateComponent<RenderableComponent>( &enemySoldierAsset, false );
+			auto hTransformationComp = ecs->CreateComponent<TransformationComponent>( glm::vec3( x, y, 2.0f ), defaultRotation, -soldierSize );
+			auto hPhysicsComp = ecs->CreateComponent<PhysicsComponent>( glm::vec3( 0.0f, -50.0f, 0.0f ) );
+			auto hCollisionComp = ecs->CreateComponent<CollisionComponent>( 7.0f );
+
+			ecs->CreateEntity( hLifetimeComp, hHealthComp, hRenderableComp, hTransformationComp, hPhysicsComp, hCollisionComp );
+
+			spawnerComponent->timeUntilNextSpawn = 1000;
+		}
+	}
+
+	void CreateRescueScript( ECS::Entity* entity, ECS::EntityComponentSystem* ecs )
+	{
+		const TimeComponent* timeComponent = ecs->GetSingletonComponent<TimeComponent>();
+		EnemyShipSpawnerComponent* spawnerComponent = entity->GetComponent<EnemyShipSpawnerComponent>();
+
+		if( (spawnerComponent->timeUntilNextSpawn -= static_cast< int >(timeComponent->deltaTime)) < 0 )
+		{
+			const float x = (( float )std::rand() / RAND_MAX) * 150.0f - 75.0f;
+			constexpr float y = 190.0f;
+
+			auto hLifetimeComp = ecs->CreateComponent<LifeTimeComponent>( 0.0f, 5.0f );
+			auto hRenderableComp = ecs->CreateComponent<RenderableComponent>( &rescueAsset, false );
+			auto hTransformationComp = ecs->CreateComponent<TransformationComponent>( glm::vec3( x, y, 2.0f ), defaultRotation, -soldierSize );
+			auto hPhysicsComp = ecs->CreateComponent<PhysicsComponent>( glm::vec3( 0.0f, -50.0f, 0.0f ) );
+			auto hCollisionComp = ecs->CreateComponent<CollisionComponent>( 7.0f );
+
+			ecs->CreateEntity( hLifetimeComp, hRenderableComp, hTransformationComp, hPhysicsComp, hCollisionComp );
+
+			spawnerComponent->timeUntilNextSpawn = 10000;
+		}
+	}
+
 	void CreateCloudScript( ECS::Entity* entity, ECS::EntityComponentSystem* ecs )
 	{
 		const TimeComponent* timeComponent = ecs->GetSingletonComponent<TimeComponent>();
@@ -428,9 +477,9 @@ namespace WildWeasel_Game
 		current_frame = (++current_frame) % SIMULTANEOUS_FRAMES;
 	}
 
-	void CreateBackgroundEntity( uint32_t background_sprite_sheet_index, GfxHeaps_BatchedAllocator& gfx_mem_allocator )
+	void CreateBackgroundEntity( uint32_t background_sprite_sheet_index, I_BufferAllocator* gfx_mem_allocator )
 	{
-		auto hBackgroundComp = ecs.CreateComponent<BackgroundInstanceComponent>( CreateBackgroundGfxModel( VIEWPORT_WIDTH, VIEWPORT_HEIGHT, background_sprite_sheet_index, &gfx_mem_allocator ) );
+		auto hBackgroundComp = ecs.CreateComponent<BackgroundInstanceComponent>( CreateBackgroundGfxModel( VIEWPORT_WIDTH, VIEWPORT_HEIGHT, background_sprite_sheet_index, gfx_mem_allocator ) );
 		auto hTransormationComp = ecs.CreateComponent<TransformationComponent>();
 		auto hRenderableComp = ecs.CreateComponent<RenderableComponent>();
 		auto hScriptComp = ecs.CreateComponent<ScriptComponent>( UpdateBackgroundScript );
@@ -464,11 +513,16 @@ namespace WildWeasel_Game
 		GfxHeaps_BatchedAllocator gfx_mem_allocator( &gfx_heap );
 		gfx_mem_allocator.Prepare();
 
-		GfxImage* shipTexture = AL::LoadTexture( "shipTexture", "assets/F14.png", &gfx_mem_allocator );
+		gfx_heap_host_visible = create_gfx_heap( 16 * 1024 * 1024, GFX_MEMORY_PROPERTY_HOST_VISIBLE_BIT );
+		GfxHeaps_Allocator gfx_host_visible_mem_allocator( &gfx_heap_host_visible );
+
+
+		GfxImage* shipTexture = AL::LoadTexture( "shipTexture", "assets/uh1.png", &gfx_mem_allocator );
 		GfxImage* mig19Texture = AL::LoadTexture( "mig_21_texture", "assets/Mig21.png", &gfx_mem_allocator );
 		GfxImage* bulletTexture = AL::LoadTexture( "bullet_texture", "assets/bullet_small.png", &gfx_mem_allocator );
 		GfxImage* cloudTexture = AL::LoadTexture( "cloud_texture", "assets/cloud.png", &gfx_mem_allocator );
 		GfxImage* background_sprite_sheet = AL::LoadTexture( "background_sprite_sheet", "assets/ground_spritesheet.png", &gfx_mem_allocator );		
+		GfxImage* rescueTexture = AL::LoadTexture( "rescue_texture", "assets/rescue.png", &gfx_mem_allocator );
 
 		GfxModel* quadModel = AL::CreateQuad( "Quad", quadSize, &gfx_mem_allocator );
 
@@ -477,21 +531,25 @@ namespace WildWeasel_Game
 		uint32_t bulletTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, bulletTexture, eSamplers::Point );
 		uint32_t cloudTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, cloudTexture, eSamplers::Point );
 		uint32_t background_sprite_sheet_index = RegisterBindlessTexture( &bindlessTexturesState, background_sprite_sheet, eSamplers::Point );
+		uint32_t rescueTextureIndex = RegisterBindlessTexture( &bindlessTexturesState, rescueTexture, eSamplers::Point );
 
-		CreateBackgroundEntity( background_sprite_sheet_index, gfx_mem_allocator );
+		CreateBackgroundEntity( background_sprite_sheet_index, &gfx_host_visible_mem_allocator );
 
 		gfx_mem_allocator.Commit();
 
-		shipRenderable = CreateGfxAsset( quadModel, shipTextureIndex );
+		shipAsset = CreateGfxAsset( quadModel, shipTextureIndex );
 		mig19Asset = CreateGfxAsset( quadModel, mig19TextureIndex );
+		enemySoldierAsset = CreateGfxAsset( quadModel, rescueTextureIndex );
 		bulletRenderable = CreateGfxAsset( quadModel, bulletTextureIndex );
-		cloudAsset = CreateGfxAsset( quadModel, cloudTextureIndex );	
+		cloudAsset = CreateGfxAsset( quadModel, cloudTextureIndex );
+		rescueAsset = CreateGfxAsset( quadModel, rescueTextureIndex );
 
 		CompileScene( &bindlessTexturesState );
 
+		//Player character
 		shipSceneInstance = { glm::vec3( 0.0f, 0.0f, 2.0f ), defaultRotation, shipSize };
 		auto hShipTranformationComponent = ecs.CreateComponent<TransformationComponent>( shipSceneInstance );
-		auto hShipRenderableComp = ecs.CreateComponent<RenderableComponent>( &shipRenderable, false );
+		auto hShipRenderableComp = ecs.CreateComponent<RenderableComponent>( &shipAsset, false );
 		auto hShipUpdateScriptComp = ecs.CreateComponent<ScriptComponent>( UpdateShipScript );
 		ecs.CreateEntity( hShipTranformationComponent, hShipRenderableComp, hShipUpdateScriptComp );
 		
@@ -502,8 +560,12 @@ namespace WildWeasel_Game
 		ecs.CreateSingletonComponent<DrawlistComponent>();
 
 		auto hEnemyShipSpawnerComponent = ecs.CreateComponent<EnemyShipSpawnerComponent>();
-		auto hCreateEnemyShipScript = ecs.CreateComponent<ScriptComponent>( CreateEnemyShipScript );
+		auto hCreateEnemyShipScript = ecs.CreateComponent<ScriptComponent>( CreateEnemySoldierScript );
 		ecs.CreateEntity( hCreateEnemyShipScript, hEnemyShipSpawnerComponent );
+
+		//auto hRescueSpawner = ecs.CreateComponent<EnemyShipSpawnerComponent>();
+		//auto hCreateRescueScript = ecs.CreateComponent<ScriptComponent>( CreateRescueScript );
+		//ecs.CreateEntity( hCreateRescueScript, hRescueSpawner );
 
 		auto hEnvironmentComponent = ecs.CreateComponent<EnvironmentComponent>();
 		auto hCreateCloudsScript = ecs.CreateComponent<ScriptComponent>( CreateCloudScript );
@@ -519,5 +581,6 @@ namespace WildWeasel_Game
 		AL::Cleanup();
 
 		destroy( &gfx_heap );
+		destroy( &gfx_heap_host_visible );
 	}
 }

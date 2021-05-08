@@ -1,7 +1,7 @@
 #include "allocators.h"
 
 /*
-Avoir un objet descripteur liÈ ‡ un buffer sur lequel on aloue de la mÈmoire.
+Avoir un objet descripteur liÅEÅEun buffer sur lequel on aloue de la m?moire.
 Buffer Dynamique on peut alouer plusieurs objet et non dynamique seulement 1?
 */
 size_t AllocateGpuBufferSlot( BufferAllocator* allocator, size_t slotSize )

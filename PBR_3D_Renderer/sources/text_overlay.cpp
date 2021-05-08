@@ -2,10 +2,10 @@
 
 #include "file_system.h"
 #include "renderer.h"
-#include "vk_commands.h"
-#include "vk_debug.h"
-#include "vk_vertex_input.h"
+#include "gfx_heaps_batched_allocator.h"
+#include "gfx_model.h"
 #include "stb_font_consolas_24_latin1.inl"
+#include "../shaders/shadersCommon.h"
 
 GfxModel textModel;
 uint32_t maxTextCharCount = 0;
@@ -29,42 +29,40 @@ GpuPipelineLayout GetTextPipelineLayout()
 	return GpuPipelineLayout();
 }
 
-GpuPipelineState GetTextPipelineState()
+GpuPipelineStateDesc GetTextPipelineState()
 {
-	GpuPipelineState gpuPipelineState = {};
+	GpuPipelineStateDesc gpuPipelineState = {};
 	GetBindingDescription( VIBindings_PosColUV, &gpuPipelineState.viState );
 
 	gpuPipelineState.shaders = {
-		{ FS::readFile( "shaders/text.vert.spv" ), "main", VK_SHADER_STAGE_VERTEX_BIT },
-		{ FS::readFile( "shaders/text.frag.spv" ), "main", VK_SHADER_STAGE_FRAGMENT_BIT } };
+		{ FS::readFile( "shaders/text.vert.spv" ), "main", GFX_SHADER_STAGE_VERTEX_BIT },
+		{ FS::readFile( "shaders/text.frag.spv" ), "main", GFX_SHADER_STAGE_FRAGMENT_BIT } };
 
 	gpuPipelineState.rasterizationState.backFaceCulling = false;
 	gpuPipelineState.rasterizationState.depthBiased = false;
 
 	gpuPipelineState.depthStencilState.depthRead = false;
 	gpuPipelineState.depthStencilState.depthWrite = false;
-	gpuPipelineState.depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS;
+	gpuPipelineState.depthStencilState.depthCompareOp = GfxCompareOp::LESS;
 
 	gpuPipelineState.blendEnabled = true;
-	gpuPipelineState.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	gpuPipelineState.primitiveTopology = GfxPrimitiveTopology::TRIANGLE_LIST;
 	return gpuPipelineState;
 }
 
-static void CmdDrawText( VkCommandBuffer commandBuffer, VkExtent2D extent, size_t frameIndex, const RenderPass * renderpass, const Technique * technique )
+static void CmdDrawText( GfxCommandBuffer commandBuffer, VkExtent2D extent, size_t frameIndex, const RenderPass * renderpass, const Technique * technique )
 {
-	CmdBeginVkLabel( commandBuffer, "Text overlay Renderpass", glm::vec4( 0.6f, 0.6f, 0.6f, 1.0f ) );
-	BeginRenderPass( commandBuffer, *renderpass, renderpass->outputFrameBuffer[frameIndex].frameBuffer, extent );
+	CmdBeginLabel( commandBuffer, "Text overlay Renderpass", glm::vec4( 0.6f, 0.6f, 0.6f, 1.0f ) );
+	const FrameBuffer& frameBuffer = renderpass->outputFrameBuffer[frameIndex];
+	BeginRenderPass( commandBuffer, *renderpass, frameBuffer );
 
-	vkCmdBindPipeline( commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipeline );
-	vkCmdBindDescriptorSets( commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, technique->pipelineLayout, 0, 1, &technique->renderPass_descriptor[0], 0, nullptr );
+	CmdBindPipeline( commandBuffer, GfxPipelineBindPoint::GRAPHICS, technique->pipeline );
+	CmdBindDescriptorTable( commandBuffer, GfxPipelineBindPoint::GRAPHICS, technique->pipelineLayout, RENDERPASS_SET, technique->descriptor_sets[RENDERPASS_SET].hw_descriptorSets[0] );
 
-	CmdBindVertexInputs( commandBuffer, VIBindings_PosColUV, textModel );
-	vkCmdBindIndexBuffer( commandBuffer, textModel.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32 );
-
-	vkCmdDrawIndexed( commandBuffer, currentTextCharCount * indexesPerChar, 1, 0, 0, 0 );
+	CmdDrawIndexed( commandBuffer, VIBindings_PosColUV, textModel, currentTextCharCount * indexesPerChar );
 
 	EndRenderPass( commandBuffer );
-	CmdEndVkLabel( commandBuffer );
+	CmdEndLabel( commandBuffer );
 }
 
 void UpdateText( const TextZone * textZones, size_t textZonesCount, VkExtent2D surfaceExtent )
@@ -127,7 +125,7 @@ void UpdateText( const TextZone * textZones, size_t textZonesCount, VkExtent2D s
 		}
 	}
 
-	VkDeviceSize bufferSize = sizeof( text_vertex_positions[0] ) * text_vertex_positions.size();
+	GfxDeviceSize bufferSize = sizeof( text_vertex_positions[0] ) * text_vertex_positions.size();
 	UpdateGpuBuffer( &GetVertexInput( textModel, eVIDataType::POSITION )->buffer, text_vertex_positions.data(), bufferSize, 0 );
 
 	bufferSize = sizeof( text_vertex_color[0] ) * text_vertex_color.size();
@@ -138,6 +136,8 @@ void UpdateText( const TextZone * textZones, size_t textZonesCount, VkExtent2D s
 
 	bufferSize = sizeof( text_indices[0] ) * text_indices.size();
 	UpdateGpuBuffer( &textModel.indexBuffer, text_indices.data(), bufferSize, 0 );
+
+	//textModel.indexCount = currentTextCharCount * indexesPerChar;
 }
 
 void CreateTextVertexBuffer( size_t maxCharCount )
@@ -148,9 +148,9 @@ void CreateTextVertexBuffer( size_t maxCharCount )
 	uint32_t maxIndices = maxCharCount * indexesPerChar;
 
 	std::vector<VIDesc> modelVIDescs = {
-		{ eVIDataType::POSITION, eVIDataElementType::FLOAT, 3 },
-		{ eVIDataType::COLOR, eVIDataElementType::FLOAT, 3 },
-		{ eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2 },
+		{ ( VIDataType )eVIDataType::POSITION, eVIDataElementType::FLOAT, 3 },
+		{ ( VIDataType )eVIDataType::COLOR, eVIDataElementType::FLOAT, 3 },
+		{ ( VIDataType )eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2 },
 	};
 
 	textModel = CreateGfxModel( modelVIDescs, maxVertices, maxIndices, sizeof( uint32_t ) );
@@ -164,16 +164,19 @@ void LoadFontTexture()
 	static unsigned char font24pixels[fontWidth][fontHeight];
 	stb_font_consolas_24_latin1( stbFontData, font24pixels, fontHeight );
 
-	Load2DTexture( &font24pixels[0][0], fontWidth, fontHeight, 1, 1, VK_FORMAT_R8_UNORM, g_fontImage );
+	GfxHeaps_CommitedResourceAllocator allocator = {};
+	allocator.Prepare();
+	Load2DTexture( &font24pixels[0][0], fontWidth, fontHeight, 1, GfxFormat::R8_UNORM, &g_fontImage, &allocator );
+	allocator.Commit();
 }
 
 void CleanupTextRenderPass()
 {
-	DestroyImage( g_fontImage );
+	DestroyImage( &g_fontImage );
 	DestroyGfxModel( textModel );
 }
 
-void TextRecordDrawCommandsBuffer( uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique )
+void TextRecordDrawCommandsBuffer( GfxCommandBuffer graphicsCommandBuffer, const FG::TaskInputData& inputData )
 {
-	CmdDrawText( graphicsCommandBuffer, extent, currentFrame, renderpass, technique );
+	CmdDrawText( graphicsCommandBuffer, inputData.extent, inputData.currentFrame, inputData.renderpass, inputData.technique );
 }

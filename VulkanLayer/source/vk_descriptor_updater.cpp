@@ -9,7 +9,7 @@ void BatchDescriptorsUpdater::AddImagesBinding( const GfxImageSamplerCombined* i
 	uint32_t bufferStart = descriptorImagesInfosCount;
 	for( uint32_t descriptorIndex = 0; descriptorIndex < count; ++descriptorIndex )
 	{
-		assert( descriptorImagesInfosCount < 16 );
+		assert( descriptorImagesInfosCount < MAX_DESCRIPTOR_PER_UPDATE );
 		descriptorImagesInfos[descriptorImagesInfosCount++] = { images[descriptorIndex].sampler, images[descriptorIndex].image->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
 	}
 	//TODO: type could probably be infered
@@ -21,7 +21,7 @@ void BatchDescriptorsUpdater::AddBuffersBinding( const GpuBuffer* buffers, uint3
 	uint32_t bufferStart = descriptorBuffersInfosCount;
 	for( uint32_t descriptorIndex = 0; descriptorIndex < count; ++descriptorIndex )
 	{
-		assert( descriptorBuffersInfosCount < 16 );
+		assert( descriptorBuffersInfosCount < MAX_DESCRIPTOR_PER_UPDATE );
 		descriptorBuffersInfos[descriptorBuffersInfosCount++] = { buffers[descriptorIndex].buffer, 0, VK_WHOLE_SIZE };
 	}
 	writeDescriptors[writeDescriptorsCount++] = { binding, count, DescriptorTypeToVkType( type, access ), &descriptorBuffersInfos[bufferStart], nullptr };

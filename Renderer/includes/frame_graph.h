@@ -71,9 +71,6 @@ namespace FG
 		AttachementDescription descriptions[MAX_ATTACHMENTS_COUNT];
 		uint32_t attachmentCount = 0;
 
-		uint32_t read_targets[MAX_READ_TARGETS];
-		uint32_t read_targets_count = 0;
-
 		FrameGraphNode frame_graph_node;
 		const char* name;
 	};
@@ -99,6 +96,7 @@ namespace FG
 	{
 		FG_RENDERTARGET_REF_CLEAR_BIT = 1 << 0,
 		FG_RENDERTARGET_REF_READ_BIT = 1 << 1,
+		FG_RENDERTARGET_REF_DEPTH_READ = 1 << 2,
 	};
 
 	class FrameGraph

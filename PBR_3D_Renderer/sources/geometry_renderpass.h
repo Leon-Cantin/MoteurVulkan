@@ -2,11 +2,11 @@
 
 #include "vk_globals.h"
 
-#include "renderpass.h"
 #include "material.h"
 #include "scene_frame_data.h"
+#include "frame_graph.h"
 
 GpuPipelineLayout GetGeoPipelineLayout();
-GpuPipelineState GetGeoPipelineState();
+GpuPipelineStateDesc GetGeoPipelineState();
 
-void GeometryRecordDrawCommandsBuffer( uint32_t currentFrame, const SceneFrameData* frameData, VkCommandBuffer graphicsCommandBuffer, VkExtent2D extent, const RenderPass * renderpass, const Technique * technique );
+void GeometryRecordDrawCommandsBuffer( GfxCommandBuffer graphicsCommandBuffer, const FG::TaskInputData& inputData );

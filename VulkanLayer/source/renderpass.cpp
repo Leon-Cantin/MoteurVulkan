@@ -71,7 +71,7 @@ RenderPass CreateRenderPass( const char* name, const AttachementDescription* col
 		description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		description.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		description.initialLayout = ConvertToVkImageLayout( depthStencilAttachement->oldLayout, depthStencilAttachement->oldAccess );
-		description.finalLayout = ConvertToVkImageLayout( depthStencilAttachement->layout, depthStencilAttachement->access );
+		description.finalLayout = ConvertToVkImageLayout( depthStencilAttachement->finalLayout, depthStencilAttachement->finalAccess );
 
 		VkAttachmentReference& reference = references[colorAttachementCount];
 		reference.attachment = colorAttachementCount;

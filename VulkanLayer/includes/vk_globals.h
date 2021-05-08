@@ -457,12 +457,13 @@ inline bool IsValid( const GpuBuffer& buffer )
 class BatchDescriptorsUpdater
 {
 private:
+	static constexpr size_t MAX_DESCRIPTOR_PER_UPDATE = 32;
 	WriteDescriptor writeDescriptors[8];
 	uint32_t writeDescriptorsCount = 0;
 
-	VkDescriptorBufferInfo descriptorBuffersInfos[16];
+	VkDescriptorBufferInfo descriptorBuffersInfos[MAX_DESCRIPTOR_PER_UPDATE];
 	uint32_t descriptorBuffersInfosCount = 0;
-	VkDescriptorImageInfo descriptorImagesInfos[16];
+	VkDescriptorImageInfo descriptorImagesInfos[MAX_DESCRIPTOR_PER_UPDATE];
 	uint32_t descriptorImagesInfosCount = 0;
 
 public:
@@ -721,6 +722,8 @@ void Destroy( Swapchain* Swapchain );
 GfxMemAlloc allocate_gfx_memory( GfxDeviceSize size, GfxMemoryType type );
 GfxMemAlloc suballocate_gfx_memory( const GfxMemAlloc& gfx_mem, GfxDeviceSize size, GfxDeviceSize offset );
 void destroy_gfx_memory( GfxMemAlloc* gfx_mem );
+void* MapGpuMemory( const GfxMemAlloc& dstMemory, GfxDeviceSize size, GfxDeviceSize offset );
+void UnmapMemory( const GfxMemAlloc& dstMemory );
 void UpdateGpuMemory( const GfxMemAlloc* dstMemory, const void* src, GfxDeviceSize size, GfxDeviceSize offset );
 
 inline bool IsValid( const GfxMemAlloc& mem_alloc )

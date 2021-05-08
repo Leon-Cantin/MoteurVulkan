@@ -4,6 +4,22 @@
 #include "gfx_image.h"
 #include "allocators.h"
 
+class GfxHeaps_Allocator : public I_BufferAllocator
+{
+public:
+	GfxHeaps_Allocator();
+	GfxHeaps_Allocator( GfxHeap* heap );
+
+	//Buffer allocator
+	bool Allocate( GfxApiBuffer buffer, GfxMemAlloc* o_gfx_mem_alloc );
+	bool UploadData( const GpuBuffer& buffer, const void* data );
+
+private:
+	GfxHeap* _heap;
+	size_t head;
+};
+
+
 class GfxHeaps_BatchedAllocator : public I_ImageAlloctor, public I_BufferAllocator
 {
 public:

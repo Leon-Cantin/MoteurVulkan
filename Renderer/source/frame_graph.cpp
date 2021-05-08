@@ -43,52 +43,42 @@ namespace FG
 		return image;
 	}
 
-	static void CreateRTCommon(RenderPassCreationData& resource, GfxFormat format, fg_handle_t render_target_handle, GfxLayout optimalLayout)
+	static AttachementDescription CreateRTCommon( GfxFormat format, fg_handle_t render_target_handle, GfxLayout optimalLayout, GfxAccess access )
 	{
-		assert(resource.attachmentCount < MAX_ATTACHMENTS_COUNT);
-
-		const uint32_t attachement_index = resource.attachmentCount++;
-		AttachementDescription& description = resource.descriptions[attachement_index];
+		AttachementDescription description;
 		description.format = format;
-		description.access = GfxAccess::WRITE;
+		description.access = access;
 		description.layout = optimalLayout;
-		description.finalAccess = GfxAccess::WRITE;
+		description.finalAccess = access; //TODO: Just like old Access, this isn't great, We never set this to write, only read.
 		description.finalLayout = optimalLayout;
 		description.loadOp = GfxLoadOp::DONT_CARE;
 		description.oldAccess = GfxAccess::WRITE;//TODO: old access isn't changed anywhere if old access is read we are boned
 		description.oldLayout = GfxLayout::UNDEFINED;
 
-		resource.fgHandleAttachement[attachement_index] = render_target_handle;
+		return description;
 	}
 
-	void RenderColor(RenderPassCreationData& resource, GfxFormat format, fg_handle_t render_target_handle )
+	static AttachementDescription RenderColor( GfxFormat format, fg_handle_t render_target_handle )
 	{
-		CreateRTCommon(resource, format, render_target_handle, GfxLayout::COLOR );
+		return CreateRTCommon( format, render_target_handle, GfxLayout::COLOR, GfxAccess::WRITE );
 	}
 
-	void RenderDepth(RenderPassCreationData& resource, GfxFormat format, fg_handle_t render_target_handle )
+	static AttachementDescription RenderDepth( GfxFormat format, fg_handle_t render_target_handle )
 	{
-		CreateRTCommon(resource, format, render_target_handle, GfxLayout::DEPTH_STENCIL );
+		return CreateRTCommon( format, render_target_handle, GfxLayout::DEPTH_STENCIL, GfxAccess::WRITE );
 	}
 
-	void ClearTarget(RenderPassCreationData& resource )
+	static AttachementDescription ReadRenderTargetDepth( GfxFormat format, fg_handle_t render_target_handle )
 	{
-		assert(resource.attachmentCount > 0);
-
-		resource.descriptions[resource.attachmentCount-1].loadOp = GfxLoadOp::CLEAR;
+		return CreateRTCommon( format, render_target_handle, GfxLayout::DEPTH_STENCIL, GfxAccess::READ );
 	}
 
-	void ReadResource(RenderPassCreationData& resource, fg_handle_t render_target_handle )
+	void ClearTarget( AttachementDescription* attachementDesc )
 	{
-		assert(resource.read_targets_count < MAX_READ_TARGETS);
-		resource.read_targets[resource.read_targets_count++] = render_target_handle;
-		/*
-		const uint32_t attachement_id = resource.attachmentCount++;
-		resource.read_targets[attachement_id] = render_target;
-		resource.e_render_targets[attachement_id] = render_target;*/
+		attachementDesc->loadOp = GfxLoadOp::CLEAR;
 	}
 
-	static int32_t FindResourceIndex(const RenderPassCreationData& pass, fg_handle_t render_target_handle )
+	static int32_t FindResourceIndex( const RenderPassCreationData& pass, fg_handle_t render_target_handle )
 	{
 		for (int32_t i = 0; i < pass.attachmentCount; ++i)
 		{
@@ -97,6 +87,13 @@ namespace FG
 		}
 
 		return -1;
+	}
+
+	static AttachementDescription* GetAttachementDesc( RenderPassCreationData* pass, fg_handle_t render_target_handle )
+	{
+		uint32_t resource_index = FindResourceIndex( *pass, render_target_handle );
+		assert( resource_index >= 0 && resource_index < pass->attachmentCount );
+		return &pass->descriptions[resource_index];
 	}
 
 	static void CreateBuffer( const FG::DataEntry& techniqueDataEntry, I_BufferAllocator* bufferAllocator, GpuBuffer* o_buffer )
@@ -118,6 +115,7 @@ namespace FG
 
 	static void ComposeGraph( FrameGraphCreationData& creationData, FrameGraphInternal* o_frameGraph )
 	{
+		//TODO: this is wrong, render targets don't include buffers
 		o_frameGraph->_render_targets_count = creationData.resources.size();
 		std::map< fg_handle_t, RenderPassCreationData*> lastPass;
 
@@ -125,61 +123,79 @@ namespace FG
 		{
 			RenderPassCreationData& pass = creationData.renderPasses[i];
 
-			//RenderTargets
-			for (uint32_t resource_index = 0; resource_index < pass.attachmentCount; ++resource_index)
+			for( uint32_t rtIndex = 0; rtIndex < pass.frame_graph_node.renderTargetRefs.size(); ++rtIndex )
 			{
-				fg_handle_t renderTargetFgHandle= pass.fgHandleAttachement[resource_index];
-				AttachementDescription& description = pass.descriptions[resource_index];
+				const RenderTargetRef& rtRef = pass.frame_graph_node.renderTargetRefs[rtIndex];
+				const fg_handle_t resource_h = rtRef.resourceHandle;
+				const GfxFormat format = creationData.resources[rtRef.resourceHandle].resourceDesc.format;
 
-				auto it_found = lastPass.find( renderTargetFgHandle );
-				if (it_found == lastPass.end())
+				if( rtRef.flags & FG_RENDERTARGET_REF_READ_BIT )
 				{
-					lastPass[renderTargetFgHandle] = &pass;
-				}
-				else
-				{
-					RenderPassCreationData* lastPassWithResource = it_found->second;
-					int32_t otherPassReferenceIndex = FindResourceIndex(*lastPassWithResource, renderTargetFgHandle );
-					//The last pass will have to transition into this pass' layout
-					lastPassWithResource->descriptions[otherPassReferenceIndex].finalLayout = description.layout;
-					//This pass' initial layout should be this one's layout
-					description.oldLayout = description.layout;
-					//We should load since the other pass wrote into this
-					description.loadOp = GfxLoadOp::LOAD;//TODO: Maybe we shouldn't load if we specified a CLEAR
-
-					lastPass[renderTargetFgHandle] = &pass;
-				}
-			}
-
-			/*
-			read resources
-			Look at read resources and change the the final layout of the last appearence to be used
-			as shader resource
-			*/
-			for (uint32_t resource_index = 0; resource_index < pass.read_targets_count; ++resource_index)
-			{
-				uint32_t render_target = pass.read_targets[resource_index];
-				auto it_found = lastPass.find(render_target);
-				if (it_found != lastPass.end())
-				{
-					RenderPassCreationData* lastPassWithResource = it_found->second;
-					int32_t otherPassReferenceIndex = FindResourceIndex(*lastPassWithResource, render_target);
-					if (otherPassReferenceIndex >= 0)
+					// read resources -	Look at read resources and change the the final layout of the last appearence to be used as shader resource or depth read
+					auto it_found = lastPass.find( resource_h );
+					if( it_found != lastPass.end() )
 					{
-						//Last pass should transition to read resource at the end
-						lastPassWithResource->descriptions[otherPassReferenceIndex].finalLayout = GfxLayout::COLOR;
-						lastPassWithResource->descriptions[otherPassReferenceIndex].finalAccess = GfxAccess::READ;
+						RenderPassCreationData* lastPassWithResource = it_found->second;
+						int32_t otherPassReferenceIndex = FindResourceIndex( *lastPassWithResource, resource_h );
+						if( otherPassReferenceIndex >= 0 )
+						{
+							//Last pass should transition to read resource at the end
+							lastPassWithResource->descriptions[otherPassReferenceIndex].finalLayout = GfxLayout::COLOR;
+							lastPassWithResource->descriptions[otherPassReferenceIndex].finalAccess = GfxAccess::READ;
+						}
+						else
+						{
+							//We are already in a read state
+						}
 					}
 					else
 					{
-						//We are already in a read state
+						throw std::runtime_error( "This render pass does not exist already!" );
 					}
-					lastPass[render_target] = &pass;
 				}
 				else
 				{
-					throw std::runtime_error("This render pass does not exist already!");
+					assert( pass.attachmentCount < MAX_ATTACHMENTS_COUNT );
+
+					const uint32_t attachement_index = pass.attachmentCount++;
+					pass.fgHandleAttachement[attachement_index] = resource_h;
+					AttachementDescription& description = pass.descriptions[attachement_index];
+
+					if( creationData.resources[resource_h].resourceDesc.usage_flags & DEPTH_STENCIL_ATTACHMENT )
+					{
+						if( rtRef.flags & FG_RENDERTARGET_REF_DEPTH_READ )
+							description = ReadRenderTargetDepth( format, rtRef.resourceHandle );
+						else
+							description = RenderDepth( format, rtRef.resourceHandle );
+					}
+					else
+						description = RenderColor( format, rtRef.resourceHandle );
+
+					if( rtRef.flags & FG_RENDERTARGET_REF_CLEAR_BIT )
+						ClearTarget( &description );
+
+					auto it_found = lastPass.find( resource_h );
+					if( it_found != lastPass.end() )
+					{
+						RenderPassCreationData* lastPassWithResource = it_found->second;
+						//The last pass will have to transition into this pass' layout
+						AttachementDescription* lastAttachementDesc = GetAttachementDesc( lastPassWithResource, resource_h );
+						lastAttachementDesc->finalLayout = description.layout;
+						if( rtRef.flags & FG_RENDERTARGET_REF_DEPTH_READ )
+						{
+							lastAttachementDesc->finalAccess = GfxAccess::READ;
+							description.oldAccess = GfxAccess::READ;
+						}
+
+						//This pass'initial layout should be the same as the layout since the line above will transition it
+						description.oldLayout = description.layout;
+
+						//If another pass wrote into this, we shouldn't discard the data
+						description.loadOp = GfxLoadOp::LOAD;//TODO: Maybe we shouldn't load if we specified a CLEAR
+					}
 				}
+
+				lastPass[resource_h] = &pass;
 			}
 		}
 	}
@@ -262,50 +278,21 @@ namespace FG
 		}
 	}
 
-	static void CreateResourceCreationData( FrameGraphCreationData* creationData, FrameGraphInternal* o_frameGraph )
-	{
-		for( uint32_t i = 0; i < creationData->renderPasses.size(); ++i )
-		{
-			RenderPassCreationData& rpCreationData = creationData->renderPasses[i];
-			for( uint32_t rtIndex = 0; rtIndex < rpCreationData.frame_graph_node.renderTargetRefs.size(); ++rtIndex )
-			{
-				RenderTargetRef& rtRef = rpCreationData.frame_graph_node.renderTargetRefs[rtIndex];
-				GfxFormat format = creationData->resources[rtRef.resourceHandle].resourceDesc.format;
-
-				if( rtRef.flags & FG_RENDERTARGET_REF_READ_BIT )
-				{
-					ReadResource( rpCreationData, rtRef.resourceHandle );
-				}
-				else
-				{
-					if( creationData->resources[rtRef.resourceHandle].resourceDesc.usage_flags & DEPTH_STENCIL_ATTACHMENT )
-						RenderDepth( rpCreationData, format, rtRef.resourceHandle );
-					else
-						RenderColor( rpCreationData, format, rtRef.resourceHandle );
-
-					if( rtRef.flags & FG_RENDERTARGET_REF_CLEAR_BIT )
-						ClearTarget( rpCreationData );
-				}
-			}
-		}
-	}
-
 	FrameGraph CreateGraph( std::vector<RenderPassCreationData> *inRpCreationData, std::vector<DataEntry> *inRtCreationData )
 	{
-		FrameGraphInternal* frameGraph = new FrameGraphInternal();
-		FrameGraph frameGraphExternal( frameGraph );
-		FrameGraphCreationData& creationData = frameGraph->creationData;
+		FrameGraphInternal* frameGraphInternal = new FrameGraphInternal();
+		FrameGraph frameGraph( frameGraphInternal );
+		FrameGraphCreationData& creationData = frameGraphInternal->creationData;
+
 		//Setup resources
 		creationData.resources = *inRtCreationData;
 		creationData.renderPasses = *inRpCreationData;
 
-		CreateResourceCreationData( &creationData, frameGraph );
+		ComposeGraph( creationData, frameGraphInternal );
 
-		ComposeGraph( creationData, frameGraph );
+		CreateResources( creationData, frameGraphInternal );
 
-		CreateResources( creationData, frameGraph );
-
-		return frameGraphExternal;
+		return frameGraph;
 	}
 
 	void Cleanup( FrameGraph* frameGraphExternal )

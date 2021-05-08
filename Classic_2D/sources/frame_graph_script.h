@@ -126,7 +126,7 @@ static FG::RenderPassCreationData FG_TextOverlay_CreateGraphNode( FG::fg_handle_
 	frameGraphNode->gpuPipelineStateDesc = GetTextPipelineState();
 	//TODO: we don't need one set per frame for this one
 	frameGraphNode->descriptorSets.push_back( textPassSet );
-	frameGraphNode->renderTargetRefs.push_back( { static_cast< uint32_t >(sceneColor), 0 } );
+	frameGraphNode->renderTargetRefs.push_back( { sceneColor, 0 } );
 
 	return renderPassCreationData;
 }
@@ -192,10 +192,9 @@ static FG::RenderPassCreationData FG_Copy_CreateGraphNode( FG::fg_handle_t dst, 
 
 	frameGraphNode->gpuPipelineLayout = GpuPipelineLayout();
 	frameGraphNode->gpuPipelineStateDesc = GetCopyPipelineState();
-	//TODO: generalize instance and pass set into an array of binding point and set
 	frameGraphNode->descriptorSets.push_back( copyPassSet );
-	frameGraphNode->renderTargetRefs.push_back( { static_cast< uint32_t >(dst), 0 } );
-	frameGraphNode->renderTargetRefs.push_back( { static_cast< uint32_t >(src), FG::FG_RENDERTARGET_REF_READ_BIT } );
+	frameGraphNode->renderTargetRefs.push_back( { dst, 0 } );
+	frameGraphNode->renderTargetRefs.push_back( { src, FG::FG_RENDERTARGET_REF_READ_BIT } );
 
 	return renderPassCreationData;
 }
@@ -227,6 +226,7 @@ FG::FrameGraph InitializeScript( const Swapchain* swapchain )
 	FG::fg_handle_t text_texture_h = resourceGatherer.AddResource( CREATE_IMAGE_SAMPLER_EXTERNAL( eTechniqueDataEntryImageName::TEXT, 1 ) );
 	FG::fg_handle_t scene_depth_h = resourceGatherer.AddResource( CREATE_IMAGE_DEPTH( eTechniqueDataEntryImageName::SCENE_DEPTH, GfxFormat::D32_SFLOAT, screenSize, 0 ) );
 	FG::fg_handle_t scene_color_h = resourceGatherer.AddResource( CREATE_IMAGE_COLOR_SAMPLER( eTechniqueDataEntryImageName::SCENE_COLOR, swapchainFormat, screenSize, GfxImageUsageFlagBits::SAMPLED, eSamplers::Point ) );
+	//TODO: also if something is external I shouldn't have to state the count, format and size. Format is used for renderpasses only
 	FG::fg_handle_t backbuffer_h = resourceGatherer.AddResource( CREATE_IMAGE_COLOR( eTechniqueDataEntryImageName::BACKBUFFER, swapchainFormat, swapchainExtent, 0, FG::eDataEntryFlags::EXTERNAL ) );
 
 	//Setup passes

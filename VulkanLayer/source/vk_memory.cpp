@@ -35,14 +35,29 @@ void destroy_gfx_memory( GfxMemAlloc* gfx_mem )
 		vkFreeMemory( g_gfx.device.device, gfx_mem->memory, nullptr );
 }
 
+void* MapGpuMemory( const GfxMemAlloc& dstMemory, GfxDeviceSize size, GfxDeviceSize offset )
+{
+	if( size == 0 )
+		size = dstMemory.size;
+
+	assert( offset + size <= dstMemory.size );
+
+	void* map;
+	vkMapMemory( g_gfx.device.device, dstMemory.memory, dstMemory.offset + offset, size, 0, &map );
+
+	return map;
+}
+
+void UnmapMemory( const GfxMemAlloc& dstMemory )
+{
+	vkUnmapMemory( g_gfx.device.device, dstMemory.memory );
+}
+
 void UpdateGpuMemory( const GfxMemAlloc* dstMemory, const void* src, GfxDeviceSize size, GfxDeviceSize offset )
 {
-	assert( offset + size <= dstMemory->size );
-	assert( size );//don't map memory with no size
-	void* dst;
-	vkMapMemory( g_gfx.device.device, dstMemory->memory, dstMemory->offset + offset, size, 0, &dst );
+	void* dst = MapGpuMemory( *dstMemory, size, offset );
 	memcpy( dst, src, size );
-	vkUnmapMemory( g_gfx.device.device, dstMemory->memory );
+	UnmapMemory( *dstMemory );
 }
 
 bool IsRequiredMemoryType( GfxMemoryTypeFilter typeFilter, GfxMemoryType memoryType )
