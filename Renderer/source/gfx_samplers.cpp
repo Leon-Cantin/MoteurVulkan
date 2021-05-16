@@ -47,3 +47,8 @@ GfxApiSampler GetSampler( eSamplers samplerId )
 {
 	return samplers[( size_t )samplerId];
 }
+
+GfxApiSampler* GetSamplers()
+{
+	return samplers.data();
+}

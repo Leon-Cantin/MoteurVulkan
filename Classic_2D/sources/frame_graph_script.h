@@ -239,7 +239,7 @@ FG::FrameGraph InitializeScript( const Swapchain* swapchain )
 	for( uint32_t frameIndex = 0; frameIndex < SIMULTANEOUS_FRAMES; ++frameIndex )
 		fg.AddExternalImage( backbuffer_h, frameIndex, swapchain->images[frameIndex] );
 	FG::CreateRenderPasses( &fg );
-	FG::SetupInputBuffers( &fg, *_pInputBuffers );
+	FG::AddResourcesToInputBuffer( &fg, *_pInputBuffers );
 	FG::CreateTechniques( &fg, _descriptorPool );
 	FG::UpdateTechniqueDescriptorSets( &fg, *_pInputBuffers );
 

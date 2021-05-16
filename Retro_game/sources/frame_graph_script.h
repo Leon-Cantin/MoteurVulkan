@@ -84,7 +84,7 @@ inline GfxImageSamplerCombined* GetImage( const GpuInputData* buffers, eTechniqu
 }
 
 
-static FG::RenderPassCreationData FG_Geometry_CreateGraphNode( FG::fg_handle_t sceneColor, FG::fg_handle_t sceneDepth, FG::fg_handle_t bindlessTextures, FG::fg_handle_t shadowMap, FG::fg_handle_t shadowData,
+static FG::RenderPassCreationData FG_Opaque_CreateGraphNode( FG::fg_handle_t sceneColor, FG::fg_handle_t sceneDepth, FG::fg_handle_t bindlessTextures, FG::fg_handle_t shadowMap, FG::fg_handle_t shadowData,
 	FG::fg_handle_t instanceData, FG::fg_handle_t lightData, FG::fg_handle_t sceneData, FG::fg_handle_t samplers )
 {
 	FG::DescriptorTableDesc geoPassSetDesc =
@@ -108,7 +108,7 @@ static FG::RenderPassCreationData FG_Geometry_CreateGraphNode( FG::fg_handle_t s
 	};
 
 	FG::RenderPassCreationData renderPassCreationData;
-	renderPassCreationData.name = "geometry_pass";
+	renderPassCreationData.name = "opaque_pass";
 
 	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData.frame_graph_node;
 	frameGraphNode->RecordDrawCommands = GeometryRecordDrawCommandsBuffer;
@@ -248,7 +248,7 @@ FG::FrameGraph InitializeScript( const Swapchain* swapchain )
 	//Setup passes
 	std::vector<FG::RenderPassCreationData> rpCreationData;
 	rpCreationData.push_back( FG_Shadow_CreateGraphNode( shadow_map_h, shadow_data_h, instance_data_h ) );
-	rpCreationData.push_back( FG_Geometry_CreateGraphNode( scene_color_h, scene_depth_h, bindless_textures_h, shadow_map_h, shadow_data_h, instance_data_h, light_data_h, scene_data_h, samplers_h ) );
+	rpCreationData.push_back( FG_Opaque_CreateGraphNode( scene_color_h, scene_depth_h, bindless_textures_h, shadow_map_h, shadow_data_h, instance_data_h, light_data_h, scene_data_h, samplers_h ) );
 	rpCreationData.push_back( FG_Skybox_CreateGraphNode( scene_color_h, scene_depth_h, skybox_texture_h, skybox_data_h ) );
 	rpCreationData.push_back( FG_TextOverlay_CreateGraphNode( scene_color_h, text_texture_h ) );
 

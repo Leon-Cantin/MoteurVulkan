@@ -1,7 +1,6 @@
 #pragma once
 #include "gfx_image.h"
-
-#define BINDLESS_TEXTURES_MAX 16
+#include "../shaders/shadersCommon.h"
 
 struct BindlessTexturesState
 {
@@ -10,3 +9,4 @@ struct BindlessTexturesState
 };
 
 uint32_t RegisterBindlessTexture( BindlessTexturesState* state, GfxImage* image, eSamplers eSampler );
+uint32_t RegisterBindlessTexture( BindlessTexturesState* state, GfxImage* image );

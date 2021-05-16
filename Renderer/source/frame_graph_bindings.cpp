@@ -140,7 +140,7 @@ namespace FG
 		}
 	}
 
-	void SetupInputBuffers( FG::FrameGraph* frameGraph, std::array< GpuInputData, SIMULTANEOUS_FRAMES>& inputBuffers )
+	void AddResourcesToInputBuffer( FG::FrameGraph* frameGraph, std::array< GpuInputData, SIMULTANEOUS_FRAMES>& inputBuffers )
 	{
 		for( uint32_t i = 0; i < frameGraph->imp->_render_passes_count; ++i )
 		{
@@ -171,17 +171,24 @@ namespace FG
 		batchDescriptorsUpdater.Submit( *descriptorTable );
 	}
 
-	static void FillWithDummyDescriptors( const FG::FrameGraph* frameGraph, const GpuInputData* inputData, const DescriptorTableDesc& descriptorSetDesc, GfxDescriptorTable* descriptorTable )
+
+	//TODO: Not very efficient, buffers being recreated all of the time because of array descriptors.
+	static void FillWithDummyDescriptors( const FG::FrameGraph* frameGraph, const DescriptorTableDesc& descriptorSetDesc, GfxDescriptorTable* descriptorTable )
 	{
 		assert( descriptorSetDesc.dataBindings.size() <= MAX_DATA_ENTRIES );
 		BatchDescriptorsUpdater batchDescriptorsUpdater;
 
 		const GfxImage* dummyImage = GetDummyImage();
 		const GfxImageSamplerCombined combinedDummyImage = { const_cast< GfxImage*>(dummyImage), GetSampler( eSamplers::Trilinear ) };
+		const GfxApiSampler dummySampler = GetSampler( eSamplers::Point );
 		constexpr uint32_t maxDescriptors = 16;
-		GfxImageSamplerCombined dummyDescriptors[maxDescriptors];
+		GfxImageSamplerCombined dummyImageDescriptors[maxDescriptors];
+		GfxApiSampler dummySamplers[maxDescriptors];
 		for( uint32_t i = 0; i < maxDescriptors; ++i )
-			dummyDescriptors[i] = combinedDummyImage;
+		{
+			dummyImageDescriptors[i] = combinedDummyImage;
+			dummySamplers[i] = dummySampler;
+		}
 
 		//Fill in buffer
 		for( uint32_t dataBindingIndex = 0; dataBindingIndex < descriptorSetDesc.dataBindings.size(); ++dataBindingIndex )
@@ -189,19 +196,24 @@ namespace FG
 			const FG::DataBinding& dataBinding = descriptorSetDesc.dataBindings[dataBindingIndex];
 			const GfxDataBinding& gfxDataBinding = dataBinding.desc;
 			const FG::DataEntry* techniqueDataEntry = GetDataEntryFromHandle( frameGraph, dataBinding.resourceHandle );
-			uint32_t buffersCount = GetDataCount( inputData, techniqueDataEntry->user_id );
-			if( IsBufferType( techniqueDataEntry->descriptorType ) )//Buffers
+			if( IsBufferType( techniqueDataEntry->descriptorType ) )
 			{
 			}
-			else if( techniqueDataEntry->descriptorType == eDescriptorType::IMAGE_SAMPLER ) // Combined image samplers
+			else if( techniqueDataEntry->descriptorType == eDescriptorType::IMAGE_SAMPLER || techniqueDataEntry->descriptorType == eDescriptorType::IMAGE )
 			{
 				assert( techniqueDataEntry->count <= maxDescriptors );
-				batchDescriptorsUpdater.AddImagesBinding( dummyDescriptors, techniqueDataEntry->count, gfxDataBinding.binding, techniqueDataEntry->descriptorType, gfxDataBinding.descriptorAccess );
+				batchDescriptorsUpdater.AddImagesBinding( dummyImageDescriptors, techniqueDataEntry->count, gfxDataBinding.binding, techniqueDataEntry->descriptorType, gfxDataBinding.descriptorAccess );
+			}
+			else if( techniqueDataEntry->descriptorType == eDescriptorType::SAMPLER )
+			{
+				assert( techniqueDataEntry->count <= maxDescriptors );
+				batchDescriptorsUpdater.AddSamplersBinding( dummySamplers, techniqueDataEntry->count, gfxDataBinding.binding );
+
 			}
 			else
 			{
 				//TODO: Other image types not yet implemented
-				assert( true );
+				assert( false );
 			}
 		}
 
@@ -221,7 +233,7 @@ namespace FG
 				for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 				{
 					GfxDescriptorTable descriptorTable = technique.descriptor_sets[tableDesc.binding].hw_descriptorSets[i];
-					FillWithDummyDescriptors( frameGraph, &inputBuffers[i], tableDesc, &descriptorTable );
+					FillWithDummyDescriptors( frameGraph, tableDesc, &descriptorTable );
 					UpdateDescriptorTable( frameGraph, &inputBuffers[i], tableDesc, &descriptorTable );
 				}
 			}

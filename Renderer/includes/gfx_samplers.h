@@ -12,3 +12,4 @@ enum class eSamplers
 void InitSamplers();
 void DestroySamplers();
 GfxApiSampler GetSampler( eSamplers samplerId );
+GfxApiSampler* GetSamplers();

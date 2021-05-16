@@ -91,7 +91,7 @@ GfxDescriptorTableLayoutBinding CreateDescriptorTableLayoutBinding( uint32_t des
 	layoutBinding.descriptorCount = descriptorCount;
 	layoutBinding.descriptorType = DescriptorTypeToVkType( descriptorType, descriptorAccess );
 	layoutBinding.stageFlags = ToVkShaderStageFlags( descriptorStageFlags );
-	layoutBinding.pImmutableSamplers = nullptr;
+	layoutBinding.pImmutableSamplers = nullptr; //TODO: immutable samplers, harder to fit in the API
 
 	return layoutBinding;
 }

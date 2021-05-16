@@ -8,6 +8,7 @@ union GpuInputDataEntry
 {
 	GpuBuffer* buffer;
 	GfxImageSamplerCombined* image;
+	GfxApiSampler* sampler;
 };
 
 struct GpuInputData
@@ -29,6 +30,13 @@ inline void SetImages( GpuInputData* buffers, uint32_t id, GfxImageSamplerCombin
 {
 	assert( id < MAX_DATA_ENTRIES );
 	buffers->data[id].image = input;
+	buffers->dataCount[id] = count;
+}
+
+inline void SetSamplers( GpuInputData* buffers, uint32_t id, GfxApiSampler* input, uint32_t count )
+{
+	assert( id < MAX_DATA_ENTRIES );
+	buffers->data[id].sampler = input;
 	buffers->dataCount[id] = count;
 }
 

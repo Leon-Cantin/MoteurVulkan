@@ -2,6 +2,9 @@
 #extension GL_ARB_separate_shader_objects : enable
 #include "shadersCommon/shadersCommon.h"
 
+#define NORMAL_TEXTURE_ID 0
+#define ALBEDO_TEXTURE_ID 1
+
 layout(set = RENDERPASS_SET, binding = 0) uniform UniformBufferObject {
     mat4 view;
     mat4 proj;
@@ -12,7 +15,8 @@ layout(set = RENDERPASS_SET, binding = 1) uniform Light
 	vec3 location;
 	float intensity;
 }light;
-layout(set = RENDERPASS_SET, binding = 2) uniform sampler2D bindlessTextures[5];
+layout(set = RENDERPASS_SET, binding = 2) uniform texture2D bindlessTextures[BINDLESS_TEXTURES_MAX];
+layout(set = RENDERPASS_SET, binding = 3) uniform sampler samplers[SAMPLERS_MAX];
 layout(set = RENDERPASS_SET, binding = 4) uniform sampler2DShadow shadowSampler;
 
 layout(set = INSTANCE_SET, binding = 0) uniform InstanceMatrices {
@@ -42,6 +46,11 @@ float G1(vec3 n, float alpha, vec3 v)
 	float k = alpha*sqrt(2/M_PI);
 	float dot_nv = dot(n,v);
 	return dot_nv/(dot_nv * (1.0 - k) + k);
+}
+
+vec4 Sample2D( uint textureId, vec2 textureCoordinate, uint samplerId )
+{
+	return texture( sampler2D( bindlessTextures[instanceMat.textureIndices[textureId]], samplers[samplerId] ), textureCoordinate );
 }
 
 void main() {
@@ -81,11 +90,11 @@ float roughness = 0.65;
 	mat3 view_tangent_matrix = mat3(normalize(fs_in.tangent_vs),
 							normalize(fs_in.bitangent_vs),
 							normalize(fs_in.normal_vs));
-	vec3 normal_ts = texture(bindlessTextures[instanceMat.textureIndices[1]], fs_in.fragTexCoord).rgb;
+	vec3 normal_ts = Sample2D( 1, fs_in.fragTexCoord, NORMAL_TEXTURE_ID ).rgb;
 	vec3 normal_vs = view_tangent_matrix * normal_ts;
 
 	float diffuse_factor = saturate( dot(normal_vs, surface_to_light));
-	vec3 albedo = texture(bindlessTextures[instanceMat.textureIndices[0]] , fs_in.fragTexCoord).rgb;
+	vec3 albedo = Sample2D( 0, fs_in.fragTexCoord, ALBEDO_TEXTURE_ID ).rgb;
 	vec3 diffuse = albedo * (diffuse_factor);
 	
 	vec3 viewVector = normalize(fs_in.viewVector);

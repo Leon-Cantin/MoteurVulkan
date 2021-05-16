@@ -382,11 +382,13 @@ struct GfxDescriptorTableDesc
 
 struct WriteDescriptor
 {
-	uint32_t dstBinding;
-	uint32_t count;
-	VkDescriptorType type;
-	VkDescriptorBufferInfo* pBufferInfos;
-	VkDescriptorImageInfo* pImageInfos;
+	uint32_t				dstBinding;
+	uint32_t				count;
+	VkDescriptorType		type;
+	union {
+		VkDescriptorBufferInfo* pBufferInfos;
+		VkDescriptorImageInfo*	pImageInfos;
+	};
 };
 
 struct WriteDescriptorTable
@@ -457,7 +459,7 @@ inline bool IsValid( const GpuBuffer& buffer )
 class BatchDescriptorsUpdater
 {
 private:
-	static constexpr size_t MAX_DESCRIPTOR_PER_UPDATE = 32;
+	static constexpr size_t MAX_DESCRIPTOR_PER_UPDATE = 64;
 	WriteDescriptor writeDescriptors[8];
 	uint32_t writeDescriptorsCount = 0;
 
@@ -467,8 +469,9 @@ private:
 	uint32_t descriptorImagesInfosCount = 0;
 
 public:
-	void AddImagesBinding( const GfxImageSamplerCombined* images, uint32_t count, uint32_t binding, eDescriptorType type, eDescriptorAccess access );
-	void AddBuffersBinding( const GpuBuffer* buffers, uint32_t count, uint32_t binding, eDescriptorType type, eDescriptorAccess access );
+	void AddImagesBinding( const GfxImageSamplerCombined* images, uint32_t count, uint32_t bindingSlot, eDescriptorType type, eDescriptorAccess access );
+	void AddBuffersBinding( const GpuBuffer* buffers, uint32_t count, uint32_t bindingSlot, eDescriptorType type, eDescriptorAccess access );
+	void AddSamplersBinding( const GfxApiSampler* samplers, uint32_t count, uint32_t bindingSlot );
 	//TODO: I could maybe use the union GpuInputDataEntry instead of void* ...
 	void AddBinding( const void* data, uint32_t count, uint32_t binding, eDescriptorType type, eDescriptorAccess access );
 	void Submit( GfxDescriptorTable descriptorTable );

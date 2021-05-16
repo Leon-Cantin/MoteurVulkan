@@ -3,6 +3,8 @@
 /output
 !/output/assets
 /Classic_2D_output
+/Retro_game_output
+/Bullet3
 /*.txt
 /*.pdf
 /*.cap

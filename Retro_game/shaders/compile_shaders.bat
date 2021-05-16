@@ -1,5 +1,5 @@
-CALL :Compile pbr_opaque.vert
-CALL :Compile pbr_opaque.frag
+CALL :Compile retro_opaque.vert
+CALL :Compile retro_opaque.frag
 CALL :Compile skybox.vert
 CALL :Compile skybox.frag
 CALL :Compile textCompute.comp
@@ -13,5 +13,5 @@ EXIT /B %ERRORLEVEL%
 
 :Compile
 @echo off
-D:\Programme\VulkanSDK\1.2.148.1\Bin\glslc.exe --target-env=vulkan1.1 .\%~1 -o ..\..\output\shaders\%~1.spv
+D:\Programme\VulkanSDK\1.2.148.1\Bin\glslc.exe --target-env=vulkan1.1 .\%~1 -o ..\..\Retro_game_output\shaders\%~1.spv
 @echo on

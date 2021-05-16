@@ -18,6 +18,8 @@ namespace FG
 	#define CREATE_IMAGE_DEPTH( id, format, extent, usage ) { (uint32_t)id, eDescriptorType::IMAGE, 1,  FG::eDataEntryFlags::NONE, { format , extent, ( GfxImageUsageFlags )( GfxImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT | usage ) },  eSamplers::Count }
 	#define CREATE_IMAGE_DEPTH_SAMPLER( id, format, extent, usage, sampler ) { static_cast< uint32_t >( id ), eDescriptorType::IMAGE_SAMPLER, 1,  FG::eDataEntryFlags::NONE, { format , extent, ( GfxImageUsageFlags )( GfxImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT | usage ) }, sampler }
 	#define CREATE_IMAGE_SAMPLER_EXTERNAL( id, count ){ static_cast< uint32_t >(id), eDescriptorType::IMAGE_SAMPLER, count, FG::eDataEntryFlags::EXTERNAL,	EXTERNAL_IMAGE }
+	#define CREATE_SAMPLER_EXTERNAL( id, count ){ static_cast< uint32_t >(id), eDescriptorType::SAMPLER, count, FG::eDataEntryFlags::EXTERNAL,	EXTERNAL_IMAGE }
+	#define CREATE_IMAGE_EXTERNAL( id, count ){ static_cast< uint32_t >(id), eDescriptorType::IMAGE, count, FG::eDataEntryFlags::EXTERNAL,	EXTERNAL_IMAGE }
 
 	#define CREATE_BUFFER_IMAGE_INTERNAL( objectSize, objectCount ) { GfxFormat::UNDEFINED, {objectSize, objectCount}, ( GfxImageUsageFlags )0 }
 	#define CREATE_BUFFER( id, size ) { (uint32_t)id, eDescriptorType::BUFFER, 1,  FG::eDataEntryFlags::NONE, CREATE_BUFFER_IMAGE_INTERNAL( size, 0 ), eSamplers::Count }
