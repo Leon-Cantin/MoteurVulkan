@@ -7,6 +7,8 @@ CALL :Compile text.vert
 CALL :Compile text.frag
 CALL :Compile shadows.vert
 CALL :Compile shadows.frag
+CALL :Compile line_draw.vert
+CALL :Compile line_draw.frag
 
 pause
 EXIT /B %ERRORLEVEL%

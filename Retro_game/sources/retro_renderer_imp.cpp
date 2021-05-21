@@ -6,6 +6,7 @@
 #include "console_command.h"
 #include "window_handler.h"
 #include "allocators.h"
+#include "retro_physics.h"
 
 #include <glm/glm.hpp>
 #include <glm/vec4.hpp>
@@ -35,9 +36,11 @@ static void UpdateLightUniformBuffer( const SceneMatricesUniform* shadowSceneMat
 
 static void UpdateSceneUniformBuffer(const glm::mat4& world_view_matrix, VkExtent2D extent, GpuBuffer* sceneUniformBuffer)
 {
+	const float zFar = 300.0f;
+	const float zNear = 0.1f;
 	SceneMatricesUniform sceneMatrices = {};
 	sceneMatrices.view = world_view_matrix;
-	sceneMatrices.proj = glm::perspective(glm::radians(45.0f), extent.width / (float)extent.height, 0.1f, 10.0f);
+	sceneMatrices.proj = glm::perspective( glm::radians( 45.0f ), extent.width / ( float )extent.height, zNear, zFar );
 	sceneMatrices.proj[1][1] *= -1;//Compensate for OpenGL Y coordinate being inverted
 	UpdateGpuBuffer( sceneUniformBuffer, &sceneMatrices, sizeof( sceneMatrices ), 0 );
 }
@@ -99,6 +102,8 @@ static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cam
 	UpdateSkyboxUniformBuffers( GetBuffer( &currentGpuInputData, eTechniqueDataEntryName::SKYBOX_DATA ), world_view_matrix );
 
 	updateTextOverlayBuffer( currentFrame );
+
+	phs::BeginDebugDraw();
 }
 
 static void PrepareSceneFrameData( SceneFrameData* frameData, uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<GfxAssetInstance>& drawList )
@@ -110,9 +115,12 @@ static void PrepareSceneFrameData( SceneFrameData* frameData, uint32_t currentFr
 GfxImageSamplerCombined textTextures[1];
 GfxImageSamplerCombined skyboxImages[1];
 
+void CreateBtDebudModels();
+
 static void CreateBuffers( BindlessTexturesState* bindlessTexturesState, const GfxImage* skyboxImage )
 {
 	CreateTextVertexBuffer( 256 );
+	CreateBtDebudModels();
 
 	VkSampler sampler = GetSampler( eSamplers::Trilinear );
 

@@ -532,6 +532,17 @@ inline VkPrimitiveTopology ToVkPrimitiveTopology( GfxPrimitiveTopology primitive
 	return static_cast< VkPrimitiveTopology >(primitiveTopology);
 }
 
+enum class GfxPolygonMode {
+	FILL = VK_POLYGON_MODE_FILL,
+	LINE = VK_POLYGON_MODE_LINE,
+	POINT = VK_POLYGON_MODE_POINT,
+};
+
+inline VkPolygonMode ToVkPolygonMode( GfxPolygonMode mode )
+{
+	return static_cast< VkPolygonMode >(mode);
+}
+
 struct GpuPipelineStateDesc
 {
 	VIState viState;
@@ -540,6 +551,9 @@ struct GpuPipelineStateDesc
 	DepthStencilState depthStencilState;
 	bool blendEnabled;
 	GfxPrimitiveTopology primitiveTopology;
+
+	GfxPolygonMode polygonMode;
+	float lineWidth;
 };
 
 struct FrameBuffer

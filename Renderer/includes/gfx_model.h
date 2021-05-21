@@ -41,6 +41,11 @@ static const std::vector<VIBinding> VIBindings_PosColUV = {
 	{ ( VIDataType )eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2, 2 }
 };
 
+static const std::vector<VIBinding> VIBindingLayout_PosCol = {
+	{ ( VIDataType )eVIDataType::POSITION, eVIDataElementType::FLOAT, 3, 0 },
+	{ ( VIDataType )eVIDataType::COLOR, eVIDataElementType::FLOAT, 3, 1 },
+};
+
 struct GfxModelVertexInput
 {
 	VIDesc desc;

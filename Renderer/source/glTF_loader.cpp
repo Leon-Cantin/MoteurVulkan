@@ -156,6 +156,73 @@ namespace glTF_L
 		return *reinterpret_cast< const T* >(&ptr[(index * TYPE_ELEMENT_COUNTS[type] + elementIndex) * COMPONENT_TYPE_SIZES[componentType]]);
 	};
 
+	void LoadCollisionData( const char* fileName, std::vector<glm::vec3>* vertices, std::vector<uint32_t>* indices )
+	{
+		std::fstream fs( fileName, std::fstream::in | std::fstream::binary );
+
+		//Parse header
+		uint32_t header[3];
+		fs.read( reinterpret_cast< char* >(header), sizeof( header ) );
+
+		//Parse JSON
+		uint32_t jsonHeader[2];
+		fs.read( reinterpret_cast< char* >(jsonHeader), sizeof( jsonHeader ) );
+
+		const uint32_t jsonChunkSize = jsonHeader[0];
+		std::vector<char> jsonChunk;
+		jsonChunk.resize( jsonChunkSize );
+		fs.read( jsonChunk.data(), jsonChunkSize );
+
+		nlohmann::json j = nlohmann::json::parse( jsonChunk.begin(), jsonChunk.end() );
+
+		std::vector<Accessor> accessors = j["accessors"].get<std::vector<Accessor>>();
+		std::vector<BufferView> bufferViews = j["bufferViews"].get<std::vector<BufferView>>();
+		std::vector<Buffer> buffers = j["buffers"].get<std::vector<Buffer>>();
+
+		int meshIndex = j["nodes"][0]["mesh"].get<int>();
+		Mesh mesh = j["meshes"][meshIndex].get<Mesh>();
+
+		//read the buffer
+		uint32_t bufferHeader[2];
+		fs.read( reinterpret_cast< char* >(bufferHeader), sizeof( bufferHeader ) );
+		size_t bufferFileOffset = fs.tellg();
+
+		std::vector<char> bufferChunk;
+		const uint32_t bufferChunkSize = bufferHeader[0];
+		bufferChunk.resize( bufferChunkSize );
+		fs.read( bufferChunk.data(), bufferChunkSize );
+
+		assert( buffers.size() == 1 );
+
+		int positionsIndex = mesh.primitives[0].attributes.position;
+		assert( accessors[positionsIndex].componentType == FLOAT );
+		assert( accessors[positionsIndex].type == VEC3 );
+		const char * positions = &bufferChunk[bufferViews[positionsIndex].byteOffset];
+
+		int indexesIndex = mesh.primitives[0].indices;
+		assert( accessors[indexesIndex].componentType == UNSIGNED_SHORT );
+		assert( accessors[indexesIndex].type == SCALAR );
+		const char* indexes = &bufferChunk[bufferViews[indexesIndex].byteOffset];
+
+		size_t vertexCount = accessors[positionsIndex].count;
+
+		vertices->resize( vertexCount );
+
+		for( size_t i = 0; i < vertexCount; ++i )
+		{
+			(*vertices)[i].x = GetType<float>( positions, i, 0, VEC3, FLOAT );
+			(*vertices)[i].y = GetType<float>( positions, i, 1, VEC3, FLOAT );
+			(*vertices)[i].z = GetType<float>( positions, i, 2, VEC3, FLOAT ) *-1.0f;//TODO: glTF forced to right handed with Z backward
+		}
+
+		size_t indexCount = accessors[indexesIndex].count;
+		indices->resize( indexCount );
+		for( size_t i = 0; i < indexCount; ++i )
+		{
+			(*indices)[i] = GetType<unsigned short>( indexes, i, 0, SCALAR, UNSIGNED_SHORT );
+		}
+	}
+
 	void LoadMesh( const char* fileName, GfxModel* model, I_BufferAllocator* allocator )
 	{
 		std::fstream fs( fileName, std::fstream::in | std::fstream::binary );

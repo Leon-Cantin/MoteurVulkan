@@ -9,6 +9,7 @@ struct SceneInstance
 	glm::vec3 location;
 	glm::fquat orientation;
 	float scale;
+	const SceneInstance* parent;
 };
 
 struct SceneMatricesUniform {

@@ -6,6 +6,8 @@
 #include "shadow_renderpass.h"
 #include "skybox.h"
 #include "text_overlay.h"
+#include "bullet_debug_draw_pass.h"
+
 #include "../shaders/shadersCommon.h"
 
 #include <unordered_map>
@@ -208,6 +210,31 @@ static FG::RenderPassCreationData FG_TextOverlay_CreateGraphNode( FG::fg_handle_
 	return renderPassCreationData;
 }
 
+static FG::RenderPassCreationData FG_BtDebug_CreateGraphNode( FG::fg_handle_t sceneColor, FG::fg_handle_t sceneData )
+{
+	FG::DescriptorTableDesc renderpass_set =
+	{
+		RENDERPASS_SET,
+		{
+			{ sceneData, 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_VERTEX_BIT | GFX_SHADER_STAGE_FRAGMENT_BIT },
+		}
+	};
+
+	FG::RenderPassCreationData renderPassCreationData;
+	renderPassCreationData.name = "bullet_debug_pass";
+
+	FG::FrameGraphNode* frameGraphNode = &renderPassCreationData.frame_graph_node;
+	frameGraphNode->RecordDrawCommands = BtDebugRecordDrawCommandsBuffer;
+
+	frameGraphNode->gpuPipelineLayout = GetBtDebugPipelineLayout();
+	frameGraphNode->gpuPipelineStateDesc = GetBtDebugPipelineState();
+	//TODO: we don't need one set per frame for this one
+	frameGraphNode->descriptorSets.push_back( renderpass_set );
+	frameGraphNode->renderTargetRefs.push_back( { sceneColor, 0 } );
+
+	return renderPassCreationData;
+}
+
 class ResourceGatherer
 {
 public:
@@ -250,6 +277,7 @@ FG::FrameGraph InitializeScript( const Swapchain* swapchain )
 	rpCreationData.push_back( FG_Shadow_CreateGraphNode( shadow_map_h, shadow_data_h, instance_data_h ) );
 	rpCreationData.push_back( FG_Opaque_CreateGraphNode( scene_color_h, scene_depth_h, bindless_textures_h, shadow_map_h, shadow_data_h, instance_data_h, light_data_h, scene_data_h, samplers_h ) );
 	rpCreationData.push_back( FG_Skybox_CreateGraphNode( scene_color_h, scene_depth_h, skybox_texture_h, skybox_data_h ) );
+	rpCreationData.push_back( FG_BtDebug_CreateGraphNode( scene_color_h, scene_data_h ) );
 	rpCreationData.push_back( FG_TextOverlay_CreateGraphNode( scene_color_h, text_texture_h ) );
 
 	FG::FrameGraph fg = FG::CreateGraph( &rpCreationData, &resourceGatherer.m_resources );
