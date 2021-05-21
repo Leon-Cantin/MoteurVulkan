@@ -4,10 +4,13 @@
 #include "retro_physics.h"
 #include "renderer.h"
 
-GfxModel debug_models[SIMULTANEOUS_FRAMES];
-uint32_t currentFrameIndex;
-size_t vertexOffset;
-size_t indexOffset;
+struct BtDebugDrawState
+{
+	GfxModel debug_models[SIMULTANEOUS_FRAMES];
+	uint32_t currentFrameIndex;
+	size_t vertexOffset;
+	size_t indexOffset;
+} g_btDebugDrawState;
 
 constexpr uint32_t maxVertices = 5024;
 constexpr uint32_t maxIndices = maxVertices * 3;
@@ -19,7 +22,7 @@ void CreateBtDebudModels()
 		{ ( VIDataType )eVIDataType::COLOR, eVIDataElementType::FLOAT, 3 },
 	};
 
-	for( GfxModel& debug_model : debug_models  )
+	for( GfxModel& debug_model : g_btDebugDrawState.debug_models  )
 		debug_model = CreateGfxModel( modelVIDescs, maxVertices, maxIndices, sizeof( uint32_t ) );
 }
 
@@ -71,18 +74,18 @@ static void CmdEndRenderPass( VkCommandBuffer vkCommandBuffer )
 
 void BtDebugRecordDrawCommandsBuffer( GfxCommandBuffer graphicsCommandBuffer, const FG::TaskInputData& inputData )
 {
-	assert( currentFrameIndex == inputData.currentFrame );
+	assert( g_btDebugDrawState.currentFrameIndex == inputData.currentFrame );
 
 	const SceneFrameData* frameData = static_cast< const SceneFrameData* >(inputData.userData);
 	CmdBeginRenderPass( graphicsCommandBuffer, inputData.currentFrame, inputData.renderpass, inputData.technique );
 
-	CmdDrawIndexed( graphicsCommandBuffer, VIBindingLayout_PosCol, debug_models[inputData.currentFrame]);
+	CmdDrawIndexed( graphicsCommandBuffer, VIBindingLayout_PosCol, g_btDebugDrawState.debug_models[inputData.currentFrame]);
 
 	CmdEndRenderPass( graphicsCommandBuffer );
 
-	currentFrameIndex = (currentFrameIndex + 1) % SIMULTANEOUS_FRAMES;
-	vertexOffset = 0;
-	indexOffset = 0;
+	g_btDebugDrawState.currentFrameIndex = (g_btDebugDrawState.currentFrameIndex + 1) % SIMULTANEOUS_FRAMES;
+	g_btDebugDrawState.vertexOffset = 0;
+	g_btDebugDrawState.indexOffset = 0;
 }
 
 
@@ -93,8 +96,8 @@ void phs::BulletDebugDraw::drawLine( const btVector3& from, const btVector3& to,
 	std::array<glm::vec3, num_vertices> text_vertex_color;
 	std::array<uint32_t, num_vertices>	text_indices;
 
-	assert( vertexOffset + num_vertices < maxVertices );
-	assert( indexOffset + num_vertices < maxIndices );
+	assert( g_btDebugDrawState.vertexOffset + num_vertices < maxVertices );
+	assert( g_btDebugDrawState.indexOffset + num_vertices < maxIndices );
 
 	text_vertex_positions[0].x = from.x();
 	text_vertex_positions[0].y = from.y();
@@ -110,20 +113,22 @@ void phs::BulletDebugDraw::drawLine( const btVector3& from, const btVector3& to,
 
 	text_vertex_color[1] = text_vertex_color[0];
 
-	text_indices[0] = vertexOffset;
-	text_indices[1] = vertexOffset + 1;
+	text_indices[0] = g_btDebugDrawState.vertexOffset;
+	text_indices[1] = g_btDebugDrawState.vertexOffset + 1;
+
+	GfxModel* debug_model = &g_btDebugDrawState.debug_models[g_btDebugDrawState.currentFrameIndex];
 
 	GfxDeviceSize bufferSize = sizeof( text_vertex_positions[0] ) * num_vertices;
-	UpdateGpuBuffer( &GetVertexInput( debug_models[currentFrameIndex], eVIDataType::POSITION )->buffer, text_vertex_positions.data(), bufferSize, vertexOffset * sizeof(glm::vec3) );
+	UpdateGpuBuffer( &GetVertexInput( *debug_model, eVIDataType::POSITION )->buffer, text_vertex_positions.data(), bufferSize, g_btDebugDrawState.vertexOffset * sizeof(glm::vec3) );
 
 	bufferSize = sizeof( text_vertex_color[0] ) * num_vertices;
-	UpdateGpuBuffer( &GetVertexInput( debug_models[currentFrameIndex], eVIDataType::COLOR )->buffer, text_vertex_color.data(), bufferSize, vertexOffset * sizeof( glm::vec3 ) );
+	UpdateGpuBuffer( &GetVertexInput( *debug_model, eVIDataType::COLOR )->buffer, text_vertex_color.data(), bufferSize, g_btDebugDrawState.vertexOffset * sizeof( glm::vec3 ) );
 
 	bufferSize = sizeof( text_indices[0] ) * num_vertices;
-	UpdateGpuBuffer( &debug_models[currentFrameIndex].indexBuffer, text_indices.data(), bufferSize, indexOffset * sizeof( text_indices[0] ) );
+	UpdateGpuBuffer( &debug_model->indexBuffer, text_indices.data(), bufferSize, g_btDebugDrawState.indexOffset * sizeof( text_indices[0] ) );
 
-	vertexOffset += num_vertices;
-	indexOffset += num_vertices;
+	g_btDebugDrawState.vertexOffset += num_vertices;
+	g_btDebugDrawState.indexOffset += num_vertices;
 }
 
 void phs::BulletDebugDraw::drawContactPoint( const btVector3& PointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime, const btVector3& color )
