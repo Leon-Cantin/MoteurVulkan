@@ -23,6 +23,7 @@ namespace glTF_L
 
 	const char COMPONENT_TYPE_SIZES[] = { 1, 1, 2, 2, 4, 4 };
 	const int COMPONENT_TYPE_ID[] = { 5120, 5121, 5122, 5123, 5125, 5126 };
+	constexpr int INVALID_INT = INT_MIN;
 
 	ComponentType ComponentTypeIdToEnum( const int id )
 	{
@@ -57,6 +58,13 @@ namespace glTF_L
 				return static_cast< Type >(type);
 		}
 		return TYPE_COUNT;
+	}
+
+	template< typename T >
+	T GetDefaultIfNull( const nlohmann::json& j, const char* object_name, const T& default_value )
+	{
+		auto it = j.find( object_name );
+		return it == j.end() ? default_value : *it;
 	}
 
 	struct Attributes
@@ -143,148 +151,195 @@ namespace glTF_L
 	struct Buffer
 	{
 		int byteLength;
+		std::string uri;
 	};
 
 	void from_json( const nlohmann::json& j, Buffer& b )
 	{
-		b = { j["byteLength"].get<int>() };
+		b = { j["byteLength"].get<int>(),
+			GetDefaultIfNull<std::string>( j, "uri", "" )
+		};
+	}
+
+	struct Vec3
+	{
+		float x;
+		float y;
+		float z;
+	};
+
+	void from_json( const nlohmann::json& j, Vec3& v )
+	{
+		v = {
+			j[0].get<float>(),
+			j[1].get<float>(),
+			j[2].get<float>()
+		};
+	}
+
+	struct Vec4
+	{
+		float w;
+		float x;
+		float y;
+		float z;
+	};
+
+	void from_json( const nlohmann::json& j, Vec4& v )
+	{
+		v = {
+			j[0].get<float>(),
+			j[1].get<float>(),
+			j[2].get<float>(),
+			j[3].get<float>()
+		};
+	}
+
+	struct Node
+	{
+		int meshIndex;
+		std::string name;
+		//extras
+		Vec3 translation;
+		Vec3 scale;
+		Vec4 rotation;
+	};
+
+	void from_json( const nlohmann::json& j, Node& n )
+	{
+		n = { GetDefaultIfNull<int>( j, "mesh", INVALID_INT ),
+			GetDefaultIfNull<std::string>( j, "name", "" ),
+			GetDefaultIfNull<Vec3>( j, "translation", { 0.0f, 0.0f, 0.0f } ),
+			GetDefaultIfNull<Vec3>( j, "scale", { 1.0f, 1.0f, 1.0f } ),
+			GetDefaultIfNull<Vec4>( j, "rotation", { 1.0f, 0.0f, 0.0f, 0.0f } )
+		};
 	}
 
 	template< class T >
-	static T GetType( const char* ptr, size_t index, size_t elementIndex, Type type, ComponentType componentType )
+	static T GetType( const byte* ptr, size_t index, size_t elementIndex, Type type, ComponentType componentType )
 	{
 		return *reinterpret_cast< const T* >(&ptr[(index * TYPE_ELEMENT_COUNTS[type] + elementIndex) * COMPONENT_TYPE_SIZES[componentType]]);
 	};
 
-	void LoadCollisionData( const char* fileName, std::vector<glm::vec3>* vertices, std::vector<uint32_t>* indices )
+	struct glTF_Json
 	{
+		std::vector<Accessor> accessors;
+		std::vector<BufferView> bufferViews;
+		std::vector<Buffer> buffers;
+		std::vector<Node> nodes;
+		std::vector<Mesh> meshes;
+		std::vector<byte> data;
+	};
+
+	static glTF_Json ReadJson( const char* fileName )
+	{
+		const bool is_gltf = strstr( fileName, ".gltf" ) != nullptr;
+		const bool is_glb = strstr( fileName, ".glb" ) != nullptr;
+
+		assert( is_glb || is_gltf );
+
 		std::fstream fs( fileName, std::fstream::in | std::fstream::binary );
 
-		//Parse header
-		uint32_t header[3];
-		fs.read( reinterpret_cast< char* >(header), sizeof( header ) );
+		nlohmann::json j;
+		if( is_glb )
+		{
+			//Parse header
+			uint32_t header[3];
+			fs.read( reinterpret_cast< char* >(header), sizeof( header ) );
 
-		//Parse JSON
-		uint32_t jsonHeader[2];
-		fs.read( reinterpret_cast< char* >(jsonHeader), sizeof( jsonHeader ) );
+			//Parse JSON
+			uint32_t jsonHeader[2];
+			fs.read( reinterpret_cast< char* >(jsonHeader), sizeof( jsonHeader ) );
 
-		const uint32_t jsonChunkSize = jsonHeader[0];
-		std::vector<char> jsonChunk;
-		jsonChunk.resize( jsonChunkSize );
-		fs.read( jsonChunk.data(), jsonChunkSize );
+			const uint32_t jsonChunkSize = jsonHeader[0];
+			std::vector<byte> jsonChunk;
+			jsonChunk.resize( jsonChunkSize );
+			fs.read( reinterpret_cast< char* >(jsonChunk.data()), jsonChunkSize );
 
-		nlohmann::json j = nlohmann::json::parse( jsonChunk.begin(), jsonChunk.end() );
+			j = nlohmann::json::parse( jsonChunk.begin(), jsonChunk.end() );
+		}
+		else if( is_gltf )
+		{
+			constexpr size_t max_byte_count = 1 * 1024 * 1024;
+			std::vector<byte> jsonChunk;
+			jsonChunk.resize( max_byte_count );
+			fs.read( reinterpret_cast< char* >(jsonChunk.data()), jsonChunk.size() );
+			assert( fs.gcount() < max_byte_count );
 
-		std::vector<Accessor> accessors = j["accessors"].get<std::vector<Accessor>>();
-		std::vector<BufferView> bufferViews = j["bufferViews"].get<std::vector<BufferView>>();
-		std::vector<Buffer> buffers = j["buffers"].get<std::vector<Buffer>>();
+			j = nlohmann::json::parse( jsonChunk.begin(), jsonChunk.begin() + jsonChunk.size() );
+		}
 
-		int meshIndex = j["nodes"][0]["mesh"].get<int>();
-		Mesh mesh = j["meshes"][meshIndex].get<Mesh>();
-
-		//read the buffer
-		uint32_t bufferHeader[2];
-		fs.read( reinterpret_cast< char* >(bufferHeader), sizeof( bufferHeader ) );
-		size_t bufferFileOffset = fs.tellg();
-
-		std::vector<char> bufferChunk;
-		const uint32_t bufferChunkSize = bufferHeader[0];
-		bufferChunk.resize( bufferChunkSize );
-		fs.read( bufferChunk.data(), bufferChunkSize );
+		const std::vector<Accessor> accessors = j["accessors"].get<std::vector<Accessor>>();
+		const std::vector<BufferView> bufferViews = j["bufferViews"].get<std::vector<BufferView>>();
+		const std::vector<Buffer> buffers = j["buffers"].get<std::vector<Buffer>>();
+		const std::vector<Node> nodes = j["nodes"].get<std::vector<Node>>();
+		const std::vector<Mesh> meshes = j["meshes"].get<std::vector<Mesh>>();
 
 		assert( buffers.size() == 1 );
 
-		int positionsIndex = mesh.primitives[0].attributes.position;
-		assert( accessors[positionsIndex].componentType == FLOAT );
-		assert( accessors[positionsIndex].type == VEC3 );
-		const char * positions = &bufferChunk[bufferViews[positionsIndex].byteOffset];
-
-		int indexesIndex = mesh.primitives[0].indices;
-		assert( accessors[indexesIndex].componentType == UNSIGNED_SHORT );
-		assert( accessors[indexesIndex].type == SCALAR );
-		const char* indexes = &bufferChunk[bufferViews[indexesIndex].byteOffset];
-
-		size_t vertexCount = accessors[positionsIndex].count;
-
-		vertices->resize( vertexCount );
-
-		for( size_t i = 0; i < vertexCount; ++i )
+		std::vector<byte> bufferChunk;
+		if( is_glb )
 		{
-			(*vertices)[i].x = GetType<float>( positions, i, 0, VEC3, FLOAT );
-			(*vertices)[i].y = GetType<float>( positions, i, 1, VEC3, FLOAT );
-			(*vertices)[i].z = GetType<float>( positions, i, 2, VEC3, FLOAT ) *-1.0f;//TODO: glTF forced to right handed with Z backward
+			//read the buffer
+			uint32_t bufferHeader[2];
+			fs.read( reinterpret_cast< char* >(bufferHeader), sizeof( bufferHeader ) );
+			size_t bufferFileOffset = fs.tellg();
+
+			const uint32_t bufferChunkSize = bufferHeader[0];
+			bufferChunk.resize( bufferChunkSize );
+			fs.read( reinterpret_cast< char* >(bufferChunk.data()), bufferChunkSize );
+		}
+		else if( is_gltf )
+		{
+			const std::string& bufferFileName = buffers[0].uri;
+			const char* ptrFilePathEnd = strrchr( fileName, '/' );
+			std::string bufferFilePath = std::string( fileName, ptrFilePathEnd - fileName );
+			bufferFilePath += "/" + bufferFileName;
+
+			constexpr size_t max_byte_count = 1 * 1024 * 1024;
+			bufferChunk.resize( max_byte_count );
+
+			std::fstream buffer_fs( bufferFilePath, std::fstream::in | std::fstream::binary );
+			buffer_fs.read( reinterpret_cast< char* >(bufferChunk.data()), bufferChunk.size() );
+			assert( buffer_fs.gcount() < max_byte_count );
 		}
 
-		size_t indexCount = accessors[indexesIndex].count;
-		indices->resize( indexCount );
-		for( size_t i = 0; i < indexCount; ++i )
-		{
-			(*indices)[i] = GetType<unsigned short>( indexes, i, 0, SCALAR, UNSIGNED_SHORT );
-		}
+		return { accessors,
+			bufferViews,
+			buffers,
+			nodes,
+			meshes,
+			bufferChunk };
 	}
 
-	void LoadMesh( const char* fileName, GfxModel* model, I_BufferAllocator* allocator )
+	static GfxModel LoadMesh( const Mesh& mesh, const std::vector<Accessor>& accessors, const std::vector<BufferView>& buffer_views, const byte* data, I_BufferAllocator* allocator )
 	{
-		std::fstream fs( fileName, std::fstream::in | std::fstream::binary );
-
-		//Parse header
-		uint32_t header[3];
-		fs.read( reinterpret_cast< char* >(header), sizeof( header ) );
-
-		//Parse JSON
-		uint32_t jsonHeader[2];
-		fs.read( reinterpret_cast< char* >(jsonHeader), sizeof( jsonHeader ) );
-
-		const uint32_t jsonChunkSize = jsonHeader[0];
-		std::vector<char> jsonChunk;
-		jsonChunk.resize( jsonChunkSize );
-		fs.read( jsonChunk.data(), jsonChunkSize );
-
-		nlohmann::json j = nlohmann::json::parse( jsonChunk.begin(), jsonChunk.end() );
-
-		std::vector<Accessor> accessors = j["accessors"].get<std::vector<Accessor>>();
-		std::vector<BufferView> bufferViews = j["bufferViews"].get<std::vector<BufferView>>();
-		std::vector<Buffer> buffers = j["buffers"].get<std::vector<Buffer>>();
-
-		int meshIndex = j["nodes"][0]["mesh"].get<int>();
-		Mesh mesh = j["meshes"][meshIndex].get<Mesh>();
-
-		//read the buffer
-		uint32_t bufferHeader[2];
-		fs.read( reinterpret_cast< char* >(bufferHeader), sizeof( bufferHeader ) );
-		size_t bufferFileOffset = fs.tellg();
-
-		std::vector<char> bufferChunk;
-		const uint32_t bufferChunkSize = bufferHeader[0];
-		bufferChunk.resize( bufferChunkSize );
-		fs.read( bufferChunk.data(), bufferChunkSize );
-
-		assert( buffers.size() == 1 );
+		assert( mesh.primitives.size() == 1 );
 
 		int positionsIndex = mesh.primitives[0].attributes.position;
 		assert( accessors[positionsIndex].componentType == FLOAT );
 		assert( accessors[positionsIndex].type == VEC3 );
-		const char * positions = &bufferChunk[bufferViews[positionsIndex].byteOffset];
+		const byte * positions = &data[buffer_views[positionsIndex].byteOffset];
 
 		int normalsIndex = mesh.primitives[0].attributes.normal;
 		assert( accessors[normalsIndex].componentType == FLOAT );
 		assert( accessors[normalsIndex].type == VEC3 );
-		const char * normals = &bufferChunk[bufferViews[normalsIndex].byteOffset];
+		const byte * normals = &data[buffer_views[normalsIndex].byteOffset];
 
 		int tangentsIndex = mesh.primitives[0].attributes.tangent;
 		assert( accessors[tangentsIndex].componentType == FLOAT );
 		assert( accessors[tangentsIndex].type == VEC4 );
-		const char * tangents = &bufferChunk[bufferViews[tangentsIndex].byteOffset];
+		const byte * tangents = &data[buffer_views[tangentsIndex].byteOffset];
 
 		int texcoordsIndex = mesh.primitives[0].attributes.texcoord_0;
 		assert( accessors[texcoordsIndex].componentType == FLOAT );
 		assert( accessors[texcoordsIndex].type == VEC2 );
-		const char * texcoords = &bufferChunk[bufferViews[texcoordsIndex].byteOffset];
+		const byte * texcoords = &data[buffer_views[texcoordsIndex].byteOffset];
 
 		int indexesIndex = mesh.primitives[0].indices;
 		assert( accessors[indexesIndex].componentType == UNSIGNED_SHORT );
 		assert( accessors[indexesIndex].type == SCALAR );
-		const char* indexes = &bufferChunk[bufferViews[indexesIndex].byteOffset];
+		const byte* indexes = &data[buffer_views[indexesIndex].byteOffset];
 
 		size_t vertexCount = accessors[positionsIndex].count;
 
@@ -337,6 +392,124 @@ namespace glTF_L
 			vertTexCoord.data(),
 		};
 
-		*model = CreateGfxModel( modelVIDescs, modelData, vertexCount, indexes_32.data(), indexCount, sizeof(uint32_t), allocator );
+		return CreateGfxModel( modelVIDescs, modelData, vertexCount, indexes_32.data(), indexCount, sizeof( uint32_t ), allocator );
+	}
+
+	void LoadCollisionData( const char* fileName, std::vector<glm::vec3>* vertices, std::vector<uint32_t>* indices )
+	{
+		std::fstream fs( fileName, std::fstream::in | std::fstream::binary );
+
+		//Parse header
+		uint32_t header[3];
+		fs.read( reinterpret_cast< char* >(header), sizeof( header ) );
+
+		//Parse JSON
+		uint32_t jsonHeader[2];
+		fs.read( reinterpret_cast< char* >(jsonHeader), sizeof( jsonHeader ) );
+
+		const uint32_t jsonChunkSize = jsonHeader[0];
+		std::vector<char> jsonChunk;
+		jsonChunk.resize( jsonChunkSize );
+		fs.read( jsonChunk.data(), jsonChunkSize );
+
+		nlohmann::json j = nlohmann::json::parse( jsonChunk.begin(), jsonChunk.end() );
+
+		std::vector<Accessor> accessors = j["accessors"].get<std::vector<Accessor>>();
+		std::vector<BufferView> bufferViews = j["bufferViews"].get<std::vector<BufferView>>();
+		std::vector<Buffer> buffers = j["buffers"].get<std::vector<Buffer>>();
+
+		int meshIndex = j["nodes"][0]["mesh"].get<int>();
+		Mesh mesh = j["meshes"][meshIndex].get<Mesh>();
+
+		//read the buffer
+		uint32_t bufferHeader[2];
+		fs.read( reinterpret_cast< char* >(bufferHeader), sizeof( bufferHeader ) );
+		size_t bufferFileOffset = fs.tellg();
+
+		std::vector<byte> bufferChunk;
+		const uint32_t bufferChunkSize = bufferHeader[0];
+		bufferChunk.resize( bufferChunkSize );
+		fs.read( reinterpret_cast<char*>( bufferChunk.data() ), bufferChunkSize );
+
+		assert( buffers.size() == 1 );
+
+		int positionsIndex = mesh.primitives[0].attributes.position;
+		assert( accessors[positionsIndex].componentType == FLOAT );
+		assert( accessors[positionsIndex].type == VEC3 );
+		const byte * positions = &bufferChunk[bufferViews[positionsIndex].byteOffset];
+
+		int indexesIndex = mesh.primitives[0].indices;
+		assert( accessors[indexesIndex].componentType == UNSIGNED_SHORT );
+		assert( accessors[indexesIndex].type == SCALAR );
+		const byte* indexes = &bufferChunk[bufferViews[indexesIndex].byteOffset];
+
+		size_t vertexCount = accessors[positionsIndex].count;
+
+		vertices->resize( vertexCount );
+
+		for( size_t i = 0; i < vertexCount; ++i )
+		{
+			(*vertices)[i].x = GetType<float>( positions, i, 0, VEC3, FLOAT );
+			(*vertices)[i].y = GetType<float>( positions, i, 1, VEC3, FLOAT );
+			(*vertices)[i].z = GetType<float>( positions, i, 2, VEC3, FLOAT ) *-1.0f;//TODO: glTF forced to right handed with Z backward
+		}
+
+		size_t indexCount = accessors[indexesIndex].count;
+		indices->resize( indexCount );
+		for( size_t i = 0; i < indexCount; ++i )
+		{
+			(*indices)[i] = GetType<unsigned short>( indexes, i, 0, SCALAR, UNSIGNED_SHORT );
+		}
+	}
+
+	void LoadMesh( const char* fileName, GfxModel* model, I_BufferAllocator* allocator )
+	{
+		const glTF_Json gltf_json = ReadJson( fileName );
+
+		assert( gltf_json.meshes.size() == 1 );
+
+		*model = LoadMesh( gltf_json.meshes[0], gltf_json.accessors, gltf_json.bufferViews, gltf_json.data.data(), allocator );
+	}
+
+	void LoadScene( const char* fileName, RegisterGfxModelCallback_t registerGfxModelCallback, RegisterGfxAssetCallback_t registerGfxAssetCallback, RegisterSceneInstanceCallback_t registerSceneInstanceCallback, I_BufferAllocator* allocator )
+	{
+		const glTF_Json gltf_json = ReadJson( fileName );
+
+		//TODO: currently 1 model == 1 asset
+		std::vector<GfxAsset*> gfxAssets;
+		gfxAssets.reserve( gltf_json.meshes.size() );
+
+		for( const Mesh& mesh : gltf_json.meshes )
+		{
+			GfxModel* gfxModel = registerGfxModelCallback( mesh.name.c_str() );
+			*gfxModel = LoadMesh( mesh, gltf_json.accessors, gltf_json.bufferViews, gltf_json.data.data(), allocator );
+			GfxAsset* gfxAsset = registerGfxAssetCallback( mesh.name.c_str() );
+			gfxAsset->modelAsset = gfxModel;
+			gfxAsset->textureIndices.push_back( 0 ); // TODO
+			gfxAssets.push_back( gfxAsset );
+		}
+
+		for( auto i = 0; i < gltf_json.nodes.size(); ++i )
+		{
+			const Node& node = gltf_json.nodes[i];
+			if( node.meshIndex == INVALID_INT )
+				continue;
+
+			assert( node.meshIndex < gfxAssets.size() );
+			SceneInstance* sceneInstance = registerSceneInstanceCallback( node.name.c_str(), gfxAssets[node.meshIndex] );
+
+			sceneInstance->location.x = node.translation.x;
+			sceneInstance->location.y = node.translation.y;
+			sceneInstance->location.z = node.translation.z * -1.0f;//TODO: glTF forced to right handed with Z backward
+
+			sceneInstance->orientation.w = node.rotation.w;
+			sceneInstance->orientation.x = node.rotation.x;
+			sceneInstance->orientation.y = node.rotation.y;
+			sceneInstance->orientation.z = node.rotation.z;
+
+			sceneInstance->scale = node.scale.x;
+
+			sceneInstance->parent = nullptr; // TODO?
+		}
 	}
 }

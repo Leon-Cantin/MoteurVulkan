@@ -28,8 +28,7 @@ namespace Scene3DGame
 	const int VIEWPORT_WIDTH = 800;
 	const int VIEWPORT_HEIGHT = 600;
 
-	SceneInstance planeSceneInstance;
-	GfxAsset planeRenderable;
+	std::vector<GfxAssetInstance> gfxInstancedAssets;
 
 	SceneInstance shipSceneInstance;
 	GfxAsset cubeRenderable;
@@ -145,7 +144,12 @@ namespace Scene3DGame
 
 		phs::Update( frameDeltaTime, &shipSceneInstance );
 
-		std::vector<GfxAssetInstance> drawList = { {&planeRenderable, planeSceneInstance}, { &cubeRenderable, shipSceneInstance} };
+		std::vector<GfxAssetInstance> drawList = { { &cubeRenderable, shipSceneInstance} };
+
+		drawList.reserve( drawList.size() + gfxInstancedAssets.size() );
+		for( const GfxAssetInstance& instanceAsset : gfxInstancedAssets )
+			drawList.push_back( instanceAsset );
+
 		DrawFrame( current_frame, &cameraSceneInstance, &g_light, drawList);
 
 		current_frame = (++current_frame) % SIMULTANEOUS_FRAMES;
@@ -154,6 +158,13 @@ namespace Scene3DGame
 	void CreateGfxAsset(const GfxModel* modelAsset, uint32_t albedoIndex, GfxAsset* o_renderable)
 	{
 		*o_renderable = { modelAsset, { albedoIndex } };
+	}
+
+	SceneInstance* GetInstancedAssetSlot( const char* name, GfxAsset* asset )
+	{
+		gfxInstancedAssets.push_back( GfxAssetInstance() );
+		gfxInstancedAssets[gfxInstancedAssets.size() - 1].asset = asset;
+		return &gfxInstancedAssets[gfxInstancedAssets.size() - 1].instanceData;
 	}
 
 	void Init()
@@ -199,17 +210,17 @@ namespace Scene3DGame
 
 		glTF_L::LoadCollisionData( groundFileName, &groundPlaneCollisionMesh.vertices, &groundPlaneCollisionMesh.indices );
 
+		glTF_L::LoadScene( "assets/scene.gltf", AL::AL_GetModelSlot, AL::AL_GetAssetSlot, GetInstancedAssetSlot, &gfx_device_local_mem_allocator );
+
 		uint32_t albedoIndex = RegisterBindlessTexture( &bindlessTexturesState, albedoTexture );
 		uint32_t badHelicopterTextIndex = RegisterBindlessTexture( &bindlessTexturesState, BadHelicopterAlbedoTexture );
 
 		gfx_device_local_mem_allocator.Commit();
 
-		CreateGfxAsset( groundModelAsset, albedoIndex, &planeRenderable );
 		CreateGfxAsset( cubeModelAsset, badHelicopterTextIndex, &cubeRenderable );
 
 		CompileScene( &bindlessTexturesState, skyboxTexture );
 
-		planeSceneInstance = { glm::vec3( 0.0f, 0.0f, 0.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 1.0f };
 		shipSceneInstance = { glm::vec3( 0.0f, 1.0f, 2.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 0.5f };
 		cameraSceneInstance = { glm::vec3( 0.0f, 1.0f, -6.0f ), glm::angleAxis( glm::radians( 0.0f ), glm::vec3{0.0f, 1.0f, 0.0f} ), 1.0f, &shipSceneInstance };
 		g_light = { glm::mat4( 1.0f ), {3.0f, 3.0f, 1.0f}, 1.0f };

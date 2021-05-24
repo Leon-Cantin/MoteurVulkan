@@ -12,10 +12,13 @@
 
 namespace AL
 {
-	std::array<GfxImage, 32> _images;
+	constexpr size_t MAX_ASSETS = 32;
+	std::array<GfxImage, MAX_ASSETS> _images;
 	size_t _imagesCount;
-	std::array<GfxModel, 32> _modelAssets;
+	std::array<GfxModel, MAX_ASSETS> _modelAssets;
 	size_t _modelAssetsCount;
+	std::array<GfxAsset, MAX_ASSETS> _gfxAssets;
+	size_t _gfxAssetsCount;
 	std::unordered_map<std::string, void*> _asset_map;
 
 	static void AL_AddAsset(const char* assetName, void* assetPtr)
@@ -23,20 +26,28 @@ namespace AL
 		_asset_map[std::string(assetName)] = assetPtr;
 	}
 
-	static GfxImage* AL_GetImageSlot(const char* assetName)
+	GfxImage* AL_GetImageSlot(const char* assetName)
 	{
-		assert(_imagesCount < 32);
+		assert(_imagesCount < MAX_ASSETS );
 		GfxImage* imageSlot = &_images[_imagesCount++];
 		AL_AddAsset(assetName, imageSlot);
 		return imageSlot;
 	}
 
-	static GfxModel* AL_GetModelSlot(const char* assetName)
+	GfxModel* AL_GetModelSlot(const char* assetName)
 	{
-		assert(_modelAssetsCount < 32);
+		assert(_modelAssetsCount < MAX_ASSETS );
 		GfxModel* modelSlot = &_modelAssets[_modelAssetsCount++];
 		AL_AddAsset(assetName, modelSlot);
 		return modelSlot;
+	}
+
+	GfxAsset* AL_GetAssetSlot( const char* assetName )
+	{
+		assert( _gfxAssetsCount < MAX_ASSETS );
+		GfxAsset* assetSlot = &_gfxAssets[_gfxAssetsCount++];
+		//TODO sine we have a single map, assets may clash with models: AL_AddAsset( assetName, modelSlot );
+		return assetSlot;
 	}
 
 	GfxImage* LoadTexture(const char* assetName, const char* assetPath, I_ImageAlloctor* allocator )
