@@ -89,13 +89,15 @@ namespace glTF_L
 	{
 		Attributes attributes;
 		int indices;
+		int material_index;
 	};
 
 	void from_json( const nlohmann::json& j, Primitive& p )
 	{
 		p = {
 			j["attributes"].get<Attributes>(),
-			j["indices"].get<int>()
+			j["indices"].get<int>(),
+			GetDefaultIfNull<int>( j, "material", INVALID_INT )
 		};
 	}
 
@@ -215,6 +217,42 @@ namespace glTF_L
 		};
 	}
 
+	struct Material
+	{
+		std::string name;
+		int texture_index;
+	};
+
+	void from_json( const nlohmann::json& j, Material& m )
+	{
+		m = { GetDefaultIfNull<std::string>( j, "name", "" ),
+			GetDefaultIfNull<int>( j["pbrMetallicRoughness"]["baseColorTexture"], "index", INVALID_INT )
+		};
+	}
+
+	struct Texture
+	{
+		int imageIndex;
+	};
+
+	void from_json( const nlohmann::json& j, Texture& t )
+	{
+		t = { GetDefaultIfNull<int>( j, "source", INVALID_INT ) };
+	}
+
+	struct Image
+	{
+		std::string name;
+		std::string uri;
+	};
+
+	void from_json( const nlohmann::json& j, Image& i )
+	{
+		i = { GetDefaultIfNull<std::string>( j, "name", "" ),
+			j["uri"].get<std::string>()
+		};
+	}
+
 	template< class T >
 	static T GetType( const byte* ptr, size_t index, size_t elementIndex, Type type, ComponentType componentType )
 	{
@@ -228,8 +266,17 @@ namespace glTF_L
 		std::vector<Buffer> buffers;
 		std::vector<Node> nodes;
 		std::vector<Mesh> meshes;
+		std::vector<Material> materials;
+		std::vector<Texture> textures;
+		std::vector<Image> images;
 		std::vector<byte> data;
 	};
+
+	static std::string GetGltfPath( const char* fileName )
+	{
+		const char* ptrFilePathEnd = strrchr( fileName, '/' );
+		return std::string( fileName, ptrFilePathEnd - fileName );
+	}
 
 	static glTF_Json ReadJson( const char* fileName )
 	{
@@ -238,6 +285,7 @@ namespace glTF_L
 
 		assert( is_glb || is_gltf );
 
+		//Open and read header
 		std::fstream fs( fileName, std::fstream::in | std::fstream::binary );
 
 		nlohmann::json j;
@@ -269,12 +317,17 @@ namespace glTF_L
 			j = nlohmann::json::parse( jsonChunk.begin(), jsonChunk.begin() + jsonChunk.size() );
 		}
 
+		//Parse
 		const std::vector<Accessor> accessors = j["accessors"].get<std::vector<Accessor>>();
 		const std::vector<BufferView> bufferViews = j["bufferViews"].get<std::vector<BufferView>>();
 		const std::vector<Buffer> buffers = j["buffers"].get<std::vector<Buffer>>();
 		const std::vector<Node> nodes = j["nodes"].get<std::vector<Node>>();
 		const std::vector<Mesh> meshes = j["meshes"].get<std::vector<Mesh>>();
+		const std::vector<Material> materials = GetDefaultIfNull( j, "materials", std::vector<Material>() );
+		const std::vector<Texture> textures = GetDefaultIfNull( j, "textures", std::vector<Texture>() );
+		const std::vector<Image> images = GetDefaultIfNull( j, "images", std::vector<Image>() );
 
+		//Read the bin part
 		assert( buffers.size() == 1 );
 
 		std::vector<byte> bufferChunk;
@@ -291,9 +344,9 @@ namespace glTF_L
 		}
 		else if( is_gltf )
 		{
+			
 			const std::string& bufferFileName = buffers[0].uri;
-			const char* ptrFilePathEnd = strrchr( fileName, '/' );
-			std::string bufferFilePath = std::string( fileName, ptrFilePathEnd - fileName );
+			std::string bufferFilePath = GetGltfPath( fileName );
 			bufferFilePath += "/" + bufferFileName;
 
 			constexpr size_t max_byte_count = 1 * 1024 * 1024;
@@ -309,6 +362,9 @@ namespace glTF_L
 			buffers,
 			nodes,
 			meshes,
+			materials,
+			textures,
+			images,
 			bufferChunk };
 	}
 
@@ -471,10 +527,23 @@ namespace glTF_L
 		*model = LoadMesh( gltf_json.meshes[0], gltf_json.accessors, gltf_json.bufferViews, gltf_json.data.data(), allocator );
 	}
 
-	void LoadScene( const char* fileName, RegisterGfxModelCallback_t registerGfxModelCallback, RegisterGfxAssetCallback_t registerGfxAssetCallback, RegisterSceneInstanceCallback_t registerSceneInstanceCallback, I_BufferAllocator* allocator )
+	void LoadScene( const char* fileName, RegisterGfxModelCallback_t registerGfxModelCallback, RegisterGfxAssetCallback_t registerGfxAssetCallback,
+		RegisterSceneInstanceCallback_t registerSceneInstanceCallback, LoadTextureCallback_t loadTextureCallback, I_BufferAllocator* allocator, I_ImageAlloctor* imageAllocator )
 	{
 		const glTF_Json gltf_json = ReadJson( fileName );
 
+		const std::string basePath = GetGltfPath( fileName ) + "/";
+
+		//Load images
+		std::vector<uint32_t> imageIndexes;
+		imageIndexes.reserve( gltf_json.images.size() );
+		for( const Image& image : gltf_json.images )
+		{
+			const std::string filePath = basePath + image.uri;
+			imageIndexes.push_back( loadTextureCallback( filePath.c_str(), imageAllocator ) );
+		}
+
+		//Load meshes and build assets
 		//TODO: currently 1 model == 1 asset
 		std::vector<GfxAsset*> gfxAssets;
 		gfxAssets.reserve( gltf_json.meshes.size() );
@@ -485,10 +554,15 @@ namespace glTF_L
 			*gfxModel = LoadMesh( mesh, gltf_json.accessors, gltf_json.bufferViews, gltf_json.data.data(), allocator );
 			GfxAsset* gfxAsset = registerGfxAssetCallback( mesh.name.c_str() );
 			gfxAsset->modelAsset = gfxModel;
-			gfxAsset->textureIndices.push_back( 0 ); // TODO
+			const int materialIndex = mesh.primitives[0].material_index;
+			const int textureIndex = gltf_json.materials[materialIndex].texture_index;
+			const int imageIndex = gltf_json.textures[textureIndex].imageIndex;
+			const uint32_t bindlesstextureIndex = imageIndexes[imageIndex];
+			gfxAsset->textureIndices.push_back( bindlesstextureIndex );
 			gfxAssets.push_back( gfxAsset );
 		}
 
+		//Build scene instances
 		for( auto i = 0; i < gltf_json.nodes.size(); ++i )
 		{
 			const Node& node = gltf_json.nodes[i];

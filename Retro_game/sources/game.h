@@ -167,6 +167,12 @@ namespace Scene3DGame
 		return &gfxInstancedAssets[gfxInstancedAssets.size() - 1].instanceData;
 	}
 
+	uint32_t LoadTexture( const char* path, I_ImageAlloctor* imageAllocator )
+	{
+		GfxImage* image = AL::LoadTexture( path, path, imageAllocator );
+		return RegisterBindlessTexture( &bindlessTexturesState, image );
+	}
+
 	void Init()
 	{
 		//Input callbacks
@@ -205,12 +211,11 @@ namespace Scene3DGame
 		GfxImage* BadHelicopterAlbedoTexture = AL::LoadTexture( "BadHelicopterAlbedoTexture", "assets/Tructext.png", &gfx_device_local_mem_allocator );
 
 		const char* groundFileName = "assets/ground.glb";
-		GfxModel* groundModelAsset = AL::LoadglTf3DModel( "Ground", groundFileName, &gfx_device_local_mem_allocator );
 		GfxModel* cubeModelAsset = AL::LoadglTf3DModel( "Cube", "assets/horrible_helicopter.glb", &gfx_device_local_mem_allocator );
 
 		glTF_L::LoadCollisionData( groundFileName, &groundPlaneCollisionMesh.vertices, &groundPlaneCollisionMesh.indices );
 
-		glTF_L::LoadScene( "assets/scene.gltf", AL::AL_GetModelSlot, AL::AL_GetAssetSlot, GetInstancedAssetSlot, &gfx_device_local_mem_allocator );
+		glTF_L::LoadScene( "assets/scene.gltf", AL::AL_GetModelSlot, AL::AL_GetAssetSlot, GetInstancedAssetSlot, LoadTexture, &gfx_device_local_mem_allocator, &gfx_device_local_mem_allocator );
 
 		uint32_t albedoIndex = RegisterBindlessTexture( &bindlessTexturesState, albedoTexture );
 		uint32_t badHelicopterTextIndex = RegisterBindlessTexture( &bindlessTexturesState, BadHelicopterAlbedoTexture );
