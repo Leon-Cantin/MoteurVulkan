@@ -50,7 +50,7 @@ GpuPipelineStateDesc GetBtDebugPipelineState()
 	gpuPipelineState.blendEnabled = false;
 	gpuPipelineState.primitiveTopology = GfxPrimitiveTopology::LINE_LIST;
 
-	gpuPipelineState.lineWidth = 2.0f;
+	gpuPipelineState.lineWidth = 1.0f;
 	gpuPipelineState.polygonMode = GfxPolygonMode::FILL;
 
 	return gpuPipelineState;
@@ -74,7 +74,7 @@ static void CmdEndRenderPass( VkCommandBuffer vkCommandBuffer )
 
 void BtDebugRecordDrawCommandsBuffer( GfxCommandBuffer graphicsCommandBuffer, const FG::TaskInputData& inputData )
 {
-	assert( g_btDebugDrawState.currentFrameIndex == inputData.currentFrame );
+	//assert( g_btDebugDrawState.currentFrameIndex == inputData.currentFrame );
 
 	const SceneFrameData* frameData = static_cast< const SceneFrameData* >(inputData.userData);
 	CmdBeginRenderPass( graphicsCommandBuffer, inputData.currentFrame, inputData.renderpass, inputData.technique );

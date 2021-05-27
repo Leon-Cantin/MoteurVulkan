@@ -116,9 +116,13 @@ namespace Scene3DGame
 		shipSceneInstance.location -= PitchVector() * (frameDeltaTime / 1000.0f) * movementSpeed;
 	}
 
-	void ReloadShadersCallback(const std::string* params, uint32_t paramsCount)
+	void PhsDrawDebugCallback(const std::string* params, uint32_t paramsCount)
 	{
-		//ForceReloadShaders();
+		if( paramsCount > 1 )
+		{
+			bool value = atoi( params[1].c_str() );
+			SetBtDebugDraw( value );
+		}
 	}
 
 	void TickObjectCallback(float dt, void* unused)
@@ -195,7 +199,7 @@ namespace Scene3DGame
 		//Console commands callback (need IH)
 		ConCom::Init();
 		ConCom::RegisterCommand( "light", &LightCallback );
-		ConCom::RegisterCommand( "reloadshaders", &ReloadShadersCallback );
+		ConCom::RegisterCommand( "phs_draw_debug", &PhsDrawDebugCallback );
 
 		//Objects update callbacks
 		RegisterTickFunction( &TickObjectCallback );

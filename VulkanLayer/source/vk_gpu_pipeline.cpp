@@ -88,7 +88,7 @@ void CreatePipeline( const GpuPipelineStateDesc& gpuPipelineDesc, const RenderPa
 	rasterizer.depthClampEnable = VK_FALSE;
 	rasterizer.rasterizerDiscardEnable = VK_FALSE;
 	rasterizer.polygonMode = ToVkPolygonMode( gpuPipelineDesc.polygonMode );
-	rasterizer.lineWidth = gpuPipelineDesc.lineWidth;
+	rasterizer.lineWidth = 1.0f;//TODO: currently VK complains if linewidth isn't 1.0f when something about dynamic state isn't set gpuPipelineDesc.lineWidth;
 	rasterizer.cullMode = gpuPipelineDesc.rasterizationState.backFaceCulling ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE;
 	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterizer.depthBiasEnable = gpuPipelineDesc.rasterizationState.depthBiased;

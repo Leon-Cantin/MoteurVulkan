@@ -17,10 +17,13 @@ namespace Engine
 		void( *destroyCallback )(void);
 	};
 
+	typedef void InitRendererCallback_t( const DisplaySurface* );
+	typedef void DestroyRendererCallback_t();
+
 	struct EngineState
 	{
-		EngineState( void( *initRendererImp )(DisplaySurface), void( *destroyRendererImp )(), const char* name, int window_width, int window_height )
-			:_initRendererImp(initRendererImp), _destroyRendererImp(destroyRendererImp), _name(name), _window_width(window_width), _window_height(window_height)
+		EngineState( InitRendererCallback_t initRendererCallback, DestroyRendererCallback_t destroyRendererImp, const char* name, int window_width, int window_height )
+			:_initRendererImp( initRendererCallback ), _destroyRendererImp(destroyRendererImp), _name(name), _window_width(window_width), _window_height(window_height)
 		{
 			MEM::zero( &_currentSceneScript );
 			MEM::zero( &_nextSceneScript );
@@ -31,8 +34,8 @@ namespace Engine
 
 		}
 
-		void( *_initRendererImp )(DisplaySurface);
-		void( *_destroyRendererImp )();
+		InitRendererCallback_t* _initRendererImp;
+		DestroyRendererCallback_t* _destroyRendererImp;
 
 		std::unordered_map< std::string, SceneScript > _scripts_library;
 

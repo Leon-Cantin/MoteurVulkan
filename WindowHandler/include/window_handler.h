@@ -15,14 +15,17 @@ namespace WH
 {
 	extern bool framebuffer_resized;
 
+	struct WindowState {
 #ifdef _WIN32
-	extern HWND g_window;
-	extern HINSTANCE g_instance;
+		HWND			window;
+		HINSTANCE		instance;
 #elif defined __linux__
-	extern xcb_connection_t *xcb_connection;
-	extern xcb_screen_t		*screen;
-	extern xcb_window_t		window;
+		xcb_connection_t *xcb_connection;
+		xcb_screen_t	*screen;
+		xcb_window_t	window;
 #endif // _WIN32
+	};
+	extern WindowState g_windowState;
 
 	using FrameBufferResizeCallback_T = void(*)(int width, int height);
 	using CharCallback_T = void(*)(uint32_t character);

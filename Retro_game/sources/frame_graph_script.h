@@ -248,8 +248,14 @@ public:
 	}
 };
 
-FG::FrameGraph InitializeScript( const Swapchain* swapchain )
+struct RetroFrameGraphParams
 {
+	bool d_btDrawDebug;
+};
+
+FG::FrameGraph InitializeScript( const Swapchain* swapchain, void* user_params )
+{
+	RetroFrameGraphParams* params = reinterpret_cast< RetroFrameGraphParams* >(user_params);
 	//Setup resources
 	GfxFormat swapchainFormat = GetFormat( swapchain->surfaceFormat );
 	VkExtent2D swapchainExtent = swapchain->extent;
@@ -277,7 +283,8 @@ FG::FrameGraph InitializeScript( const Swapchain* swapchain )
 	rpCreationData.push_back( FG_Shadow_CreateGraphNode( shadow_map_h, shadow_data_h, instance_data_h ) );
 	rpCreationData.push_back( FG_Opaque_CreateGraphNode( scene_color_h, scene_depth_h, bindless_textures_h, shadow_map_h, shadow_data_h, instance_data_h, light_data_h, scene_data_h, samplers_h ) );
 	rpCreationData.push_back( FG_Skybox_CreateGraphNode( scene_color_h, scene_depth_h, skybox_texture_h, skybox_data_h ) );
-	rpCreationData.push_back( FG_BtDebug_CreateGraphNode( scene_color_h, scene_data_h ) );
+	if( params->d_btDrawDebug )
+		rpCreationData.push_back( FG_BtDebug_CreateGraphNode( scene_color_h, scene_data_h ) );
 	rpCreationData.push_back( FG_TextOverlay_CreateGraphNode( scene_color_h, text_texture_h ) );
 
 	FG::FrameGraph fg = FG::CreateGraph( &rpCreationData, &resourceGatherer.m_resources );

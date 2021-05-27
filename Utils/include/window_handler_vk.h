@@ -5,9 +5,7 @@
 
 namespace WH {
 	namespace VK{
-		extern DisplaySurface _windowSurface;
-
-		void InitializeWindow();
-		void ShutdownWindow();
+		DisplaySurface create_surface( VkInstance vkInstance, const WindowState& windowState );
+		void DestroySurface( DisplaySurface* surface, VkInstance vkInstance );
 	}
 }

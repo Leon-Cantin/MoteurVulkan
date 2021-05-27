@@ -12,17 +12,11 @@ GfxCommandPool g_graphicsCommandPool;
 Swapchain g_swapchain;
 std::array<GfxCommandBuffer, SIMULTANEOUS_FRAMES> g_graphicsCommandBuffers;
 
-std::array<GfxSemaphore, SIMULTANEOUS_FRAMES> graphicPassFinishedSemaphores;
 std::array<GfxSemaphore, SIMULTANEOUS_FRAMES> imageAvailableSemaphores;
 std::array<GfxSemaphore, SIMULTANEOUS_FRAMES> renderFinishedSemaphores;
 std::array<GfxFence, SIMULTANEOUS_FRAMES> inFlightFences;
 
-FG::FrameGraph( *_fFGScriptInitialize )(const Swapchain*);
-
 FG::FrameGraph _frameGraph;
-
-bool( *_needResize )();
-void( *_getFrameBufferSize )(uint64_t* width, uint64_t* height);
 
 DisplaySurface _swapchainSurface;
 
@@ -34,7 +28,6 @@ static void create_sync_objects()
 	{
 		if (!CreateGfxSemaphore( &imageAvailableSemaphores[i]) ||
 			!CreateGfxSemaphore( &renderFinishedSemaphores[i]) ||
-			!CreateGfxSemaphore( &graphicPassFinishedSemaphores[i]) ||
 			!CreateGfxFence( &inFlightFences[i]) )
 		{
 			throw std::runtime_error("failed to create semaphores!");
@@ -42,16 +35,8 @@ static void create_sync_objects()
 
 		MarkGfxObject(imageAvailableSemaphores[i], "image available semaphore");
 		MarkGfxObject(renderFinishedSemaphores[i], "render finished semaphore");
-		MarkGfxObject(graphicPassFinishedSemaphores[i], "graphic pass finished semaphore");
 		MarkGfxObject(inFlightFences[i], "In flight fence");
 	}
-}
-
-static void cleanup_swap_chain()
-{
-	FG::Cleanup( &_frameGraph );
-
-	Destroy( &g_swapchain );
 }
 
 static void CreateDummyImage()
@@ -62,14 +47,8 @@ static void CreateDummyImage()
 	allocator.Commit();
 }
 
-void InitRenderer( DisplaySurface swapchainSurface, bool( *needResize )(), void( *getFrameBufferSize )(uint64_t* width, uint64_t* height) )
+void InitRenderer( DisplaySurface swapchainSurface, uint64_t width, uint64_t height )
 {
-	//TODO: do better than this shit
-	_getFrameBufferSize = getFrameBufferSize;
-	_needResize = needResize;
-
-	uint64_t width, height;
-	_getFrameBufferSize( &width, &height );
 	_swapchainSurface = swapchainSurface;
 	CreateSwapChain( swapchainSurface, width, height, g_swapchain );
 
@@ -87,41 +66,24 @@ void InitRenderer( DisplaySurface swapchainSurface, bool( *needResize )(), void(
 	CreateDummyImage();
 }
 
-static void CompileFrameGraph()
+void recreate_swap_chain( DisplaySurface swapchainSurface, uint64_t width, uint64_t height, FG_CompileScriptCallback_t FGScriptInitialize, void* fg_user_params )
 {
-	_frameGraph = _fFGScriptInitialize( &g_swapchain );
-}
-
-void recreate_swap_chain( DisplaySurface swapchainSurface )
-{
-	//TODO: find a better way of handling window minimization
-	uint64_t width = 0, height = 0;
-	while (width == 0 || height == 0) {
-		_getFrameBufferSize( &width, &height );
-		//TODO
-		//glfwWaitEvents();
-	}
-
 	DeviceWaitIdle( g_gfx.device.device );
 
-	cleanup_swap_chain();
+	Destroy( &g_swapchain );
 
 	//TODO: try to use the "oldSwapchain" parameter to optimize when recreating swap chains
-	_getFrameBufferSize(&width, &height);
 	CreateSwapChain( swapchainSurface, width, height, g_swapchain );
 
-	CompileFrameGraph();
+	CompileFrameGraph( FGScriptInitialize, fg_user_params );
 }
 
-void CleanupFrameGraph()
+void CompileFrameGraph( FG_CompileScriptCallback_t FGScriptInitialize, void* fg_user_params )
 {
+	DeviceWaitIdle( g_gfx.device.device );
+
 	FG::Cleanup( &_frameGraph );
-}
-
-void CompileFrameGraph( FG::FrameGraph( *FGScriptInitialize )( const Swapchain* ) )
-{
-	_fFGScriptInitialize = FGScriptInitialize;
-	CompileFrameGraph();
+	_frameGraph = FGScriptInitialize( &g_swapchain, fg_user_params );
 }
 
 void RecordCommandBuffer(uint32_t currentFrame, const SceneFrameData* frameData)
@@ -148,17 +110,16 @@ void WaitForFrame(uint32_t currentFrame)
 	WaitForFence( &inFlightFences[currentFrame], 1 );
 }
 
-void draw_frame(uint32_t currentFrame, const SceneFrameData* frameData)
+eRenderError draw_frame(uint32_t currentFrame, const SceneFrameData* frameData)
 {
 	RecordCommandBuffer(currentFrame, frameData);
 
 	GfxSwapchainImage swapchainImage;
 	const GfxSwapchainOperationResult aquireSwapChainImageResult = AcquireNextSwapchainImage( g_swapchain.swapchain, imageAvailableSemaphores[currentFrame], &swapchainImage );
 	//TODO: Do I really need 2 check for recreate swap chain in this function?
-	if ( !SwapchainImageIsValid( aquireSwapChainImageResult ) || _needResize() ) {
+	if ( !SwapchainImageIsValid( aquireSwapChainImageResult ) ) {
 		unsignalSemaphore( imageAvailableSemaphores[currentFrame] );
-		recreate_swap_chain( _swapchainSurface );
-		return;
+		return eRenderError::NEED_FRAMEBUFFER_RESIZE;
 	}
 
 	//Submit work
@@ -175,9 +136,10 @@ void draw_frame(uint32_t currentFrame, const SceneFrameData* frameData)
 	const GfxSwapchainOperationResult presentResult = QueuePresent( g_gfx.device.present_queue.queue, swapchainImage, &renderFinishedSemaphores[currentFrame], 1 );
 	if (!SwapchainImageIsValid( presentResult ))
 	{
-		std::cout << "recreating swap chain " << currentFrame << std::endl;
-		recreate_swap_chain( _swapchainSurface );
+		eRenderError::NEED_FRAMEBUFFER_RESIZE;
 	}
+
+	return eRenderError::SUCCESS;
 }
 
 void CleanupRenderer() {
@@ -185,7 +147,7 @@ void CleanupRenderer() {
 
 	DestroyCommandBuffers( g_graphicsCommandPool, g_graphicsCommandBuffers.data(), static_cast<uint32_t>(g_graphicsCommandBuffers.size()));
 
-	cleanup_swap_chain();
+	Destroy( &g_swapchain );
 
 	DestroySamplers();
 
@@ -195,7 +157,6 @@ void CleanupRenderer() {
 	{
 		DestroyGfxSemaphore( &renderFinishedSemaphores[i] );
 		DestroyGfxSemaphore( &imageAvailableSemaphores[i] );
-		DestroyGfxSemaphore( &graphicPassFinishedSemaphores[i] );
 		DestroyGfxFence( &inFlightFences[i] );
 	}
 

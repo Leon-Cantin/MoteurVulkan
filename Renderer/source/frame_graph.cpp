@@ -202,7 +202,7 @@ namespace FG
 
 	static void CreateResources( FrameGraphCreationData& creationData, FrameGraphInternal* o_frameGraph )
 	{
-		o_frameGraph->_gfx_mem_heap = create_gfx_heap( 8 * 1024 * 1024, GFX_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
+		o_frameGraph->_gfx_mem_heap = create_gfx_heap( 16 * 1024 * 1024, GFX_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
 		GfxHeaps_BatchedAllocator image_allocator( &o_frameGraph->_gfx_mem_heap );
 		o_frameGraph->_gfx_mem_heap_host_visible = create_gfx_heap( 8 * 1024 * 1024, GFX_MEMORY_PROPERTY_HOST_VISIBLE_BIT | GFX_MEMORY_PROPERTY_HOST_COHERENT_BIT );
 		GfxHeaps_BatchedAllocator buffer_allocator( &o_frameGraph->_gfx_mem_heap_host_visible );

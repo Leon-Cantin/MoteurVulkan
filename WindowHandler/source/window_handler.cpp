@@ -5,6 +5,8 @@
 
 namespace WH
 {
+	WindowState g_windowState;
+
 	FrameBufferResizeCallback_T _framebuffer_resize_callback;
 	CharCallback_T charCallback;
 	bool shouldQuit = false;
@@ -12,9 +14,6 @@ namespace WH
 	static std::chrono::system_clock::time_point startTime;
 
 #ifdef _WIN32
-	HWND g_window = nullptr;
-	HINSTANCE g_instance = nullptr;
-
 	LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
 		switch (message) {
 		case WM_SIZE:
@@ -39,7 +38,7 @@ namespace WH
 		wchar_t windowNameW[256];
 		mbstowcs( windowNameW, windowName, 256 );
 
-		g_instance = GetModuleHandle(nullptr);
+		g_windowState.instance = GetModuleHandle(nullptr);
 		// Register window class
 		WNDCLASSEX wcex;
 
@@ -49,7 +48,7 @@ namespace WH
 		wcex.lpfnWndProc = WndProc;
 		wcex.cbClsExtra = 0;
 		wcex.cbWndExtra = 0;
-		wcex.hInstance = g_instance;
+		wcex.hInstance = g_windowState.instance;
 		wcex.hIcon = NULL;
 		wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
 		wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
@@ -64,12 +63,12 @@ namespace WH
 		RECT windowRect = {0, 0, clientAreaWidth, clientAreaHeight};
 		AdjustWindowRect( &windowRect, WS_OVERLAPPEDWINDOW, false );
 
-		g_window = CreateWindow( windowNameW, windowNameW, WS_OVERLAPPEDWINDOW, 20, 20, windowRect.right - windowRect.left, windowRect.bottom - windowRect.top, nullptr, nullptr, g_instance, nullptr);
-		if (!g_window)
+		g_windowState.window = CreateWindow( windowNameW, windowNameW, WS_OVERLAPPEDWINDOW, 20, 20, windowRect.right - windowRect.left, windowRect.bottom - windowRect.top, nullptr, nullptr, g_windowState.instance, nullptr);
+		if (!g_windowState.window)
 			throw std::runtime_error("Failed to create window");
 
-		ShowWindow( g_window, SW_SHOWNORMAL);
-		UpdateWindow( g_window );
+		ShowWindow( g_windowState.window, SW_SHOWNORMAL);
+		UpdateWindow( g_windowState.window );
 
 		startTime = std::chrono::system_clock::now();
 	}
@@ -85,21 +84,17 @@ namespace WH
 
 	void terminate()
 	{
-		DestroyWindow(g_window);
+		DestroyWindow( g_windowState.window);
 	}
 
 	void GetFramebufferSize( uint64_t *width, uint64_t *height )
 	{
 		RECT rect;
-		GetClientRect(g_window, &rect);
+		GetClientRect( g_windowState.window, &rect);
 		*width = rect.left - rect.right;
 		*height = rect.top - rect.bottom;
 	}
 #elif defined __linux__
-	xcb_connection_t *xcb_connection = nullptr;
-  	xcb_screen_t     *screen = nullptr;
- 	xcb_window_t      window = 0;
-
 	//TODO:
 	/*LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
 		switch (message) {
@@ -125,29 +120,29 @@ namespace WH
 		wchar_t windowNameW[256];
 		mbstowcs( windowNameW, windowName, 256 );
 
-		xcb_connection = xcb_connect (NULL, NULL);
+		g_windowState.xcb_connection = xcb_connect (NULL, NULL);
 
 		//Get the first screen
-		screen = xcb_setup_roots_iterator (xcb_get_setup (xcb_connection)).data;
+		g_windowState.screen = xcb_setup_roots_iterator (xcb_get_setup (xcb_connection)).data;
 
-		window = xcb_generate_id(xcb_connection);
+		g_windowState.window = xcb_generate_id(xcb_connection);
 
 		xcb_create_window( xcb_connection, 
 							XCB_COPY_FROM_PARENT, // depth
-							window,
-							screen->root,
+							g_windowState.window,
+							g_windowState.screen->root,
 							0, 0,
 							clientAreaWidth, clientAreaHeight,
 							10,
 							XCB_WINDOW_CLASS_INPUT_OUTPUT,
-							screen->root_visual,
+							g_windowState.screen->root_visual,
 							0, nullptr);
 
-		xcb_map_window( xcb_connection, window );
+		xcb_map_window( g_windowState.xcb_connection, g_windowState.window );
 
-		xcb_flush( xcb_connection );
+		xcb_flush( g_windowState.xcb_connection );
 
-		if( !window )
+		if( !g_windowState.window )
 			throw std::runtime_error("Failed to create window");
 
 		startTime = std::chrono::system_clock::now();
@@ -164,7 +159,7 @@ namespace WH
 
 	void terminate()
 	{
-		xcb_disconnect( xcb_connection );
+		xcb_disconnect( g_windowState.xcb_connection );
 	}
 
 	void GetFramebufferSize( uint64_t *width, uint64_t *height )

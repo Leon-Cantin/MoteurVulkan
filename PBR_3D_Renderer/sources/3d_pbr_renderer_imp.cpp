@@ -14,6 +14,7 @@
 GfxDescriptorPool descriptorPool;
 
 extern Swapchain g_swapchain;
+const DisplaySurface* m_swapchainSurface;
 
 
 std::array< GpuInputData, SIMULTANEOUS_FRAMES> _inputBuffers;
@@ -135,9 +136,10 @@ static bool NeedResize()
 	return value;
 }
 
-void InitRendererImp( VkSurfaceKHR swapchainSurface )
+void InitRendererImp( const DisplaySurface* swapchainSurface )
 {
-	InitRenderer( swapchainSurface, NeedResize, WH::GetFramebufferSize );
+	m_swapchainSurface = swapchainSurface;
+	InitRenderer( *m_swapchainSurface, NeedResize, WH::GetFramebufferSize );
 
 	LoadFontTexture();
 	CreateTextVertexBuffer( 256 );
@@ -177,8 +179,6 @@ static GfxDescriptorPool CreateDescriptorPool_BAD()
 
 void CompileScene( BindlessTexturesState* bindlessTexturesState, const GfxImage* skyboxImage )
 {
-	CleanupFrameGraph();
-
 	if( descriptorPool )
 		Destroy( &descriptorPool );
 	descriptorPool = CreateDescriptorPool_BAD();

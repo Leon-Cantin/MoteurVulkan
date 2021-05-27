@@ -146,8 +146,6 @@ void InitRendererImp( DisplaySurface swapchainSurface )
 
 void CompileScene( BindlessTexturesState* bindlessTexturesState )
 {
-	CleanupFrameGraph();
-
 	if( descriptorPool_scene )
 		Destroy( &descriptorPool_scene );
 	descriptorPool_scene = CreateDescriptorPool_BAD();

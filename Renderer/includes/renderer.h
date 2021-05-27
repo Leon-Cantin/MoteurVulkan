@@ -9,12 +9,20 @@
 
 #include <glm/mat4x4.hpp>
 
-void InitRenderer( DisplaySurface swapchainSurface, bool( *needResize )(), void( *getFrameBufferSize )(uint64_t* width, uint64_t* height) );
-void CompileFrameGraph( FG::FrameGraph( *FGScriptInitialize )(const Swapchain* swapchain) );
-void CleanupFrameGraph();
+enum class eRenderError
+{
+	SUCCESS,
+	NEED_FRAMEBUFFER_RESIZE,
+};
+
+typedef FG::FrameGraph FG_CompileScriptCallback_t (const Swapchain*, void* user_params );
+
+void InitRenderer( DisplaySurface swapchainSurface, uint64_t width, uint64_t height );
+void CompileFrameGraph( FG_CompileScriptCallback_t FGScriptInitialize, void* fg_user_params );
+void recreate_swap_chain( DisplaySurface swapchainSurface, uint64_t width, uint64_t height, FG_CompileScriptCallback_t FGScriptInitialize, void* fg_user_params );
 void CleanupRenderer();
 void WaitForFrame(uint32_t currentFrame);
-void draw_frame(uint32_t currentFrame, const SceneFrameData* frameData);
+eRenderError draw_frame(uint32_t currentFrame, const SceneFrameData* frameData);
 void CmdBindVertexInputs( GfxCommandBuffer commandBuffer, const std::vector<VIBinding>& gpuPipelineVIBindings, const GfxModel& gfxModel );
 void CmdDrawIndexed( GfxCommandBuffer commandBuffer, const std::vector<VIBinding>& gpuPipelineVIBindings, const GfxModel& gfxModel, uint32_t indexCount );
 void CmdDrawIndexed( GfxCommandBuffer commandBuffer, const std::vector<VIBinding>& gpuPipelineVIBindings, const GfxModel& gfxModel );

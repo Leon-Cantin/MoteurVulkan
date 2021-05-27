@@ -3,6 +3,7 @@
 namespace Engine
 {
 	EngineState _engineState;
+	DisplaySurface _displaySurface;
 
 	void SetNextScript( const char * scriptName )
 	{
@@ -45,12 +46,12 @@ namespace Engine
 		const bool useValidationLayer = true;
 #endif
 		g_gfx.instance = CreateInstance( useValidationLayer );
-		WH::VK::InitializeWindow();
-		g_gfx.physicalDevice = PickSuitablePhysicalDevice( WH::VK::_windowSurface, g_gfx.instance );
-		g_gfx.device = create_logical_device( WH::VK::_windowSurface, g_gfx.physicalDevice, useValidationLayer );
+		_displaySurface = WH::VK::create_surface( g_gfx.instance.instance, WH::g_windowState );
+		g_gfx.physicalDevice = PickSuitablePhysicalDevice( _displaySurface, g_gfx.instance );
+		g_gfx.device = create_logical_device( _displaySurface, g_gfx.physicalDevice, useValidationLayer );
 
 		//Init renderer stuff
-		_engineState._initRendererImp( WH::VK::_windowSurface );
+		_engineState._initRendererImp( &_displaySurface );
 
 		while( !WH::shouldClose() )
 		{
@@ -66,7 +67,7 @@ namespace Engine
 		_engineState._currentSceneScript.destroyCallback();
 		_engineState._destroyRendererImp();
 
-		WH::VK::ShutdownWindow();
+		WH::VK::DestroySurface( &_displaySurface, g_gfx.instance.instance );
 		Destroy( &g_gfx.device );
 		Destroy( &g_gfx.instance );
 		WH::ShutdownWindow();

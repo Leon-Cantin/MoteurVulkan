@@ -15,9 +15,12 @@
 GfxDescriptorPool descriptorPool;
 
 extern Swapchain g_swapchain;
-
+const DisplaySurface* m_swapchainSurface;
 
 std::array< GpuInputData, SIMULTANEOUS_FRAMES> _inputBuffers;
+
+static RetroFrameGraphParams m_fg_params;
+static bool m_fg_need_reconfig;
 
 /*
 	Update Stuff
@@ -103,7 +106,8 @@ static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cam
 
 	updateTextOverlayBuffer( currentFrame );
 
-	phs::BeginDebugDraw();
+	if( m_fg_params.d_btDrawDebug )
+		phs::BeginDebugDraw();
 }
 
 static void PrepareSceneFrameData( SceneFrameData* frameData, uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<GfxAssetInstance>& drawList )
@@ -143,9 +147,13 @@ static bool NeedResize()
 	return value;
 }
 
-void InitRendererImp( VkSurfaceKHR swapchainSurface )
+void InitRendererImp( const VkSurfaceKHR* swapchainSurface )
 {
-	InitRenderer( swapchainSurface, NeedResize, WH::GetFramebufferSize );
+	uint64_t width, height;
+	WH::GetFramebufferSize( &width, &height );
+	m_swapchainSurface = swapchainSurface;
+
+	InitRenderer( *swapchainSurface, width, height );
 
 	LoadFontTexture();
 	CreateTextVertexBuffer( 256 );
@@ -185,15 +193,14 @@ static GfxDescriptorPool CreateDescriptorPool_BAD()
 
 void CompileScene( BindlessTexturesState* bindlessTexturesState, const GfxImage* skyboxImage )
 {
-	CleanupFrameGraph();
-
 	if( descriptorPool )
 		Destroy( &descriptorPool );
 	descriptorPool = CreateDescriptorPool_BAD();
 
 	CreateBuffers( bindlessTexturesState, skyboxImage );
 	FG_Script_SetInputBuffers( &_inputBuffers, descriptorPool );
-	CompileFrameGraph( InitializeScript );
+
+	CompileFrameGraph( InitializeScript, &m_fg_params );
 }
 
 void CleanupRendererImp()
@@ -210,5 +217,23 @@ void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance,
 	SceneFrameData frameData;
 	PrepareSceneFrameData(&frameData, currentFrame, cameraSceneInstance, light, drawList);
 
-	draw_frame(currentFrame, &frameData);
+	if( m_fg_need_reconfig )
+	{
+		CompileFrameGraph( InitializeScript, &m_fg_params );
+		m_fg_need_reconfig = false;
+	}
+	else
+	if( NeedResize() || draw_frame( currentFrame, &frameData ) == eRenderError::NEED_FRAMEBUFFER_RESIZE )
+	{
+		uint64_t frameBufferWidth, frameBufferHeight;
+		WH::GetFramebufferSize( &frameBufferWidth, &frameBufferHeight );
+		recreate_swap_chain( *m_swapchainSurface, frameBufferWidth, frameBufferHeight, InitializeScript, &m_fg_params );
+	}
+}
+
+void SetBtDebugDraw( bool value )
+{
+	if( m_fg_params.d_btDrawDebug != value )
+		m_fg_need_reconfig = true;
+	m_fg_params.d_btDrawDebug = value;
 }
