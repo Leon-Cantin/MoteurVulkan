@@ -1,6 +1,9 @@
 #pragma once
 
-namespace VKL
+namespace R_HW
 {
-	void truc();
+	namespace VKL
+	{
+		void truc();
+	}
 }

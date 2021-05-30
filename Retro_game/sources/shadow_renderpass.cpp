@@ -16,7 +16,7 @@ void computeShadowMatrix(const glm::vec3& light_location, glm::mat4* view, glm::
 	//return light_projection_matrix * light_view_matrix;
 }
 
-void UpdateShadowUniformBuffers(GpuBuffer* shadowSceneUniformBuffer, const SceneMatricesUniform* sceneUniforms)
+void UpdateShadowUniformBuffers( R_HW::GpuBuffer* shadowSceneUniformBuffer, const SceneMatricesUniform* sceneUniforms)
 {
 	//TODO don't pass in the perFrameBuffer but just the right one, doesn't need to know the frame
 	//per Instance data should be updated by the geometry render pass
@@ -24,28 +24,28 @@ void UpdateShadowUniformBuffers(GpuBuffer* shadowSceneUniformBuffer, const Scene
 	UpdateGpuBuffer( shadowSceneUniformBuffer, sceneUniforms, sizeof( SceneMatricesUniform ), 0 );
 }
 
-GpuPipelineLayout GetShadowPipelineLayout()
+R_HW::GpuPipelineLayout GetShadowPipelineLayout()
 {
-	return GpuPipelineLayout();
+	return R_HW::GpuPipelineLayout();
 }
 
-GpuPipelineStateDesc GetShadowPipelineState()
+R_HW::GpuPipelineStateDesc GetShadowPipelineState()
 {
-	GpuPipelineStateDesc gpuPipelineState = {};
+	R_HW::GpuPipelineStateDesc gpuPipelineState = {};
 	uint32_t bindingCount = GetBindingDescription( VIBindingsMeshOnly, &gpuPipelineState.viState );
 
 	gpuPipelineState.shaders = {
-		{ FS::readFile( "shaders/shadows.vert.spv" ), "main", GFX_SHADER_STAGE_VERTEX_BIT }, };
+		{ FS::readFile( "shaders/shadows.vert.spv" ), "main", R_HW::GFX_SHADER_STAGE_VERTEX_BIT }, };
 
 	gpuPipelineState.rasterizationState.backFaceCulling = true;
 	gpuPipelineState.rasterizationState.depthBiased = true;
 
 	gpuPipelineState.depthStencilState.depthRead = true;
 	gpuPipelineState.depthStencilState.depthWrite = true;
-	gpuPipelineState.depthStencilState.depthCompareOp = GfxCompareOp::LESS;
+	gpuPipelineState.depthStencilState.depthCompareOp = R_HW::GfxCompareOp::LESS;
 
 	gpuPipelineState.blendEnabled = false;
-	gpuPipelineState.primitiveTopology = GfxPrimitiveTopology::TRIANGLE_LIST;
+	gpuPipelineState.primitiveTopology = R_HW::GfxPrimitiveTopology::TRIANGLE_LIST;
 
 	return gpuPipelineState;
 }
@@ -54,33 +54,33 @@ GpuPipelineStateDesc GetShadowPipelineState()
 	Draw stuff
 */
 
-static void CmdBeginShadowPass( GfxCommandBuffer commandBuffer, size_t currentFrame, const RenderPass * renderpass, const Technique * technique )
+static void CmdBeginShadowPass( R_HW::GfxCommandBuffer commandBuffer, size_t currentFrame, const R_HW::RenderPass * renderpass, const Technique * technique )
 {
-	CmdBeginLabel( commandBuffer, "Shadow Renderpass", glm::vec4( 0.5f, 0.2f, 0.4f, 1.0f ) );
+	R_HW::CmdBeginLabel( commandBuffer, "Shadow Renderpass", glm::vec4( 0.5f, 0.2f, 0.4f, 1.0f ) );
 
-	const FrameBuffer& frameBuffer = renderpass->outputFrameBuffer[currentFrame];
-	BeginRenderPass( commandBuffer, *renderpass, frameBuffer );
+	const R_HW::FrameBuffer& frameBuffer = renderpass->outputFrameBuffer[currentFrame];
+	R_HW::BeginRenderPass( commandBuffer, *renderpass, frameBuffer );
 
 	BeginTechnique( commandBuffer, technique, currentFrame );
 }
 
-static void CmdDrawModel( GfxCommandBuffer commandBuffer, const DrawListEntry* drawModel, uint32_t currentFrame, const Technique * technique )
+static void CmdDrawModel( R_HW::GfxCommandBuffer commandBuffer, const DrawListEntry* drawModel, uint32_t currentFrame, const Technique * technique )
 {
 	const SceneInstanceSet* instanceSet = &drawModel->descriptorSet;
 	const GfxModel* modelAsset = drawModel->asset->modelAsset;
-	CmdBindRootDescriptor( commandBuffer, GfxPipelineBindPoint::GRAPHICS, technique->pipelineLayout, INSTANCE_SET, technique->descriptor_sets[INSTANCE_SET].hw_descriptorSets[currentFrame],
+	R_HW::CmdBindRootDescriptor( commandBuffer, R_HW::GfxPipelineBindPoint::GRAPHICS, technique->pipelineLayout, INSTANCE_SET, technique->descriptor_sets[INSTANCE_SET].hw_descriptorSets[currentFrame],
 		instanceSet->geometryBufferOffsets );
 
 	CmdDrawIndexed( commandBuffer, VIBindingsMeshOnly, *modelAsset );
 }
 
-static void CmdEndShadowPass( GfxCommandBuffer commandBuffer )
+static void CmdEndShadowPass( R_HW::GfxCommandBuffer commandBuffer )
 {
-	EndRenderPass( commandBuffer );
-	CmdEndLabel( commandBuffer );
+	R_HW::EndRenderPass( commandBuffer );
+	R_HW::CmdEndLabel( commandBuffer );
 }
 
-void ShadowRecordDrawCommandsBuffer( GfxCommandBuffer graphicsCommandBuffer, const FG::TaskInputData& inputData )
+void ShadowRecordDrawCommandsBuffer( R_HW::GfxCommandBuffer graphicsCommandBuffer, const FG::TaskInputData& inputData )
 {
 	const SceneFrameData* frameData = static_cast< const SceneFrameData* >(inputData.userData);
 	CmdBeginShadowPass( graphicsCommandBuffer, inputData.currentFrame, inputData.renderpass, inputData.technique );

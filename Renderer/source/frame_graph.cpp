@@ -9,17 +9,17 @@
 
 namespace FG
 {
-	const RenderPass* FrameGraph::GetRenderPass( uint32_t id )
+	const R_HW::RenderPass* FrameGraph::GetRenderPass( uint32_t id )
 	{
 		return imp->GetRenderPass( id );
 	}
 
-	const GfxImage* FrameGraph::GetImageFromId( user_id_t render_target_id )
+	const R_HW::GfxImage* FrameGraph::GetImageFromId( user_id_t render_target_id )
 	{
 		return imp->GetImageFromId( render_target_id );
 	}
 
-	void FrameGraph::AddExternalImage( fg_handle_t handle, uint32_t frameIndex, const GfxImage& image )
+	void FrameGraph::AddExternalImage( fg_handle_t handle, uint32_t frameIndex, const R_HW::GfxImage& image )
 	{
 		imp->_render_targets[handle][frameIndex] = image;
 	}
@@ -31,10 +31,10 @@ namespace FG
 		: imp( imp ) {}
 
 	//TODO could be generalized in gfxImage
-	static GfxImage CreateImage( GfxFormat format, VkExtent2D extent, GfxImageUsageFlags usage_flags, I_ImageAlloctor* allocator )
+	static R_HW::GfxImage CreateImage( R_HW::GfxFormat format, VkExtent2D extent, R_HW::GfxImageUsageFlags usage_flags, I_ImageAlloctor* allocator )
 	{
 		//TODO: we aren't getting any error for not transitionning to the image_layout? is it done in the renderpass?
-		GfxImage image = CreateImage( extent.width, extent.height, 1, format, usage_flags );
+		R_HW::GfxImage image = CreateImage( extent.width, extent.height, 1, format, usage_flags );
 
 		allocator->Allocate( image.image, &image.gfx_mem_alloc );
 
@@ -43,39 +43,39 @@ namespace FG
 		return image;
 	}
 
-	static AttachementDescription CreateRTCommon( GfxFormat format, fg_handle_t render_target_handle, GfxLayout optimalLayout, GfxAccess access )
+	static R_HW::AttachementDescription CreateRTCommon( R_HW::GfxFormat format, fg_handle_t render_target_handle, R_HW::GfxLayout optimalLayout, R_HW::GfxAccess access )
 	{
-		AttachementDescription description;
+		R_HW::AttachementDescription description;
 		description.format = format;
 		description.access = access;
 		description.layout = optimalLayout;
 		description.finalAccess = access; //TODO: Just like old Access, this isn't great, We never set this to write, only read.
 		description.finalLayout = optimalLayout;
-		description.loadOp = GfxLoadOp::DONT_CARE;
-		description.oldAccess = GfxAccess::WRITE;//TODO: old access isn't changed anywhere if old access is read we are boned
-		description.oldLayout = GfxLayout::UNDEFINED;
+		description.loadOp = R_HW::GfxLoadOp::DONT_CARE;
+		description.oldAccess = R_HW::GfxAccess::WRITE;//TODO: old access isn't changed anywhere if old access is read we are boned
+		description.oldLayout = R_HW::GfxLayout::UNDEFINED;
 
 		return description;
 	}
 
-	static AttachementDescription RenderColor( GfxFormat format, fg_handle_t render_target_handle )
+	static R_HW::AttachementDescription RenderColor( R_HW::GfxFormat format, fg_handle_t render_target_handle )
 	{
-		return CreateRTCommon( format, render_target_handle, GfxLayout::COLOR, GfxAccess::WRITE );
+		return CreateRTCommon( format, render_target_handle, R_HW::GfxLayout::COLOR, R_HW::GfxAccess::WRITE );
 	}
 
-	static AttachementDescription RenderDepth( GfxFormat format, fg_handle_t render_target_handle )
+	static R_HW::AttachementDescription RenderDepth( R_HW::GfxFormat format, fg_handle_t render_target_handle )
 	{
-		return CreateRTCommon( format, render_target_handle, GfxLayout::DEPTH_STENCIL, GfxAccess::WRITE );
+		return CreateRTCommon( format, render_target_handle, R_HW::GfxLayout::DEPTH_STENCIL, R_HW::GfxAccess::WRITE );
 	}
 
-	static AttachementDescription ReadRenderTargetDepth( GfxFormat format, fg_handle_t render_target_handle )
+	static R_HW::AttachementDescription ReadRenderTargetDepth( R_HW::GfxFormat format, fg_handle_t render_target_handle )
 	{
-		return CreateRTCommon( format, render_target_handle, GfxLayout::DEPTH_STENCIL, GfxAccess::READ );
+		return CreateRTCommon( format, render_target_handle, R_HW::GfxLayout::DEPTH_STENCIL, R_HW::GfxAccess::READ );
 	}
 
-	void ClearTarget( AttachementDescription* attachementDesc )
+	void ClearTarget( R_HW::AttachementDescription* attachementDesc )
 	{
-		attachementDesc->loadOp = GfxLoadOp::CLEAR;
+		attachementDesc->loadOp = R_HW::GfxLoadOp::CLEAR;
 	}
 
 	static int32_t FindResourceIndex( const RenderPassCreationData& pass, fg_handle_t render_target_handle )
@@ -89,27 +89,27 @@ namespace FG
 		return -1;
 	}
 
-	static AttachementDescription* GetAttachementDesc( RenderPassCreationData* pass, fg_handle_t render_target_handle )
+	static R_HW::AttachementDescription* GetAttachementDesc( RenderPassCreationData* pass, fg_handle_t render_target_handle )
 	{
 		uint32_t resource_index = FindResourceIndex( *pass, render_target_handle );
 		assert( resource_index >= 0 && resource_index < pass->attachmentCount );
 		return &pass->descriptions[resource_index];
 	}
 
-	static void CreateBuffer( const FG::DataEntry& techniqueDataEntry, I_BufferAllocator* bufferAllocator, GpuBuffer* o_buffer )
+	static void CreateBuffer( const FG::DataEntry& techniqueDataEntry, R_HW::I_BufferAllocator* bufferAllocator, R_HW::GpuBuffer* o_buffer )
 	{
-		GfxDeviceSize size;
+		R_HW::GfxDeviceSize size;
 		switch( techniqueDataEntry.descriptorType )
 		{
-		case eDescriptorType::BUFFER:
+		case R_HW::eDescriptorType::BUFFER:
 			size = techniqueDataEntry.resourceDesc.extent.width;
 			break;
-		case eDescriptorType::BUFFER_DYNAMIC:
+		case R_HW::eDescriptorType::BUFFER_DYNAMIC:
 			size = techniqueDataEntry.resourceDesc.extent.width * techniqueDataEntry.resourceDesc.extent.height;
 		}
 
 		//TODO: could have to change VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT if we write (store). Will have to check all bindings to know.
-		o_buffer->buffer = create_buffer( size, GFX_BUFFER_USAGE_UNIFORM_BUFFER_BIT );
+		o_buffer->buffer = create_buffer( size, R_HW::GFX_BUFFER_USAGE_UNIFORM_BUFFER_BIT );
 		bufferAllocator->Allocate( o_buffer->buffer, &o_buffer->gpuMemory );
 	}
 
@@ -127,7 +127,7 @@ namespace FG
 			{
 				const RenderTargetRef& rtRef = pass.frame_graph_node.renderTargetRefs[rtIndex];
 				const fg_handle_t resource_h = rtRef.resourceHandle;
-				const GfxFormat format = creationData.resources[rtRef.resourceHandle].resourceDesc.format;
+				const R_HW::GfxFormat format = creationData.resources[rtRef.resourceHandle].resourceDesc.format;
 
 				if( rtRef.flags & FG_RENDERTARGET_REF_READ_BIT )
 				{
@@ -140,8 +140,8 @@ namespace FG
 						if( otherPassReferenceIndex >= 0 )
 						{
 							//Last pass should transition to read resource at the end
-							lastPassWithResource->descriptions[otherPassReferenceIndex].finalLayout = GfxLayout::COLOR;
-							lastPassWithResource->descriptions[otherPassReferenceIndex].finalAccess = GfxAccess::READ;
+							lastPassWithResource->descriptions[otherPassReferenceIndex].finalLayout = R_HW::GfxLayout::COLOR;
+							lastPassWithResource->descriptions[otherPassReferenceIndex].finalAccess = R_HW::GfxAccess::READ;
 						}
 						else
 						{
@@ -159,9 +159,9 @@ namespace FG
 
 					const uint32_t attachement_index = pass.attachmentCount++;
 					pass.fgHandleAttachement[attachement_index] = resource_h;
-					AttachementDescription& description = pass.descriptions[attachement_index];
+					R_HW::AttachementDescription& description = pass.descriptions[attachement_index];
 
-					if( creationData.resources[resource_h].resourceDesc.usage_flags & DEPTH_STENCIL_ATTACHMENT )
+					if( creationData.resources[resource_h].resourceDesc.usage_flags & R_HW::DEPTH_STENCIL_ATTACHMENT )
 					{
 						if( rtRef.flags & FG_RENDERTARGET_REF_DEPTH_READ )
 							description = ReadRenderTargetDepth( format, rtRef.resourceHandle );
@@ -179,19 +179,19 @@ namespace FG
 					{
 						RenderPassCreationData* lastPassWithResource = it_found->second;
 						//The last pass will have to transition into this pass' layout
-						AttachementDescription* lastAttachementDesc = GetAttachementDesc( lastPassWithResource, resource_h );
+						R_HW::AttachementDescription* lastAttachementDesc = GetAttachementDesc( lastPassWithResource, resource_h );
 						lastAttachementDesc->finalLayout = description.layout;
 						if( rtRef.flags & FG_RENDERTARGET_REF_DEPTH_READ )
 						{
-							lastAttachementDesc->finalAccess = GfxAccess::READ;
-							description.oldAccess = GfxAccess::READ;
+							lastAttachementDesc->finalAccess = R_HW::GfxAccess::READ;
+							description.oldAccess = R_HW::GfxAccess::READ;
 						}
 
 						//This pass'initial layout should be the same as the layout since the line above will transition it
 						description.oldLayout = description.layout;
 
 						//If another pass wrote into this, we shouldn't discard the data
-						description.loadOp = GfxLoadOp::LOAD;//TODO: Maybe we shouldn't load if we specified a CLEAR
+						description.loadOp = R_HW::GfxLoadOp::LOAD;//TODO: Maybe we shouldn't load if we specified a CLEAR
 					}
 				}
 
@@ -202,9 +202,9 @@ namespace FG
 
 	static void CreateResources( FrameGraphCreationData& creationData, FrameGraphInternal* o_frameGraph )
 	{
-		o_frameGraph->_gfx_mem_heap = create_gfx_heap( 16 * 1024 * 1024, GFX_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
+		o_frameGraph->_gfx_mem_heap = R_HW::create_gfx_heap( 16 * 1024 * 1024, R_HW::GFX_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
 		GfxHeaps_BatchedAllocator image_allocator( &o_frameGraph->_gfx_mem_heap );
-		o_frameGraph->_gfx_mem_heap_host_visible = create_gfx_heap( 8 * 1024 * 1024, GFX_MEMORY_PROPERTY_HOST_VISIBLE_BIT | GFX_MEMORY_PROPERTY_HOST_COHERENT_BIT );
+		o_frameGraph->_gfx_mem_heap_host_visible = R_HW::create_gfx_heap( 8 * 1024 * 1024, R_HW::GFX_MEMORY_PROPERTY_HOST_VISIBLE_BIT | R_HW::GFX_MEMORY_PROPERTY_HOST_COHERENT_BIT );
 		GfxHeaps_BatchedAllocator buffer_allocator( &o_frameGraph->_gfx_mem_heap_host_visible );
 
 		image_allocator.Prepare();
@@ -218,7 +218,7 @@ namespace FG
 					for( uint32_t frameIndex = 0; frameIndex < SIMULTANEOUS_FRAMES; ++frameIndex )
 						CreateBuffer( creationData.resources[fg_Handle], &buffer_allocator, &o_frameGraph->_buffers[fg_Handle][frameIndex] );
 				}
-				else if( creationData.resources[fg_Handle].descriptorType == eDescriptorType::SAMPLER )
+				else if( creationData.resources[fg_Handle].descriptorType == R_HW::eDescriptorType::SAMPLER )
 				{
 				}
 				else
@@ -235,30 +235,30 @@ namespace FG
 	}
 
 	//TODO: probably doesn't need the frame graph
-	static void CreateFrameBuffer( RenderPass* renderpass, const RenderPassCreationData& passCreationData, uint32_t colorCount, bool containsDepth, FrameGraphInternal* frameGraph )
+	static void CreateFrameBuffer( R_HW::RenderPass* renderpass, const RenderPassCreationData& passCreationData, uint32_t colorCount, bool containsDepth, FrameGraphInternal* frameGraph )
 	{
 		VkExtent2D extent = frameGraph->_render_targets[passCreationData.fgHandleAttachement[0]][0].extent;
 		for( uint32_t frameIndex = 0; frameIndex < SIMULTANEOUS_FRAMES; frameIndex++ )
 		{
-			GfxImageView colorImages[MAX_ATTACHMENTS_COUNT];
+			R_HW::GfxImageView colorImages[MAX_ATTACHMENTS_COUNT];
 			for( uint32_t colorIndex = 0; colorIndex < colorCount; ++colorIndex )
 			{
 				const fg_handle_t resourceHandle = passCreationData.fgHandleAttachement[colorIndex];
 				colorImages[colorIndex] = frameGraph->_render_targets[resourceHandle][frameIndex].imageView;
 			}
-			GfxImageView* depthImage = containsDepth ? &frameGraph->_render_targets[passCreationData.fgHandleAttachement[colorCount]][frameIndex].imageView : nullptr;
+			R_HW::GfxImageView* depthImage = containsDepth ? &frameGraph->_render_targets[passCreationData.fgHandleAttachement[colorCount]][frameIndex].imageView : nullptr;
 
 
 			renderpass->outputFrameBuffer[frameIndex] = CreateFrameBuffer( colorImages, colorCount, depthImage, extent, *renderpass );
 		}
 	}
 
-	static void CreateRenderPass(const RenderPassCreationData& passCreationData, const char* name, RenderPass* o_renderPass, FrameGraphInternal* frameGraph)
+	static void CreateRenderPass(const RenderPassCreationData& passCreationData, const char* name, R_HW::RenderPass* o_renderPass, FrameGraphInternal* frameGraph)
 	{
 		assert(passCreationData.attachmentCount > 0);
-		bool containsDepth = passCreationData.descriptions[passCreationData.attachmentCount - 1].layout == GfxLayout::DEPTH_STENCIL;
+		bool containsDepth = passCreationData.descriptions[passCreationData.attachmentCount - 1].layout == R_HW::GfxLayout::DEPTH_STENCIL;
 		uint32_t colorCount = passCreationData.attachmentCount - (containsDepth ? 1 : 0);
-		const AttachementDescription* ptrDepthStencilAttachement = (containsDepth ? &passCreationData.descriptions[colorCount] : nullptr );
+		const R_HW::AttachementDescription* ptrDepthStencilAttachement = (containsDepth ? &passCreationData.descriptions[colorCount] : nullptr );
 
 		*o_renderPass = CreateRenderPass( name, passCreationData.descriptions, colorCount, ptrDepthStencilAttachement );
 
@@ -300,16 +300,16 @@ namespace FG
 		if( !frameGraphExternal->imp )
 			return;
 
-		DestroyImage( &frameGraphExternal->dummyImage );
+		R_HW::DestroyImage( &frameGraphExternal->dummyImage );
 
 		FrameGraphInternal* frameGraph = frameGraphExternal->imp;
 
 		for (uint32_t i = 0; i < frameGraph->_render_targets_count; ++i)
 		{
 			//TODO: So far only the external stuff is multi buffered
-			GfxImage& image = frameGraph->_render_targets[i][0];
+			R_HW::GfxImage& image = frameGraph->_render_targets[i][0];
 			if( image.image && !( frameGraph->creationData.resources[i].flags & eDataEntryFlags::EXTERNAL ) )
-				DestroyImage( &image );
+				R_HW::DestroyImage( &image );
 		}
 		frameGraph->_render_targets_count = 0;
 		for( uint32_t i = 0; i < frameGraph->creationData.resources.size(); ++i )
@@ -323,7 +323,7 @@ namespace FG
 
 		for (uint32_t i = 0; i < frameGraph->_render_passes_count; ++i)
 		{
-			RenderPass& renderpass = frameGraph->_render_passes[i];
+			R_HW::RenderPass& renderpass = frameGraph->_render_passes[i];
 			for (uint32_t fb_index = 0; fb_index < SIMULTANEOUS_FRAMES; ++fb_index)
 			{
 				Destroy( &renderpass.outputFrameBuffer[fb_index] );
@@ -350,7 +350,7 @@ namespace FG
 		frameGraphExternal->imp = nullptr;
 	}
 
-	void RecordDrawCommands(uint32_t currentFrame, void* userData, GfxCommandBuffer graphicsCommandBuffer, VkExtent2D extent, FrameGraph* frameGraphExternal)
+	void RecordDrawCommands(uint32_t currentFrame, void* userData, R_HW::GfxCommandBuffer graphicsCommandBuffer, VkExtent2D extent, FrameGraph* frameGraphExternal)
 	{
 		FrameGraphInternal* frameGraph = frameGraphExternal->imp;
 		for (uint32_t i = 0; i < frameGraph->_render_passes_count; ++i)

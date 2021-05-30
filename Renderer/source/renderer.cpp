@@ -11,14 +11,14 @@ namespace RNDR
 {
 	struct R_State
 	{
-		GfxCommandPool g_graphicsCommandPool;
+		R_HW::GfxCommandPool g_graphicsCommandPool;
 
-		Swapchain g_swapchain;
-		std::array<GfxCommandBuffer, SIMULTANEOUS_FRAMES> g_graphicsCommandBuffers;
+		R_HW::Swapchain g_swapchain;
+		std::array<R_HW::GfxCommandBuffer, SIMULTANEOUS_FRAMES> g_graphicsCommandBuffers;
 
-		std::array<GfxSemaphore, SIMULTANEOUS_FRAMES> imageAvailableSemaphores;
-		std::array<GfxSemaphore, SIMULTANEOUS_FRAMES> renderFinishedSemaphores;
-		std::array<GfxFence, SIMULTANEOUS_FRAMES> end_of_frame_fences;
+		std::array<R_HW::GfxSemaphore, SIMULTANEOUS_FRAMES> imageAvailableSemaphores;
+		std::array<R_HW::GfxSemaphore, SIMULTANEOUS_FRAMES> renderFinishedSemaphores;
+		std::array<R_HW::GfxFence, SIMULTANEOUS_FRAMES> end_of_frame_fences;
 
 		FG::FrameGraph _frameGraph;
 	};
@@ -27,16 +27,16 @@ namespace RNDR
 	{
 		for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 		{
-			if( !CreateGfxSemaphore( &pr_state->imageAvailableSemaphores[i] ) ||
-				!CreateGfxSemaphore( &pr_state->renderFinishedSemaphores[i] ) ||
-				!CreateGfxFence( &pr_state->end_of_frame_fences[i] ) )
+			if( !R_HW::CreateGfxSemaphore( &pr_state->imageAvailableSemaphores[i] ) ||
+				!R_HW::CreateGfxSemaphore( &pr_state->renderFinishedSemaphores[i] ) ||
+				!R_HW::CreateGfxFence( &pr_state->end_of_frame_fences[i] ) )
 			{
 				throw std::runtime_error( "failed to create semaphores!" );
 			}
 
-			MarkGfxObject( pr_state->imageAvailableSemaphores[i], "image available semaphore" );
-			MarkGfxObject( pr_state->renderFinishedSemaphores[i], "render finished semaphore" );
-			MarkGfxObject( pr_state->end_of_frame_fences[i], "In flight fence" );
+			R_HW::MarkGfxObject( pr_state->imageAvailableSemaphores[i], "image available semaphore" );
+			R_HW::MarkGfxObject( pr_state->renderFinishedSemaphores[i], "render finished semaphore" );
+			R_HW::MarkGfxObject( pr_state->end_of_frame_fences[i], "In flight fence" );
 		}
 	}
 
@@ -45,15 +45,15 @@ namespace RNDR
 		return pr_state->g_swapchain.extent;
 	}
 
-	R_State* CreateRenderer( DisplaySurface swapchainSurface, uint64_t width, uint64_t height )
+	R_State* CreateRenderer( R_HW::DisplaySurface swapchainSurface, uint64_t width, uint64_t height )
 	{
 		R_State* pr_state = new R_State();
 
 		CreateSwapChain( swapchainSurface, width, height, pr_state->g_swapchain );
 
-		CreateCommandPool( g_gfx.device.graphics_queue.queueFamilyIndex, &pr_state->g_graphicsCommandPool );
-		CreateSingleUseCommandPool( g_gfx.device.graphics_queue.queueFamilyIndex, &g_gfx.graphicsSingleUseCommandPool );
-		if( !CreateCommandBuffers( pr_state->g_graphicsCommandPool, pr_state->g_graphicsCommandBuffers.data(), static_cast< uint32_t >(pr_state->g_graphicsCommandBuffers.size()) ) )
+		R_HW::CreateCommandPool( g_gfx.device.graphics_queue.queueFamilyIndex, &pr_state->g_graphicsCommandPool );
+		R_HW::CreateSingleUseCommandPool( g_gfx.device.graphics_queue.queueFamilyIndex, &g_gfx.graphicsSingleUseCommandPool );
+		if( !R_HW::CreateCommandBuffers( pr_state->g_graphicsCommandPool, pr_state->g_graphicsCommandBuffers.data(), static_cast< uint32_t >(pr_state->g_graphicsCommandBuffers.size()) ) )
 			throw std::runtime_error( "failed to allocate command buffers!" );
 
 		InitSamplers();
@@ -67,15 +67,15 @@ namespace RNDR
 
 	void CompileFrameGraph( R_State* pr_state, FG_CompileScriptCallback_t FGScriptInitialize, void* fg_user_params )
 	{
-		DeviceWaitIdle( g_gfx.device.device );
+		R_HW::DeviceWaitIdle( g_gfx.device.device );
 
 		FG::Cleanup( &pr_state->_frameGraph );
 		pr_state->_frameGraph = FGScriptInitialize( &pr_state->g_swapchain, fg_user_params );
 	}
 
-	void recreate_swap_chain( R_State* pr_state, DisplaySurface swapchainSurface, uint64_t width, uint64_t height, FG_CompileScriptCallback_t FGScriptInitialize, void* fg_user_params )
+	void recreate_swap_chain( R_State* pr_state, R_HW::DisplaySurface swapchainSurface, uint64_t width, uint64_t height, FG_CompileScriptCallback_t FGScriptInitialize, void* fg_user_params )
 	{
-		DeviceWaitIdle( g_gfx.device.device );
+		R_HW::DeviceWaitIdle( g_gfx.device.device );
 
 		Destroy( &pr_state->g_swapchain );
 
@@ -87,53 +87,53 @@ namespace RNDR
 
 	static void RecordCommandBuffer( R_State* pr_state, uint32_t currentFrame, const SceneFrameData* frameData )
 	{
-		GfxCommandBuffer graphicsCommandBuffer = pr_state->g_graphicsCommandBuffers[currentFrame];
-		BeginCommandBufferRecording( graphicsCommandBuffer );
+		R_HW::GfxCommandBuffer graphicsCommandBuffer = pr_state->g_graphicsCommandBuffers[currentFrame];
+		R_HW::BeginCommandBufferRecording( graphicsCommandBuffer );
 
 		CmdResetTimeStampSet( graphicsCommandBuffer, currentFrame );
 
-		CmdWriteTimestamp( graphicsCommandBuffer, GFX_PIPELINE_STAGE_TOP_OF_PIPE_BIT, Timestamp::COMMAND_BUFFER_START, currentFrame );
+		CmdWriteTimestamp( graphicsCommandBuffer, R_HW::GFX_PIPELINE_STAGE_TOP_OF_PIPE_BIT, Timestamp::COMMAND_BUFFER_START, currentFrame );
 
 		FG::RecordDrawCommands( currentFrame, const_cast< SceneFrameData* >(frameData), graphicsCommandBuffer, pr_state->g_swapchain.extent, &pr_state->_frameGraph );
 
 		//TODO: Maybe make a present task so it changes the final layout in the frame graph?
-		GfxImageBarrier( graphicsCommandBuffer, pr_state->g_swapchain.images[currentFrame].image, GfxLayout::COLOR, GfxAccess::WRITE, GfxLayout::PRESENT, GfxAccess::READ );
+		R_HW::GfxImageBarrier( graphicsCommandBuffer, pr_state->g_swapchain.images[currentFrame].image, R_HW::GfxLayout::COLOR, R_HW::GfxAccess::WRITE, R_HW::GfxLayout::PRESENT, R_HW::GfxAccess::READ );
 
-		CmdWriteTimestamp( graphicsCommandBuffer, GFX_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, Timestamp::COMMAND_BUFFER_END, currentFrame );
+		CmdWriteTimestamp( graphicsCommandBuffer, R_HW::GFX_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, Timestamp::COMMAND_BUFFER_END, currentFrame );
 
-		EndCommandBufferRecording( graphicsCommandBuffer );
+		R_HW::EndCommandBufferRecording( graphicsCommandBuffer );
 	}
 
 	void WaitForFrame( const R_State* pr_state, uint32_t currentFrame )
 	{
-		WaitForFence( &pr_state->end_of_frame_fences[currentFrame], 1 );
+		R_HW::WaitForFence( &pr_state->end_of_frame_fences[currentFrame], 1 );
 	}
 
 	eRenderError draw_frame( R_State* pr_state, uint32_t currentFrame, const SceneFrameData* frameData )
 	{
 		RecordCommandBuffer( pr_state, currentFrame, frameData );
 
-		GfxSwapchainImage swapchainImage;
-		const GfxSwapchainOperationResult aquireSwapChainImageResult = AcquireNextSwapchainImage( pr_state->g_swapchain.swapchain, pr_state->imageAvailableSemaphores[currentFrame], &swapchainImage );
+		R_HW::GfxSwapchainImage swapchainImage;
+		const R_HW::GfxSwapchainOperationResult aquireSwapChainImageResult = AcquireNextSwapchainImage( pr_state->g_swapchain.swapchain, pr_state->imageAvailableSemaphores[currentFrame], &swapchainImage );
 		//TODO: Do I really need 2 check for recreate swap chain in this function?
-		if( !SwapchainImageIsValid( aquireSwapChainImageResult ) ) {
-			unsignalSemaphore( pr_state->imageAvailableSemaphores[currentFrame] );
+		if( !R_HW::SwapchainImageIsValid( aquireSwapChainImageResult ) ) {
+			R_HW::unsignalSemaphore( pr_state->imageAvailableSemaphores[currentFrame] );
 			return eRenderError::NEED_FRAMEBUFFER_RESIZE;
 		}
 
 		//Submit work
-		GfxSemaphore waitSemaphores[] = { pr_state->imageAvailableSemaphores[currentFrame] };
-		GfxPipelineStageFlag waitStages[] = { GFX_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-		GfxSemaphore signalSemaphores[] = { pr_state->renderFinishedSemaphores[currentFrame] }; //TODO make a system that keeps the semaphores ordered
+		R_HW::GfxSemaphore waitSemaphores[] = { pr_state->imageAvailableSemaphores[currentFrame] };
+		R_HW::GfxPipelineStageFlag waitStages[] = { R_HW::GFX_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		R_HW::GfxSemaphore signalSemaphores[] = { pr_state->renderFinishedSemaphores[currentFrame] }; //TODO make a system that keeps the semaphores ordered
 
-		ResetGfxFences( &pr_state->end_of_frame_fences[currentFrame], 1 );
+		R_HW::ResetGfxFences( &pr_state->end_of_frame_fences[currentFrame], 1 );
 
-		if( !QueueSubmit( g_gfx.device.graphics_queue.queue, &pr_state->g_graphicsCommandBuffers[currentFrame], 1, waitSemaphores, waitStages, 1, signalSemaphores, 1, pr_state->end_of_frame_fences[currentFrame] ) )
+		if( !R_HW::QueueSubmit( g_gfx.device.graphics_queue.queue, &pr_state->g_graphicsCommandBuffers[currentFrame], 1, waitSemaphores, waitStages, 1, signalSemaphores, 1, pr_state->end_of_frame_fences[currentFrame] ) )
 			throw std::runtime_error( "failed to submit draw command buffer!" );
 
 		//Present
-		const GfxSwapchainOperationResult presentResult = QueuePresent( g_gfx.device.present_queue.queue, swapchainImage, &pr_state->renderFinishedSemaphores[currentFrame], 1 );
-		if( !SwapchainImageIsValid( presentResult ) )
+		const R_HW::GfxSwapchainOperationResult presentResult = QueuePresent( g_gfx.device.present_queue.queue, swapchainImage, &pr_state->renderFinishedSemaphores[currentFrame], 1 );
+		if( !R_HW::SwapchainImageIsValid( presentResult ) )
 		{
 			eRenderError::NEED_FRAMEBUFFER_RESIZE;
 		}
@@ -145,7 +145,7 @@ namespace RNDR
 	{
 		R_State* pr_state = *ppr_state;
 
-		DestroyCommandBuffers( pr_state->g_graphicsCommandPool, pr_state->g_graphicsCommandBuffers.data(), static_cast< uint32_t >(pr_state->g_graphicsCommandBuffers.size()) );
+		R_HW::DestroyCommandBuffers( pr_state->g_graphicsCommandPool, pr_state->g_graphicsCommandBuffers.data(), static_cast< uint32_t >(pr_state->g_graphicsCommandBuffers.size()) );
 
 		Destroy( &pr_state->g_swapchain );
 
@@ -155,13 +155,13 @@ namespace RNDR
 
 		for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 		{
-			DestroyGfxSemaphore( &pr_state->renderFinishedSemaphores[i] );
-			DestroyGfxSemaphore( &pr_state->imageAvailableSemaphores[i] );
-			DestroyGfxFence( &pr_state->end_of_frame_fences[i] );
+			R_HW::DestroyGfxSemaphore( &pr_state->renderFinishedSemaphores[i] );
+			R_HW::DestroyGfxSemaphore( &pr_state->imageAvailableSemaphores[i] );
+			R_HW::DestroyGfxFence( &pr_state->end_of_frame_fences[i] );
 		}
 
-		Destroy( &pr_state->g_graphicsCommandPool );
-		Destroy( &g_gfx.graphicsSingleUseCommandPool );
+		R_HW::Destroy( &pr_state->g_graphicsCommandPool );
+		R_HW::Destroy( &g_gfx.graphicsSingleUseCommandPool );
 
 		DestroyTimeStampsPool();
 
@@ -170,13 +170,13 @@ namespace RNDR
 	}
 }
 
-void CmdBindVertexInputs( GfxCommandBuffer commandBuffer, const std::vector<VIBinding>& gpuPipelineVIBindings, const GfxModel& gfxModel )
+void CmdBindVertexInputs( R_HW::GfxCommandBuffer commandBuffer, const std::vector<R_HW::VIBinding>& gpuPipelineVIBindings, const GfxModel& gfxModel )
 {
 	const uint32_t maxVertexInputBinding = 16;
 	const uint32_t gpuPipelineVIBingindCount = gpuPipelineVIBindings.size();
 	assert( gpuPipelineVIBingindCount <= maxVertexInputBinding );
-	GfxApiBuffer vertexBuffers[maxVertexInputBinding];
-	GfxDeviceSize offsets[maxVertexInputBinding];
+	R_HW::GfxApiBuffer vertexBuffers[maxVertexInputBinding];
+	R_HW::GfxDeviceSize offsets[maxVertexInputBinding];
 
 	for( uint32_t i = 0; i < gpuPipelineVIBingindCount; ++i )
 	{
@@ -187,17 +187,17 @@ void CmdBindVertexInputs( GfxCommandBuffer commandBuffer, const std::vector<VIBi
 		offsets[i] = 0;
 	}
 
-	CmdBindVertexInputs( commandBuffer, vertexBuffers, 0, gpuPipelineVIBingindCount, offsets );
+	R_HW::CmdBindVertexInputs( commandBuffer, vertexBuffers, 0, gpuPipelineVIBingindCount, offsets );
 }
 
-void CmdDrawIndexed( GfxCommandBuffer commandBuffer, const std::vector<VIBinding>& gpuPipelineVIBindings, const GfxModel& gfxModel, uint32_t indexCount )
+void CmdDrawIndexed( R_HW::GfxCommandBuffer commandBuffer, const std::vector<R_HW::VIBinding>& gpuPipelineVIBindings, const GfxModel& gfxModel, uint32_t indexCount )
 {
 	CmdBindVertexInputs( commandBuffer, gpuPipelineVIBindings, gfxModel );
 	CmdBindIndexBuffer( commandBuffer, gfxModel.indexBuffer.buffer, 0, gfxModel.indexType );
-	CmdDrawIndexed( commandBuffer, indexCount, 1, 0, 0, 0 );
+	R_HW::CmdDrawIndexed( commandBuffer, indexCount, 1, 0, 0, 0 );
 }
 
-void CmdDrawIndexed( GfxCommandBuffer commandBuffer, const std::vector<VIBinding>& gpuPipelineVIBindings, const GfxModel& gfxModel )
+void CmdDrawIndexed( R_HW::GfxCommandBuffer commandBuffer, const std::vector<R_HW::VIBinding>& gpuPipelineVIBindings, const GfxModel& gfxModel )
 {
 	CmdDrawIndexed( commandBuffer, gpuPipelineVIBindings, gfxModel, gfxModel.indexCount );
 }

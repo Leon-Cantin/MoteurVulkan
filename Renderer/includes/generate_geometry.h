@@ -12,7 +12,7 @@ typedef uint32_t Index_t;
 const uint32_t verticesPerQuad = 4;
 const uint32_t indexesPerQuad = 6;
 
-GfxModel GenerateQuad( float width, float height, I_BufferAllocator* allocator )
+GfxModel GenerateQuad( float width, float height, R_HW::I_BufferAllocator* allocator )
 {
 	std::vector<glm::vec3> text_vertices_pos;
 	text_vertices_pos.resize( verticesPerQuad );
@@ -49,10 +49,10 @@ GfxModel GenerateQuad( float width, float height, I_BufferAllocator* allocator )
 	text_indices[4] = 3;
 	text_indices[5] = 0;
 
-	std::vector<VIDesc> modelVIDescs = {
-		{ ( VIDataType )eVIDataType::POSITION, eVIDataElementType::FLOAT, 3 },
-		{ ( VIDataType )eVIDataType::COLOR, eVIDataElementType::FLOAT, 3 },
-		{ ( VIDataType )eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2 },
+	std::vector<R_HW::VIDesc> modelVIDescs = {
+		{ (R_HW::VIDataType )eVIDataType::POSITION, R_HW::eVIDataElementType::FLOAT, 3 },
+		{ (R_HW::VIDataType )eVIDataType::COLOR, R_HW::eVIDataElementType::FLOAT, 3 },
+		{ (R_HW::VIDataType )eVIDataType::TEX_COORD, R_HW::eVIDataElementType::FLOAT, 2 },
 	};
 
 	std::vector<void*> modelData = {
@@ -64,7 +64,7 @@ GfxModel GenerateQuad( float width, float height, I_BufferAllocator* allocator )
 	return CreateGfxModel( modelVIDescs, modelData, verticesPerQuad, text_indices.data(), indexesPerQuad, sizeof( Index_t ), allocator );
 }
 
-GfxModel GenerateQuad( float size, I_BufferAllocator* allocator )
+GfxModel GenerateQuad( float size, R_HW::I_BufferAllocator* allocator )
 {
 	return GenerateQuad( size, size, allocator );
 }

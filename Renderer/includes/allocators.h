@@ -3,7 +3,7 @@
 
 struct BufferAllocator
 {
-	const GpuBuffer* buffer;
+	const R_HW::GpuBuffer* buffer;
 	size_t head = 0;
 };
 

@@ -17,62 +17,62 @@ constexpr uint32_t maxIndices = maxVertices * 3;
 
 void CreateBtDebudModels()
 {
-	std::vector<VIDesc> modelVIDescs = {
-		{ ( VIDataType )eVIDataType::POSITION, eVIDataElementType::FLOAT, 3 },
-		{ ( VIDataType )eVIDataType::COLOR, eVIDataElementType::FLOAT, 3 },
+	std::vector<R_HW::VIDesc> modelVIDescs = {
+		{ (R_HW::VIDataType )eVIDataType::POSITION, R_HW::eVIDataElementType::FLOAT, 3 },
+		{ (R_HW::VIDataType )eVIDataType::COLOR, R_HW::eVIDataElementType::FLOAT, 3 },
 	};
 
 	for( GfxModel& debug_model : g_btDebugDrawState.debug_models  )
 		debug_model = CreateGfxModel( modelVIDescs, maxVertices, maxIndices, sizeof( uint32_t ) );
 }
 
-GpuPipelineLayout GetBtDebugPipelineLayout()
+R_HW::GpuPipelineLayout GetBtDebugPipelineLayout()
 {
-	return GpuPipelineLayout();
+	return R_HW::GpuPipelineLayout();
 }
 
-GpuPipelineStateDesc GetBtDebugPipelineState()
+R_HW::GpuPipelineStateDesc GetBtDebugPipelineState()
 {
-	GpuPipelineStateDesc gpuPipelineState = {};
+	R_HW::GpuPipelineStateDesc gpuPipelineState = {};
 	GetBindingDescription( VIBindings_PosColUV, &gpuPipelineState.viState );
 
 	gpuPipelineState.shaders = {
-		{ FS::readFile( "shaders/line_draw.vert.spv" ), "main", GFX_SHADER_STAGE_VERTEX_BIT },
-		{ FS::readFile( "shaders/line_draw.frag.spv" ), "main", GFX_SHADER_STAGE_FRAGMENT_BIT } };
+		{ FS::readFile( "shaders/line_draw.vert.spv" ), "main", R_HW::GFX_SHADER_STAGE_VERTEX_BIT },
+		{ FS::readFile( "shaders/line_draw.frag.spv" ), "main", R_HW::GFX_SHADER_STAGE_FRAGMENT_BIT } };
 
 	gpuPipelineState.rasterizationState.backFaceCulling = false;
 	gpuPipelineState.rasterizationState.depthBiased = false;
 
 	gpuPipelineState.depthStencilState.depthRead = false;
 	gpuPipelineState.depthStencilState.depthWrite = false;
-	gpuPipelineState.depthStencilState.depthCompareOp = GfxCompareOp::LESS;
+	gpuPipelineState.depthStencilState.depthCompareOp = R_HW::GfxCompareOp::LESS;
 
 	gpuPipelineState.blendEnabled = false;
-	gpuPipelineState.primitiveTopology = GfxPrimitiveTopology::LINE_LIST;
+	gpuPipelineState.primitiveTopology = R_HW::GfxPrimitiveTopology::LINE_LIST;
 
 	gpuPipelineState.lineWidth = 1.0f;
-	gpuPipelineState.polygonMode = GfxPolygonMode::FILL;
+	gpuPipelineState.polygonMode = R_HW::GfxPolygonMode::FILL;
 
 	return gpuPipelineState;
 }
 
-static void CmdBeginRenderPass( VkCommandBuffer commandBuffer, uint32_t currentFrame, const RenderPass * renderpass, const Technique * technique )
+static void CmdBeginRenderPass( VkCommandBuffer commandBuffer, uint32_t currentFrame, const R_HW::RenderPass * renderpass, const Technique * technique )
 {
-	CmdBeginLabel( commandBuffer, "Bullet debug", glm::vec4( 0.3f, 0.2f, 0.8f, 1.0f ) );
+	R_HW::CmdBeginLabel( commandBuffer, "Bullet debug", glm::vec4( 0.3f, 0.2f, 0.8f, 1.0f ) );
 
-	const FrameBuffer& frameBuffer = renderpass->outputFrameBuffer[currentFrame];
-	BeginRenderPass( commandBuffer, *renderpass, frameBuffer );
+	const R_HW::FrameBuffer& frameBuffer = renderpass->outputFrameBuffer[currentFrame];
+	R_HW::BeginRenderPass( commandBuffer, *renderpass, frameBuffer );
 
 	BeginTechnique( commandBuffer, technique, currentFrame );
 }
 
 static void CmdEndRenderPass( VkCommandBuffer vkCommandBuffer )
 {
-	EndRenderPass( vkCommandBuffer );
-	CmdEndLabel( vkCommandBuffer );
+	R_HW::EndRenderPass( vkCommandBuffer );
+	R_HW::CmdEndLabel( vkCommandBuffer );
 }
 
-void BtDebugRecordDrawCommandsBuffer( GfxCommandBuffer graphicsCommandBuffer, const FG::TaskInputData& inputData )
+void BtDebugRecordDrawCommandsBuffer( R_HW::GfxCommandBuffer graphicsCommandBuffer, const FG::TaskInputData& inputData )
 {
 	//assert( g_btDebugDrawState.currentFrameIndex == inputData.currentFrame );
 
@@ -118,7 +118,7 @@ void phs::BulletDebugDraw::drawLine( const btVector3& from, const btVector3& to,
 
 	GfxModel* debug_model = &g_btDebugDrawState.debug_models[g_btDebugDrawState.currentFrameIndex];
 
-	GfxDeviceSize bufferSize = sizeof( text_vertex_positions[0] ) * num_vertices;
+	R_HW::GfxDeviceSize bufferSize = sizeof( text_vertex_positions[0] ) * num_vertices;
 	UpdateGpuBuffer( &GetVertexInput( *debug_model, eVIDataType::POSITION )->buffer, text_vertex_positions.data(), bufferSize, g_btDebugDrawState.vertexOffset * sizeof(glm::vec3) );
 
 	bufferSize = sizeof( text_vertex_color[0] ) * num_vertices;

@@ -6,7 +6,7 @@
 
 #include <vector>
 
-void LoadModel_AssImp( const char * filename, GfxModel& o_modelAsset, size_t hackModelIndex, I_BufferAllocator* allocator )
+void LoadModel_AssImp( const char * filename, GfxModel& o_modelAsset, size_t hackModelIndex, R_HW::I_BufferAllocator* allocator )
 {
 	Assimp::Importer importer;
 	const aiScene* scene = importer.ReadFile( filename,
@@ -46,12 +46,12 @@ void LoadModel_AssImp( const char * filename, GfxModel& o_modelAsset, size_t hac
 		indices[i * 3 + 2] = mesh->mFaces[i].mIndices[2];
 	}
 
-	std::vector<VIDesc> modelVIDescs = {
-		{ ( VIDataType )eVIDataType::POSITION, eVIDataElementType::FLOAT, 3 },
-		{ ( VIDataType )eVIDataType::NORMAL, eVIDataElementType::FLOAT, 3 },
-		{ ( VIDataType )eVIDataType::TANGENT, eVIDataElementType::FLOAT, 3 },
-		{ ( VIDataType )eVIDataType::COLOR, eVIDataElementType::FLOAT, 3 },
-		{ ( VIDataType )eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2 },
+	std::vector<R_HW::VIDesc> modelVIDescs = {
+		{ (R_HW::VIDataType )eVIDataType::POSITION, R_HW::eVIDataElementType::FLOAT, 3 },
+		{ (R_HW::VIDataType )eVIDataType::NORMAL, R_HW::eVIDataElementType::FLOAT, 3 },
+		{ (R_HW::VIDataType )eVIDataType::TANGENT, R_HW::eVIDataElementType::FLOAT, 3 },
+		{ (R_HW::VIDataType )eVIDataType::COLOR, R_HW::eVIDataElementType::FLOAT, 3 },
+		{ (R_HW::VIDataType )eVIDataType::TEX_COORD, R_HW::eVIDataElementType::FLOAT, 2 },
 	};
 	std::vector<void*> modelData = {
 		vertPos.data(),

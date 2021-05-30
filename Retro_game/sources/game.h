@@ -41,7 +41,7 @@ namespace Scene3DGame
 
 	float frameDeltaTime = 0.0f;
 
-	GfxHeap gfx_heap_device_local;
+	R_HW::GfxHeap gfx_heap_device_local;
 
 	phs::CollisionMesh groundPlaneCollisionMesh;
 
@@ -173,7 +173,7 @@ namespace Scene3DGame
 
 	uint32_t LoadTexture( const char* path, I_ImageAlloctor* imageAllocator )
 	{
-		GfxImage* image = AL::LoadTexture( path, path, imageAllocator );
+		R_HW::GfxImage* image = AL::LoadTexture( path, path, imageAllocator );
 		return RegisterBindlessTexture( &bindlessTexturesState, image );
 	}
 
@@ -204,15 +204,15 @@ namespace Scene3DGame
 		//Objects update callbacks
 		RegisterTickFunction( &TickObjectCallback );
 
-		gfx_heap_device_local = create_gfx_heap( 16 * 1024 * 1024, GFX_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
+		gfx_heap_device_local = R_HW::create_gfx_heap( 16 * 1024 * 1024, R_HW::GFX_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
 		GfxHeaps_BatchedAllocator gfx_device_local_mem_allocator( &gfx_heap_device_local );
 		gfx_device_local_mem_allocator.Prepare();
 
 		//LoadAssets
-		GfxImage* skyboxTexture = AL::LoadCubeTexture( "SkyboxTexture", "assets/mountaincube.ktx", &gfx_device_local_mem_allocator );
+		R_HW::GfxImage* skyboxTexture = AL::LoadCubeTexture( "SkyboxTexture", "assets/mountaincube.ktx", &gfx_device_local_mem_allocator );
 
-		GfxImage* albedoTexture = AL::CreateSolidColorTexture( "ModelAlbedoTexture", glm::vec4( 0.8f, 0.8f, 0.8f, 1.0f ), &gfx_device_local_mem_allocator );
-		GfxImage* BadHelicopterAlbedoTexture = AL::LoadTexture( "BadHelicopterAlbedoTexture", "assets/Tructext.png", &gfx_device_local_mem_allocator );
+		R_HW::GfxImage* albedoTexture = AL::CreateSolidColorTexture( "ModelAlbedoTexture", glm::vec4( 0.8f, 0.8f, 0.8f, 1.0f ), &gfx_device_local_mem_allocator );
+		R_HW::GfxImage* BadHelicopterAlbedoTexture = AL::LoadTexture( "BadHelicopterAlbedoTexture", "assets/Tructext.png", &gfx_device_local_mem_allocator );
 
 		const char* groundFileName = "assets/ground.glb";
 		GfxModel* cubeModelAsset = AL::LoadglTf3DModel( "Cube", "assets/horrible_helicopter.glb", &gfx_device_local_mem_allocator );

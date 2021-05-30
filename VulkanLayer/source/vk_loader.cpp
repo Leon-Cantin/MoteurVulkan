@@ -16,62 +16,65 @@
 #include <stdexcept>
 #include <iostream>
 
-namespace VKL
+namespace R_HW
 {
-	/*bool truc_exported()
+	namespace VKL
 	{
-#define VK_EXPORTED_FUNCTION( fun )                                                   \
-    if( !(fun = (PFN_##fun)GetProcAddress( VulkanLibrary, #fun )) ) {                \
-      std::cout << "Could not load exported function: " << #fun << "!" << std::endl;  \
-      return false;                                                                   \
-    }
+		/*bool truc_exported()
+		{
+	#define VK_EXPORTED_FUNCTION( fun )                                                   \
+		if( !(fun = (PFN_##fun)GetProcAddress( VulkanLibrary, #fun )) ) {                \
+		  std::cout << "Could not load exported function: " << #fun << "!" << std::endl;  \
+		  return false;                                                                   \
+		}
 
-#include "vk_functions_def.inl"
+	#include "vk_functions_def.inl"
 
-		return true;
-	}
+			return true;
+		}
 
-	bool truc_global()
-	{
-#define VK_GLOBAL_LEVEL_FUNCTION( fun )                                                   \
-    if( !(fun = (PFN_##fun)vkGetInstanceProcAddr( nullptr, #fun )) ) {                    \
-      std::cout << "Could not load global level function: " << #fun << "!" << std::endl;  \
-      return false;                                                                       \
-    }
+		bool truc_global()
+		{
+	#define VK_GLOBAL_LEVEL_FUNCTION( fun )                                                   \
+		if( !(fun = (PFN_##fun)vkGetInstanceProcAddr( nullptr, #fun )) ) {                    \
+		  std::cout << "Could not load global level function: " << #fun << "!" << std::endl;  \
+		  return false;                                                                       \
+		}
 
-#include "vk_functions_def.inl"
+	#include "vk_functions_def.inl"
 
-		return true;
-	}*/
+			return true;
+		}*/
 
-	void truc()
-	{
+		void truc()
+		{
 #ifdef _WIN32
-		HMODULE vulkanLibrary = LoadLibrary(L"vulkan-1.dll");
+			HMODULE vulkanLibrary = LoadLibrary( L"vulkan-1.dll" );
 #elif defined __linux__
-		void* vulkanLibrary = dlopen("libvulkan.so.1.dll", RTLD_LAZY);
+			void* vulkanLibrary = dlopen( "libvulkan.so.1.dll", RTLD_LAZY );
 #endif
-		if (!vulkanLibrary)
-			throw std::runtime_error("Failed to load Vulkan library");
+			if( !vulkanLibrary )
+				throw std::runtime_error( "Failed to load Vulkan library" );
 
-		//truc_exported();
-		//truc_global();
+			//truc_exported();
+			//truc_global();
 
-		VkApplicationInfo app_info = {};
-		app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-		app_info.pApplicationName = "Hello triangle";
-		app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-		app_info.pEngineName = "No Engine";
-		app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-		app_info.apiVersion = VK_API_VERSION_1_1;
+			VkApplicationInfo app_info = {};
+			app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+			app_info.pApplicationName = "Hello triangle";
+			app_info.applicationVersion = VK_MAKE_VERSION( 1, 0, 0 );
+			app_info.pEngineName = "No Engine";
+			app_info.engineVersion = VK_MAKE_VERSION( 1, 0, 0 );
+			app_info.apiVersion = VK_API_VERSION_1_1;
 
-		VkInstanceCreateInfo create_info = {};
-		create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-		create_info.pApplicationInfo = &app_info;
+			VkInstanceCreateInfo create_info = {};
+			create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+			create_info.pApplicationInfo = &app_info;
 
-		VkInstance vk_instance;
-		if (vkCreateInstance(&create_info, nullptr, &vk_instance) != VK_SUCCESS)
-			throw std::runtime_error("failed to create instance");
+			VkInstance vk_instance;
+			if( vkCreateInstance( &create_info, nullptr, &vk_instance ) != VK_SUCCESS )
+				throw std::runtime_error( "failed to create instance" );
 
+		}
 	}
 }

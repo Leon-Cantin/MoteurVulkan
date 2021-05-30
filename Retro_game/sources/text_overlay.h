@@ -14,11 +14,11 @@ struct TextZone {
 };
 
 
-GpuPipelineLayout GetTextPipelineLayout();
-GpuPipelineStateDesc GetTextPipelineState();
+R_HW::GpuPipelineLayout GetTextPipelineLayout();
+R_HW::GpuPipelineStateDesc GetTextPipelineState();
 void CleanupTextRenderPass();
-void TextRecordDrawCommandsBuffer( GfxCommandBuffer graphicsCommandBuffer, const FG::TaskInputData& inputData );
+void TextRecordDrawCommandsBuffer( R_HW::GfxCommandBuffer graphicsCommandBuffer, const FG::TaskInputData& inputData );
 void CreateTextVertexBuffer( size_t maxCharCount );
 void UpdateText( const TextZone * textZones, size_t textZonesCount, VkExtent2D surfaceExtent );
 void LoadFontTexture();
-const GfxImage* GetTextImage();
+const R_HW::GfxImage* GetTextImage();

@@ -6,7 +6,7 @@
 #include "scene_frame_data.h"
 #include "frame_graph.h"
 
-GpuPipelineLayout GetBtDebugPipelineLayout();
-GpuPipelineStateDesc GetBtDebugPipelineState();
+R_HW::GpuPipelineLayout GetBtDebugPipelineLayout();
+R_HW::GpuPipelineStateDesc GetBtDebugPipelineState();
 
-void BtDebugRecordDrawCommandsBuffer( GfxCommandBuffer graphicsCommandBuffer, const FG::TaskInputData& inputData );
+void BtDebugRecordDrawCommandsBuffer( R_HW::GfxCommandBuffer graphicsCommandBuffer, const FG::TaskInputData& inputData );

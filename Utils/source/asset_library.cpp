@@ -13,7 +13,7 @@
 namespace AL
 {
 	constexpr size_t MAX_ASSETS = 32;
-	std::array<GfxImage, MAX_ASSETS> _images;
+	std::array<R_HW::GfxImage, MAX_ASSETS> _images;
 	size_t _imagesCount;
 	std::array<GfxModel, MAX_ASSETS> _modelAssets;
 	size_t _modelAssetsCount;
@@ -26,10 +26,10 @@ namespace AL
 		_asset_map[std::string(assetName)] = assetPtr;
 	}
 
-	GfxImage* AL_GetImageSlot(const char* assetName)
+	R_HW::GfxImage* AL_GetImageSlot(const char* assetName)
 	{
 		assert(_imagesCount < MAX_ASSETS );
-		GfxImage* imageSlot = &_images[_imagesCount++];
+		R_HW::GfxImage* imageSlot = &_images[_imagesCount++];
 		AL_AddAsset(assetName, imageSlot);
 		return imageSlot;
 	}
@@ -50,30 +50,30 @@ namespace AL
 		return assetSlot;
 	}
 
-	GfxImage* LoadTexture(const char* assetName, const char* assetPath, I_ImageAlloctor* allocator )
+	R_HW::GfxImage* LoadTexture(const char* assetName, const char* assetPath, I_ImageAlloctor* allocator )
 	{
-		GfxImage* image = AL_GetImageSlot( assetName );
+		R_HW::GfxImage* image = AL_GetImageSlot( assetName );
 		Load2DTextureFromFile( assetPath, image, allocator );
 		return image;
 	}
 
-	GfxImage* LoadCubeTexture(const char* assetName, const char* assetPath, I_ImageAlloctor* allocator )
+	R_HW::GfxImage* LoadCubeTexture(const char* assetName, const char* assetPath, I_ImageAlloctor* allocator )
 	{
-		GfxImage* cubeImage = AL_GetImageSlot( assetName );
+		R_HW::GfxImage* cubeImage = AL_GetImageSlot( assetName );
 		Load3DTexture( assetPath, cubeImage, allocator );
 
 		return cubeImage;
 	}
 
-	GfxImage* CreateSolidColorTexture(const char* assetName, glm::vec4 color, I_ImageAlloctor* allocator )
+	R_HW::GfxImage* CreateSolidColorTexture(const char* assetName, glm::vec4 color, I_ImageAlloctor* allocator )
 	{
-		GfxImage* colorImage = AL_GetImageSlot( assetName );
+		R_HW::GfxImage* colorImage = AL_GetImageSlot( assetName );
 		CreateSolidColorImage( color, colorImage, allocator );
 
 		return colorImage;
 	}
 
-	GfxModel* Load3DModel (const char* assetName, const char* assetPath, uint32_t hackIndex, I_BufferAllocator* allocator )
+	GfxModel* Load3DModel (const char* assetName, const char* assetPath, uint32_t hackIndex, R_HW::I_BufferAllocator* allocator )
 	{
 		GfxModel* modelAsset = AL_GetModelSlot( assetName );
 		LoadModel_AssImp( assetPath, *modelAsset, hackIndex, allocator );
@@ -81,7 +81,7 @@ namespace AL
 		return modelAsset;
 	}
 
-	GfxModel* LoadglTf3DModel( const char* assetName, const char* assetPath, I_BufferAllocator* allocator )
+	GfxModel* LoadglTf3DModel( const char* assetName, const char* assetPath, R_HW::I_BufferAllocator* allocator )
 	{
 		GfxModel* modelAsset = AL_GetModelSlot( assetName );
 		glTF_L::LoadMesh( assetPath, modelAsset, allocator );
@@ -89,7 +89,7 @@ namespace AL
 		return modelAsset;
 	}
 
-	GfxModel* CreateQuad( const char* assetName, float size, I_BufferAllocator* allocator )
+	GfxModel* CreateQuad( const char* assetName, float size, R_HW::I_BufferAllocator* allocator )
 	{
 		GfxModel* modelAsset = AL_GetModelSlot( assetName );
 		*modelAsset = GenerateQuad( size, allocator );
@@ -97,7 +97,7 @@ namespace AL
 		return modelAsset;
 	}
 
-	GfxModel* CreateQuad( const char* assetName, float width, float height, I_BufferAllocator* allocator )
+	GfxModel* CreateQuad( const char* assetName, float width, float height, R_HW::I_BufferAllocator* allocator )
 	{
 		GfxModel* modelAsset = AL_GetModelSlot( assetName );
 		*modelAsset = GenerateQuad( width, height, allocator );

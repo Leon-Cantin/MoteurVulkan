@@ -6,9 +6,9 @@ constexpr size_t MAX_DATA_ENTRIES = 16;
 
 union GpuInputDataEntry
 {
-	GpuBuffer* buffer;
-	GfxImageSamplerCombined* image;
-	GfxApiSampler* sampler;
+	R_HW::GpuBuffer* buffer;
+	R_HW::GfxImageSamplerCombined* image;
+	R_HW::GfxApiSampler* sampler;
 };
 
 struct GpuInputData
@@ -19,34 +19,34 @@ struct GpuInputData
 	//TOOD: add a dirty cache, so when a buffer changes, we update the descriptor sets
 };
 
-inline void SetBuffers( GpuInputData* buffers, uint32_t id, GpuBuffer* input, uint32_t count )
+inline void SetBuffers( GpuInputData* buffers, uint32_t id, R_HW::GpuBuffer* input, uint32_t count )
 {
 	assert( id < MAX_DATA_ENTRIES );
 	buffers->data[id].buffer = input;
 	buffers->dataCount[id] = count;
 }
 
-inline void SetImages( GpuInputData* buffers, uint32_t id, GfxImageSamplerCombined* input, uint32_t count )
+inline void SetImages( GpuInputData* buffers, uint32_t id, R_HW::GfxImageSamplerCombined* input, uint32_t count )
 {
 	assert( id < MAX_DATA_ENTRIES );
 	buffers->data[id].image = input;
 	buffers->dataCount[id] = count;
 }
 
-inline void SetSamplers( GpuInputData* buffers, uint32_t id, GfxApiSampler* input, uint32_t count )
+inline void SetSamplers( GpuInputData* buffers, uint32_t id, R_HW::GfxApiSampler* input, uint32_t count )
 {
 	assert( id < MAX_DATA_ENTRIES );
 	buffers->data[id].sampler = input;
 	buffers->dataCount[id] = count;
 }
 
-inline GpuBuffer* GetBuffer( const GpuInputData* buffers, uint32_t id )
+inline R_HW::GpuBuffer* GetBuffer( const GpuInputData* buffers, uint32_t id )
 {
 	assert( id < MAX_DATA_ENTRIES );
 	return buffers->data[id].buffer;
 }
 
-inline GfxImageSamplerCombined* GetImage( const GpuInputData* buffers, uint32_t id )
+inline R_HW::GfxImageSamplerCombined* GetImage( const GpuInputData* buffers, uint32_t id )
 {
 	assert( id < MAX_DATA_ENTRIES );
 	return buffers->data[id].image;

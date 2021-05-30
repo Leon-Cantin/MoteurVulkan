@@ -12,9 +12,9 @@
 #include <glm/vec4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-GfxDescriptorPool descriptorPool;
+R_HW::GfxDescriptorPool descriptorPool;
 
-const DisplaySurface* m_swapchainSurface;
+const R_HW::DisplaySurface* m_swapchainSurface;
 
 std::array< GpuInputData, SIMULTANEOUS_FRAMES> _inputBuffers;
 
@@ -25,7 +25,7 @@ static RNDR::R_State* mpr_state;
 /*
 	Update Stuff
 */
-static void UpdateLightUniformBuffer( const SceneMatricesUniform* shadowSceneMatrices, LightUniform* light, GpuBuffer* lightUniformBuffer, GpuBuffer* shadowSceneUniformBuffer )
+static void UpdateLightUniformBuffer( const SceneMatricesUniform* shadowSceneMatrices, LightUniform* light, R_HW::GpuBuffer* lightUniformBuffer, R_HW::GpuBuffer* shadowSceneUniformBuffer )
 {
 	const glm::mat4 biasMat = {
 		0.5, 0.0, 0.0, 0.0,
@@ -37,7 +37,7 @@ static void UpdateLightUniformBuffer( const SceneMatricesUniform* shadowSceneMat
 	UpdateShadowUniformBuffers( shadowSceneUniformBuffer, shadowSceneMatrices);
 }
 
-static void UpdateSceneUniformBuffer(const glm::mat4& world_view_matrix, VkExtent2D extent, GpuBuffer* sceneUniformBuffer)
+static void UpdateSceneUniformBuffer(const glm::mat4& world_view_matrix, VkExtent2D extent, R_HW::GpuBuffer* sceneUniformBuffer)
 {
 	const float zFar = 300.0f;
 	const float zNear = 0.1f;
@@ -116,20 +116,20 @@ static void PrepareSceneFrameData( SceneFrameData* frameData, uint32_t currentFr
 	updateUniformBuffer( currentFrame, cameraSceneInstance, light, drawList, frameData->drawList );
 }
 
-GfxImageSamplerCombined textTextures[1];
-GfxImageSamplerCombined skyboxImages[1];
+R_HW::GfxImageSamplerCombined textTextures[1];
+R_HW::GfxImageSamplerCombined skyboxImages[1];
 
 void CreateBtDebudModels();
 
-static void CreateBuffers( BindlessTexturesState* bindlessTexturesState, const GfxImage* skyboxImage )
+static void CreateBuffers( BindlessTexturesState* bindlessTexturesState, const R_HW::GfxImage* skyboxImage )
 {
 	CreateTextVertexBuffer( 256 );
 	CreateBtDebudModels();
 
 	VkSampler sampler = GetSampler( eSamplers::Trilinear );
 
-	textTextures[0] = { const_cast< GfxImage*>(GetTextImage()), sampler };
-	skyboxImages[0] = { const_cast< GfxImage* >(skyboxImage), sampler };
+	textTextures[0] = { const_cast< R_HW::GfxImage*>(GetTextImage()), sampler };
+	skyboxImages[0] = { const_cast< R_HW::GfxImage* >(skyboxImage), sampler };
 	
 	for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 	{
@@ -159,7 +159,7 @@ void InitRendererImp( const VkSurfaceKHR* swapchainSurface )
 	CreateTextVertexBuffer( 256 );
 }
 
-static GfxDescriptorPool CreateDescriptorPool_BAD()
+static R_HW::GfxDescriptorPool CreateDescriptorPool_BAD()
 {
 	const uint32_t geometryDescriptorSets = 2 * SIMULTANEOUS_FRAMES;
 	const uint32_t geometryBuffersCount = 2 * SIMULTANEOUS_FRAMES;
@@ -185,16 +185,16 @@ static GfxDescriptorPool CreateDescriptorPool_BAD()
 
 	const uint32_t maxSets = geometryDescriptorSets + shadowDescriptorSets + skyboxDescriptorSetsCount + textDescriptorSetsCount;
 
-	GfxDescriptorPool descriptorPool;
-	CreateDescriptorPool( uniformBuffersCount, uniformBuffersDynamicCount, imageSamplersCount, storageImageCount, sampledImageCount, maxSets, &descriptorPool );
+	R_HW::GfxDescriptorPool descriptorPool;
+	R_HW::CreateDescriptorPool( uniformBuffersCount, uniformBuffersDynamicCount, imageSamplersCount, storageImageCount, sampledImageCount, maxSets, &descriptorPool );
 
 	return descriptorPool;
 }
 
-void CompileScene( BindlessTexturesState* bindlessTexturesState, const GfxImage* skyboxImage )
+void CompileScene( BindlessTexturesState* bindlessTexturesState, const R_HW::GfxImage* skyboxImage )
 {
 	if( descriptorPool )
-		Destroy( &descriptorPool );
+		R_HW::Destroy( &descriptorPool );
 	descriptorPool = CreateDescriptorPool_BAD();
 
 	CreateBuffers( bindlessTexturesState, skyboxImage );
@@ -209,7 +209,7 @@ void CleanupRendererImp()
 {
 	CleanupTextRenderPass();
 	Destroy( &mpr_state );
-	Destroy( &descriptorPool );
+	R_HW::Destroy( &descriptorPool );
 }
 
 void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<GfxAssetInstance>& drawList )

@@ -11,5 +11,5 @@ enum class eSamplers
 };
 void InitSamplers();
 void DestroySamplers();
-GfxApiSampler GetSampler( eSamplers samplerId );
-GfxApiSampler* GetSamplers();
+R_HW::GfxApiSampler GetSampler( eSamplers samplerId );
+R_HW::GfxApiSampler* GetSamplers();

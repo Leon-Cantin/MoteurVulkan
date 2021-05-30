@@ -2,7 +2,7 @@
 
 #include <cassert>
 
-GfxHeaps_Allocator::GfxHeaps_Allocator( GfxHeap* heap )
+GfxHeaps_Allocator::GfxHeaps_Allocator( R_HW::GfxHeap* heap )
 	:_heap( heap ), head( 0 )
 {
 
@@ -14,14 +14,14 @@ GfxHeaps_Allocator::GfxHeaps_Allocator()
 
 }
 
-bool GfxHeaps_Allocator::Allocate( GfxApiBuffer buffer, GfxMemAlloc* o_gfx_mem_alloc )
+bool GfxHeaps_Allocator::Allocate( R_HW::GfxApiBuffer buffer, R_HW::GfxMemAlloc* o_gfx_mem_alloc )
 {
-	GfxMemoryRequirements memRequirements = GetBufferMemoryRequirement( buffer );
+	R_HW::GfxMemoryRequirements memRequirements = R_HW::GetBufferMemoryRequirement( buffer );
 
-	assert( IsRequiredMemoryType( memRequirements.memoryTypeBits, _heap->memoryTypeIndex ) );
+	assert( R_HW::IsRequiredMemoryType( memRequirements.memoryTypeBits, _heap->memoryTypeIndex ) );
 
-	const GfxDeviceSize alignment = GetAlignment( memRequirements );
-	const GfxDeviceSize size = GetSize( memRequirements );
+	const R_HW::GfxDeviceSize alignment = R_HW::GetAlignment( memRequirements );
+	const R_HW::GfxDeviceSize size = R_HW::GetSize( memRequirements );
 	const size_t alignementOffset = alignment - (head % alignment);
 	const size_t memOffset = head + alignementOffset;
 	const size_t newHead = memOffset + size;
@@ -34,9 +34,9 @@ bool GfxHeaps_Allocator::Allocate( GfxApiBuffer buffer, GfxMemAlloc* o_gfx_mem_a
 	return true;
 }
 
-bool GfxHeaps_Allocator::UploadData( const GpuBuffer& buffer, const void* data )
+bool GfxHeaps_Allocator::UploadData( const R_HW::GpuBuffer& buffer, const void* data )
 {
-	GfxDeviceSize memorySize = buffer.gpuMemory.size;
+	R_HW::GfxDeviceSize memorySize = buffer.gpuMemory.size;
 	UpdateGpuBuffer( &buffer, data, memorySize, 0 );
 
 	return true;
@@ -44,7 +44,7 @@ bool GfxHeaps_Allocator::UploadData( const GpuBuffer& buffer, const void* data )
 
 // ********************** Batched allocator *************************
 
-GfxHeaps_BatchedAllocator::GfxHeaps_BatchedAllocator( GfxHeap* heap )
+GfxHeaps_BatchedAllocator::GfxHeaps_BatchedAllocator( R_HW::GfxHeap* heap )
 	:_heap( heap ), head( 0 ), stagingBuffer(), commandBuffer( VK_NULL_HANDLE ), stagingBufferAllocator()
 {
 
@@ -58,26 +58,26 @@ GfxHeaps_BatchedAllocator::GfxHeaps_BatchedAllocator()
 
 void GfxHeaps_BatchedAllocator::Prepare()
 {
-	CreateCommitedGpuBuffer( 16 * 1024 * 1024, GFX_BUFFER_USAGE_TRANSFER_SRC_BIT, GFX_MEMORY_PROPERTY_HOST_VISIBLE_BIT | GFX_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer );
-	commandBuffer = beginSingleTimeCommands();
+	CreateCommitedGpuBuffer( 16 * 1024 * 1024, R_HW::GFX_BUFFER_USAGE_TRANSFER_SRC_BIT, R_HW::GFX_MEMORY_PROPERTY_HOST_VISIBLE_BIT | R_HW::GFX_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer );
+	commandBuffer = R_HW::beginSingleTimeCommands();
 	stagingBufferAllocator = {};
 	stagingBufferAllocator.buffer = &stagingBuffer;
 }
 
 void GfxHeaps_BatchedAllocator::Commit()
 {
-	endSingleTimeCommands( commandBuffer );
+	R_HW::endSingleTimeCommands( commandBuffer );
 	Destroy( &stagingBuffer );
 }
 
-bool GfxHeaps_BatchedAllocator::Allocate( GfxApiImage image, GfxMemAlloc* o_gfx_mem_alloc )
+bool GfxHeaps_BatchedAllocator::Allocate( R_HW::GfxApiImage image, R_HW::GfxMemAlloc* o_gfx_mem_alloc )
 {
-	GfxMemoryRequirements memRequirements = GetImageMemoryRequirement( image );
+	R_HW::GfxMemoryRequirements memRequirements = R_HW::GetImageMemoryRequirement( image );
 
-	assert( IsRequiredMemoryType( memRequirements.memoryTypeBits, _heap->memoryTypeIndex ) );
+	assert( R_HW::IsRequiredMemoryType( memRequirements.memoryTypeBits, _heap->memoryTypeIndex ) );
 
-	const GfxDeviceSize alignment = GetAlignment( memRequirements );
-	const GfxDeviceSize size = GetSize( memRequirements );
+	const R_HW::GfxDeviceSize alignment = R_HW::GetAlignment( memRequirements );
+	const R_HW::GfxDeviceSize size = R_HW::GetSize( memRequirements );
 	const size_t alignementOffset = alignment - (head % alignment);
 	const size_t memOffset = head + alignementOffset;
 	const size_t newHead = memOffset + size;
@@ -90,37 +90,37 @@ bool GfxHeaps_BatchedAllocator::Allocate( GfxApiImage image, GfxMemAlloc* o_gfx_
 	return true;
 }
 
-static bool UploadDataCommon( GfxCommandBuffer commandBuffer, const GfxImage& gfxImage, const void* data, BufferAllocator* stagingBufferAllocator, GpuBuffer* stagingBuffer )
+static bool UploadDataCommon( R_HW::GfxCommandBuffer commandBuffer, const R_HW::GfxImage& gfxImage, const void* data, BufferAllocator* stagingBufferAllocator, R_HW::GpuBuffer* stagingBuffer )
 {
-	GfxDeviceSize stagingBufferOffset = AllocateGpuBufferSlot( stagingBufferAllocator, gfxImage.gfx_mem_alloc.size );
-	UpdateGpuBuffer( stagingBuffer, data, gfxImage.gfx_mem_alloc.size, stagingBufferOffset );
+	R_HW::GfxDeviceSize stagingBufferOffset = AllocateGpuBufferSlot( stagingBufferAllocator, gfxImage.gfx_mem_alloc.size );
+	R_HW::UpdateGpuBuffer( stagingBuffer, data, gfxImage.gfx_mem_alloc.size, stagingBufferOffset );
 
-	GfxImageBarrier( commandBuffer, gfxImage.image, GfxLayout::UNDEFINED, GfxAccess::WRITE, GfxLayout::TRANSFER, GfxAccess::WRITE );
+	R_HW::GfxImageBarrier( commandBuffer, gfxImage.image, R_HW::GfxLayout::UNDEFINED, R_HW::GfxAccess::WRITE, R_HW::GfxLayout::TRANSFER, R_HW::GfxAccess::WRITE );
 
-	copyBufferToImage( commandBuffer, stagingBuffer->buffer, stagingBufferOffset, gfxImage.image, gfxImage.extent.width, gfxImage.extent.height, gfxImage.layers );
+	R_HW::copyBufferToImage( commandBuffer, stagingBuffer->buffer, stagingBufferOffset, gfxImage.image, gfxImage.extent.width, gfxImage.extent.height, gfxImage.layers );
 
 	//GenerateMipmaps will do the transition, do it if we don't generate them
 	if( gfxImage.mipLevels > 1 )
 		generateMipmaps( commandBuffer, gfxImage.image, gfxImage.format, gfxImage.extent.width, gfxImage.extent.height, gfxImage.mipLevels );//TODO: should probably not be done here
 	else
-		GfxImageBarrier( commandBuffer, gfxImage.image, GfxLayout::TRANSFER, GfxAccess::WRITE, GfxLayout::COLOR, GfxAccess::READ );
+		R_HW::GfxImageBarrier( commandBuffer, gfxImage.image, R_HW::GfxLayout::TRANSFER, R_HW::GfxAccess::WRITE, R_HW::GfxLayout::COLOR, R_HW::GfxAccess::READ );
 
 	return true;
 }
 
-bool GfxHeaps_BatchedAllocator::UploadData( const GfxImage& gfxImage, const void* data )
+bool GfxHeaps_BatchedAllocator::UploadData( const R_HW::GfxImage& gfxImage, const void* data )
 {
 	return UploadDataCommon( commandBuffer, gfxImage, data, &stagingBufferAllocator, &stagingBuffer );
 }
 
-bool GfxHeaps_BatchedAllocator::Allocate( GfxApiBuffer buffer, GfxMemAlloc* o_gfx_mem_alloc )
+bool GfxHeaps_BatchedAllocator::Allocate( R_HW::GfxApiBuffer buffer, R_HW::GfxMemAlloc* o_gfx_mem_alloc )
 {
-	GfxMemoryRequirements memRequirements = GetBufferMemoryRequirement( buffer );
+	R_HW::GfxMemoryRequirements memRequirements = R_HW::GetBufferMemoryRequirement( buffer );
 
-	assert( IsRequiredMemoryType( memRequirements.memoryTypeBits, _heap->memoryTypeIndex ) );
+	assert( R_HW::IsRequiredMemoryType( memRequirements.memoryTypeBits, _heap->memoryTypeIndex ) );
 
-	const GfxDeviceSize alignment = GetAlignment( memRequirements );
-	const GfxDeviceSize size = GetSize( memRequirements );
+	const R_HW::GfxDeviceSize alignment = R_HW::GetAlignment( memRequirements );
+	const R_HW::GfxDeviceSize size = R_HW::GetSize( memRequirements );
 	const size_t alignementOffset = alignment - (head % alignment);
 	const size_t memOffset = head + alignementOffset;
 	const size_t newHead = memOffset + size;
@@ -133,12 +133,12 @@ bool GfxHeaps_BatchedAllocator::Allocate( GfxApiBuffer buffer, GfxMemAlloc* o_gf
 	return true;
 }
 
-bool GfxHeaps_BatchedAllocator::UploadData( const GpuBuffer& buffer, const void* data )
+bool GfxHeaps_BatchedAllocator::UploadData( const R_HW::GpuBuffer& buffer, const void* data )
 {
-	GfxDeviceSize memorySize = buffer.gpuMemory.size;
-	GfxDeviceSize stagingBufferOffset = AllocateGpuBufferSlot( &stagingBufferAllocator, memorySize );
+	R_HW::GfxDeviceSize memorySize = buffer.gpuMemory.size;
+	R_HW::GfxDeviceSize stagingBufferOffset = AllocateGpuBufferSlot( &stagingBufferAllocator, memorySize );
 	UpdateGpuBuffer( &stagingBuffer, data, memorySize, stagingBufferOffset );
-	copy_buffer( commandBuffer, buffer.buffer, stagingBuffer.buffer, 0, stagingBufferOffset, memorySize );
+	R_HW::copy_buffer( commandBuffer, buffer.buffer, stagingBuffer.buffer, 0, stagingBufferOffset, memorySize );
 
 	return true;
 }
@@ -146,36 +146,36 @@ bool GfxHeaps_BatchedAllocator::UploadData( const GpuBuffer& buffer, const void*
 void GfxHeaps_CommitedResourceAllocator::Prepare()
 {
 	assert( commandBuffer == VK_NULL_HANDLE );
-	CreateCommitedGpuBuffer( 16 * 1024 * 1024, GFX_BUFFER_USAGE_TRANSFER_SRC_BIT, GFX_MEMORY_PROPERTY_HOST_VISIBLE_BIT | GFX_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer );
-	commandBuffer = beginSingleTimeCommands();
+	CreateCommitedGpuBuffer( 16 * 1024 * 1024, R_HW::GFX_BUFFER_USAGE_TRANSFER_SRC_BIT, R_HW::GFX_MEMORY_PROPERTY_HOST_VISIBLE_BIT | R_HW::GFX_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer );
+	commandBuffer = R_HW::beginSingleTimeCommands();
 	stagingBufferAllocator = {};
 	stagingBufferAllocator.buffer = &stagingBuffer;
 }
 
 void GfxHeaps_CommitedResourceAllocator::Commit()
 {
-	endSingleTimeCommands( commandBuffer );
+	R_HW::endSingleTimeCommands( commandBuffer );
 	commandBuffer = VK_NULL_HANDLE;
 	Destroy( &stagingBuffer );
 }
 
-bool GfxHeaps_CommitedResourceAllocator::Allocate( GfxApiImage image, GfxMemAlloc* o_gfx_mem_alloc )
+bool GfxHeaps_CommitedResourceAllocator::Allocate( R_HW::GfxApiImage image, R_HW::GfxMemAlloc* o_gfx_mem_alloc )
 {
-	GfxMemoryRequirements mem_requirements = GetImageMemoryRequirement( image );
+	R_HW::GfxMemoryRequirements mem_requirements = R_HW::GetImageMemoryRequirement( image );
 
-	const GfxDeviceSize alignment = GetAlignment( mem_requirements );
-	const GfxDeviceSize size = GetSize( mem_requirements );
-	const GfxMemoryTypeFilter memoryTypeFilter = GetMemoryTypeFilter( mem_requirements );
+	const R_HW::GfxDeviceSize alignment = R_HW::GetAlignment( mem_requirements );
+	const R_HW::GfxDeviceSize size = R_HW::GetSize( mem_requirements );
+	const R_HW::GfxMemoryTypeFilter memoryTypeFilter = R_HW::GetMemoryTypeFilter( mem_requirements );
 
-	const GfxMemoryType memoryType = findMemoryType( memoryTypeFilter, GFX_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
+	const R_HW::GfxMemoryType memoryType = R_HW::findMemoryType( memoryTypeFilter, R_HW::GFX_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
 
-	*o_gfx_mem_alloc = allocate_gfx_memory( size, memoryType );
+	*o_gfx_mem_alloc = R_HW::allocate_gfx_memory( size, memoryType );
 	BindMemory( image, *o_gfx_mem_alloc );
 
 	return true;
 }
 
-bool GfxHeaps_CommitedResourceAllocator::UploadData( const GfxImage& gfxImage, const void* data )
+bool GfxHeaps_CommitedResourceAllocator::UploadData( const R_HW::GfxImage& gfxImage, const void* data )
 {
 	return UploadDataCommon( commandBuffer, gfxImage, data, &stagingBufferAllocator, &stagingBuffer );
 }

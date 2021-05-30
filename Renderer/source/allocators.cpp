@@ -14,9 +14,3 @@ size_t AllocateGpuBufferSlot( BufferAllocator* allocator, size_t slotSize )
 	allocator->head = newHead;
 	return allocationOffset;
 }
-
-void Destroy( GfxDescriptorPool* descriptorPool )
-{
-	vkDestroyDescriptorPool( g_gfx.device.device, *descriptorPool, nullptr );
-	*descriptorPool = VK_NULL_HANDLE;
-}

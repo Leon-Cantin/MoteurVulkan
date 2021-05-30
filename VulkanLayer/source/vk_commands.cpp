@@ -2,212 +2,215 @@
 
 #include <stdexcept>
 
-GfxCommandBuffer beginSingleTimeCommands()
+namespace R_HW
 {
-	VkCommandBufferAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandPool = g_gfx.graphicsSingleUseCommandPool;
-	allocInfo.commandBufferCount = 1;
+	GfxCommandBuffer beginSingleTimeCommands()
+	{
+		VkCommandBufferAllocateInfo allocInfo = {};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandPool = g_gfx.graphicsSingleUseCommandPool;
+		allocInfo.commandBufferCount = 1;
 
-	GfxCommandBuffer commandBuffer;
-	vkAllocateCommandBuffers(g_gfx.device.device, &allocInfo, &commandBuffer);
+		GfxCommandBuffer commandBuffer;
+		vkAllocateCommandBuffers( g_gfx.device.device, &allocInfo, &commandBuffer );
 
-	VkCommandBufferBeginInfo beginInfo = {};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		VkCommandBufferBeginInfo beginInfo = {};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-	vkBeginCommandBuffer(commandBuffer, &beginInfo);
+		vkBeginCommandBuffer( commandBuffer, &beginInfo );
 
-	return commandBuffer;
-}
-
-void endSingleTimeCommands(GfxCommandBuffer commandBuffer)
-{
-	vkEndCommandBuffer(commandBuffer);
-
-	VkSubmitInfo submitInfo = {};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer;
-
-	vkQueueSubmit( g_gfx.device.graphics_queue.queue, 1, &submitInfo, VK_NULL_HANDLE);
-	vkQueueWaitIdle( g_gfx.device.graphics_queue.queue);
-
-	vkFreeCommandBuffers( g_gfx.device.device, g_gfx.graphicsSingleUseCommandPool, 1, &commandBuffer);
-}
-
-void CreateCommandPool(uint32_t queueFamilyIndex, GfxCommandPool* o_commandPool)
-{
-	VkCommandPoolCreateInfo pool_info = {};
-	pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	pool_info.queueFamilyIndex = queueFamilyIndex;
-	pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; //Optional
-
-	if (vkCreateCommandPool(g_gfx.device.device, &pool_info, nullptr, o_commandPool) != VK_SUCCESS)
-		throw std::runtime_error("failed to create command pool!");
-}
-
-void CreateSingleUseCommandPool(uint32_t queueFamilyIndex, GfxCommandPool* o_commandPool)
-{	
-	VkCommandPoolCreateInfo pool_info = {};
-	pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	pool_info.queueFamilyIndex = queueFamilyIndex;
-	pool_info.flags = 0; //Optional
-
-	if (vkCreateCommandPool(g_gfx.device.device, &pool_info, nullptr, o_commandPool) != VK_SUCCESS)
-		throw std::runtime_error("failed to create command pool!");
-}
-
-void Destroy( GfxCommandPool* commandPool )
-{
-	vkDestroyCommandPool( g_gfx.device.device, *commandPool, nullptr );
-	*commandPool = VK_NULL_HANDLE;
-}
-
-void BeginCommandBufferRecording(GfxCommandBuffer commandBuffer)
-{
-	VkCommandBufferBeginInfo beginInfo = {};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-	beginInfo.pInheritanceInfo = nullptr; // Optional
-
-	if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-		throw std::runtime_error("failed to begin recording command buffer!");
+		return commandBuffer;
 	}
-}
 
-void EndCommandBufferRecording(GfxCommandBuffer commandBuffer)
-{
-	if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
-		throw std::runtime_error("failed to record command buffer!");
-}
+	void endSingleTimeCommands( GfxCommandBuffer commandBuffer )
+	{
+		vkEndCommandBuffer( commandBuffer );
 
-void CmdBlitImage( GfxCommandBuffer commandBuffer, GfxApiImage srcImage, int32_t srcX1, int32_t srcY1, int32_t srcZ1, int32_t srcX2, int32_t srcY2, int32_t srcZ2, uint32_t srcMipLevel, GfxLayout srcLayout, GfxAccess srcAccess,
-	GfxApiImage dstImage, int32_t dstX1, int32_t dstY1, int32_t dstZ1, int32_t dstX2, int32_t dstY2, int32_t dstZ2, uint32_t dstMipLevel, GfxLayout dstLayout, GfxAccess dstAccess, GfxFilter filter )
-{
-	VkImageBlit blit = {};
-	blit.srcOffsets[0] = { srcX1, srcY1, srcZ1 };
-	blit.srcOffsets[1] = { srcX2, srcY2, srcZ2 };
-	blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	blit.srcSubresource.mipLevel = srcMipLevel;
-	blit.srcSubresource.baseArrayLayer = 0;
-	blit.srcSubresource.layerCount = 1;
+		VkSubmitInfo submitInfo = {};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
 
-	blit.dstOffsets[0] = { dstX1, dstY1, dstZ1 };
-	blit.dstOffsets[1] = { dstX2, dstY2, dstZ2 };
-	blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	blit.dstSubresource.mipLevel = dstMipLevel;
-	blit.dstSubresource.baseArrayLayer = 0;
-	blit.dstSubresource.layerCount = 1;
+		vkQueueSubmit( g_gfx.device.graphics_queue.queue, 1, &submitInfo, VK_NULL_HANDLE );
+		vkQueueWaitIdle( g_gfx.device.graphics_queue.queue );
 
-	vkCmdBlitImage( commandBuffer,
-		srcImage, ConvertToVkImageLayout( srcLayout, srcAccess ),
-		dstImage, ConvertToVkImageLayout( srcLayout, srcAccess ),
-		1, &blit,
-		ToVkFilter( filter ) );
+		vkFreeCommandBuffers( g_gfx.device.device, g_gfx.graphicsSingleUseCommandPool, 1, &commandBuffer );
+	}
 
-}
+	void CreateCommandPool( uint32_t queueFamilyIndex, GfxCommandPool* o_commandPool )
+	{
+		VkCommandPoolCreateInfo pool_info = {};
+		pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		pool_info.queueFamilyIndex = queueFamilyIndex;
+		pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; //Optional
 
-void CmdBlitImage( GfxCommandBuffer commandBuffer, GfxApiImage srcImage, int32_t srcX1, int32_t srcY1, int32_t srcZ1, int32_t srcX2, int32_t srcY2, int32_t srcZ2, uint32_t srcMipLevel,
-	GfxApiImage dstImage, int32_t dstX1, int32_t dstY1, int32_t dstZ1, int32_t dstX2, int32_t dstY2, int32_t dstZ2, uint32_t dstMipLevel, GfxFilter filter )
-{
-	CmdBlitImage( commandBuffer, srcImage, srcX1, srcY1, srcZ1, srcX2, srcY2, srcZ2, srcMipLevel, GfxLayout::TRANSFER, GfxAccess::READ,
-		dstImage, dstX1, dstY1, dstZ1, dstX2, dstY2, dstZ2, dstMipLevel, GfxLayout::TRANSFER, GfxAccess::WRITE, filter );
-}
+		if( vkCreateCommandPool( g_gfx.device.device, &pool_info, nullptr, o_commandPool ) != VK_SUCCESS )
+			throw std::runtime_error( "failed to create command pool!" );
+	}
 
-void CmdBindRootDescriptor( GfxCommandBuffer commandBuffer, GfxPipelineBindPoint pipelineBindPoint, GfxPipelineLayout pipelineLayout, uint32_t rootBindingPoint, GfxRootDescriptor rootDescriptor, uint32_t bufferOffset )
-{
-	vkCmdBindDescriptorSets( commandBuffer, ToVkPipelineBindPoint(pipelineBindPoint), pipelineLayout, rootBindingPoint, 1,
-		&rootDescriptor, 1, &bufferOffset );
-}
+	void CreateSingleUseCommandPool( uint32_t queueFamilyIndex, GfxCommandPool* o_commandPool )
+	{
+		VkCommandPoolCreateInfo pool_info = {};
+		pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		pool_info.queueFamilyIndex = queueFamilyIndex;
+		pool_info.flags = 0; //Optional
 
-void CmdBindPipeline( GfxCommandBuffer commandBuffer, GfxPipelineBindPoint pipelineBindPoint, GfxPipeline pipeline )
-{
-	vkCmdBindPipeline( commandBuffer, ToVkPipelineBindPoint( pipelineBindPoint ), pipeline );
-}
+		if( vkCreateCommandPool( g_gfx.device.device, &pool_info, nullptr, o_commandPool ) != VK_SUCCESS )
+			throw std::runtime_error( "failed to create command pool!" );
+	}
 
-void CmdBindDescriptorTable( GfxCommandBuffer commandBuffer, GfxPipelineBindPoint pipelineBindPoint, GfxPipelineLayout pipelineLayout, uint32_t rootBindingPoint, GfxDescriptorTable descriptorTable )
-{
-	vkCmdBindDescriptorSets( commandBuffer, ToVkPipelineBindPoint( pipelineBindPoint ), pipelineLayout, rootBindingPoint, 1, &descriptorTable, 0, nullptr );
-}
+	void Destroy( GfxCommandPool* commandPool )
+	{
+		vkDestroyCommandPool( g_gfx.device.device, *commandPool, nullptr );
+		*commandPool = VK_NULL_HANDLE;
+	}
 
-bool QueueSubmit( VkQueue queue, GfxCommandBuffer* commandBuffers, uint32_t commandBuffersCount, GfxSemaphore* pWaitSemaphores, GfxPipelineStageFlag* waitDstStageMask, uint32_t waitSemaphoresCount, GfxSemaphore* pSignalSemaphores, uint32_t signalSemaphoresCount, GfxFence signalFence )
-{
-	VkSubmitInfo graphicsSubmitInfo = {};
-	graphicsSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	void BeginCommandBufferRecording( GfxCommandBuffer commandBuffer )
+	{
+		VkCommandBufferBeginInfo beginInfo = {};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+		beginInfo.pInheritanceInfo = nullptr; // Optional
 
-	graphicsSubmitInfo.waitSemaphoreCount = waitSemaphoresCount;
-	graphicsSubmitInfo.pWaitSemaphores = pWaitSemaphores;
-	graphicsSubmitInfo.pWaitDstStageMask = waitDstStageMask;
-	graphicsSubmitInfo.commandBufferCount = commandBuffersCount;
-	graphicsSubmitInfo.pCommandBuffers = commandBuffers;
+		if( vkBeginCommandBuffer( commandBuffer, &beginInfo ) != VK_SUCCESS ) {
+			throw std::runtime_error( "failed to begin recording command buffer!" );
+		}
+	}
 
-	graphicsSubmitInfo.signalSemaphoreCount = signalSemaphoresCount;
-	graphicsSubmitInfo.pSignalSemaphores = pSignalSemaphores;
+	void EndCommandBufferRecording( GfxCommandBuffer commandBuffer )
+	{
+		if( vkEndCommandBuffer( commandBuffer ) != VK_SUCCESS )
+			throw std::runtime_error( "failed to record command buffer!" );
+	}
 
-	return vkQueueSubmit( queue, 1, &graphicsSubmitInfo, signalFence ) == VK_SUCCESS;
-}
+	void CmdBlitImage( GfxCommandBuffer commandBuffer, GfxApiImage srcImage, int32_t srcX1, int32_t srcY1, int32_t srcZ1, int32_t srcX2, int32_t srcY2, int32_t srcZ2, uint32_t srcMipLevel, GfxLayout srcLayout, GfxAccess srcAccess,
+		GfxApiImage dstImage, int32_t dstX1, int32_t dstY1, int32_t dstZ1, int32_t dstX2, int32_t dstY2, int32_t dstZ2, uint32_t dstMipLevel, GfxLayout dstLayout, GfxAccess dstAccess, GfxFilter filter )
+	{
+		VkImageBlit blit = {};
+		blit.srcOffsets[0] = { srcX1, srcY1, srcZ1 };
+		blit.srcOffsets[1] = { srcX2, srcY2, srcZ2 };
+		blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		blit.srcSubresource.mipLevel = srcMipLevel;
+		blit.srcSubresource.baseArrayLayer = 0;
+		blit.srcSubresource.layerCount = 1;
 
-GfxSwapchainOperationResult AcquireNextSwapchainImage( GfxSwapchain swapchain, GfxSemaphore signalSemaphore, GfxSwapchainImage* swapchainImage )
-{
-	swapchainImage->swapchain = swapchain;
-	return vkAcquireNextImageKHR( g_gfx.device.device, swapchain, UINT64_MAX, signalSemaphore, VK_NULL_HANDLE, &swapchainImage->imageIndex );
-}
+		blit.dstOffsets[0] = { dstX1, dstY1, dstZ1 };
+		blit.dstOffsets[1] = { dstX2, dstY2, dstZ2 };
+		blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		blit.dstSubresource.mipLevel = dstMipLevel;
+		blit.dstSubresource.baseArrayLayer = 0;
+		blit.dstSubresource.layerCount = 1;
 
-bool SwapchainImageIsValid( GfxSwapchainOperationResult result )
-{
-	//if (result != VK_SUCCESS)
-		//throw std::runtime_error("failed to acquire swap chain image");
+		vkCmdBlitImage( commandBuffer,
+			srcImage, ConvertToVkImageLayout( srcLayout, srcAccess ),
+			dstImage, ConvertToVkImageLayout( srcLayout, srcAccess ),
+			1, &blit,
+			ToVkFilter( filter ) );
 
-	return result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ? false : true;
-}
+	}
 
-GfxSwapchainOperationResult QueuePresent( VkQueue presentQueue, const GfxSwapchainImage& swapchainImage, GfxSemaphore* pWaitSemaphores, uint32_t waitSemaphoresCount )
-{
-	VkPresentInfoKHR presentInfo = {};
-	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	void CmdBlitImage( GfxCommandBuffer commandBuffer, GfxApiImage srcImage, int32_t srcX1, int32_t srcY1, int32_t srcZ1, int32_t srcX2, int32_t srcY2, int32_t srcZ2, uint32_t srcMipLevel,
+		GfxApiImage dstImage, int32_t dstX1, int32_t dstY1, int32_t dstZ1, int32_t dstX2, int32_t dstY2, int32_t dstZ2, uint32_t dstMipLevel, GfxFilter filter )
+	{
+		CmdBlitImage( commandBuffer, srcImage, srcX1, srcY1, srcZ1, srcX2, srcY2, srcZ2, srcMipLevel, GfxLayout::TRANSFER, GfxAccess::READ,
+			dstImage, dstX1, dstY1, dstZ1, dstX2, dstY2, dstZ2, dstMipLevel, GfxLayout::TRANSFER, GfxAccess::WRITE, filter );
+	}
 
-	presentInfo.waitSemaphoreCount = waitSemaphoresCount;
-	presentInfo.pWaitSemaphores = pWaitSemaphores;
+	void CmdBindRootDescriptor( GfxCommandBuffer commandBuffer, GfxPipelineBindPoint pipelineBindPoint, GfxPipelineLayout pipelineLayout, uint32_t rootBindingPoint, GfxRootDescriptor rootDescriptor, uint32_t bufferOffset )
+	{
+		vkCmdBindDescriptorSets( commandBuffer, ToVkPipelineBindPoint( pipelineBindPoint ), pipelineLayout, rootBindingPoint, 1,
+			&rootDescriptor, 1, &bufferOffset );
+	}
 
-	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = &swapchainImage.swapchain;
-	presentInfo.pImageIndices = &swapchainImage.imageIndex;
-	presentInfo.pResults = nullptr; // Optional, for multiple swapchains
+	void CmdBindPipeline( GfxCommandBuffer commandBuffer, GfxPipelineBindPoint pipelineBindPoint, GfxPipeline pipeline )
+	{
+		vkCmdBindPipeline( commandBuffer, ToVkPipelineBindPoint( pipelineBindPoint ), pipeline );
+	}
 
-	return vkQueuePresentKHR( presentQueue, &presentInfo );
-}
+	void CmdBindDescriptorTable( GfxCommandBuffer commandBuffer, GfxPipelineBindPoint pipelineBindPoint, GfxPipelineLayout pipelineLayout, uint32_t rootBindingPoint, GfxDescriptorTable descriptorTable )
+	{
+		vkCmdBindDescriptorSets( commandBuffer, ToVkPipelineBindPoint( pipelineBindPoint ), pipelineLayout, rootBindingPoint, 1, &descriptorTable, 0, nullptr );
+	}
 
-void CmdBindVertexInputs( GfxCommandBuffer commandBuffer, GfxApiBuffer* pVertexBuffers, uint32_t firstBinding, uint32_t vertexBuffersCount, GfxDeviceSize* pBufferOffsets )
-{
-	vkCmdBindVertexBuffers( commandBuffer, firstBinding, vertexBuffersCount, pVertexBuffers, pBufferOffsets );
-}
+	bool QueueSubmit( VkQueue queue, GfxCommandBuffer* commandBuffers, uint32_t commandBuffersCount, GfxSemaphore* pWaitSemaphores, GfxPipelineStageFlag* waitDstStageMask, uint32_t waitSemaphoresCount, GfxSemaphore* pSignalSemaphores, uint32_t signalSemaphoresCount, GfxFence signalFence )
+	{
+		VkSubmitInfo graphicsSubmitInfo = {};
+		graphicsSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-void CmdBindIndexBuffer( GfxCommandBuffer commandBuffer, GfxApiBuffer buffer, GfxDeviceSize bufferOffset, GfxIndexType indexType )
-{
-	vkCmdBindIndexBuffer( commandBuffer, buffer, bufferOffset, ( VkIndexType )indexType );
-}
+		graphicsSubmitInfo.waitSemaphoreCount = waitSemaphoresCount;
+		graphicsSubmitInfo.pWaitSemaphores = pWaitSemaphores;
+		graphicsSubmitInfo.pWaitDstStageMask = waitDstStageMask;
+		graphicsSubmitInfo.commandBufferCount = commandBuffersCount;
+		graphicsSubmitInfo.pCommandBuffers = commandBuffers;
 
-void CmdDrawIndexed( GfxCommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance )
-{
-	vkCmdDrawIndexed( commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance );
-}
+		graphicsSubmitInfo.signalSemaphoreCount = signalSemaphoresCount;
+		graphicsSubmitInfo.pSignalSemaphores = pSignalSemaphores;
 
-bool CreateCommandBuffers( GfxCommandPool commandPool, GfxCommandBuffer* pCommandBuffers, uint32_t count )
-{
-	VkCommandBufferAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = commandPool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = count;
+		return vkQueueSubmit( queue, 1, &graphicsSubmitInfo, signalFence ) == VK_SUCCESS;
+	}
 
-	return (vkAllocateCommandBuffers( g_gfx.device.device, &allocInfo, pCommandBuffers ) == VK_SUCCESS);
-}
+	GfxSwapchainOperationResult AcquireNextSwapchainImage( GfxSwapchain swapchain, GfxSemaphore signalSemaphore, GfxSwapchainImage* swapchainImage )
+	{
+		swapchainImage->swapchain = swapchain;
+		return vkAcquireNextImageKHR( g_gfx.device.device, swapchain, UINT64_MAX, signalSemaphore, VK_NULL_HANDLE, &swapchainImage->imageIndex );
+	}
 
-void DestroyCommandBuffers( GfxCommandPool commandPool, GfxCommandBuffer* pCommandBuffers, uint32_t count )
-{
-	vkFreeCommandBuffers( g_gfx.device.device, commandPool, count, pCommandBuffers );
-	for( uint32_t i = 0; i < count; ++i )
-		pCommandBuffers[i] = VK_NULL_HANDLE;
+	bool SwapchainImageIsValid( GfxSwapchainOperationResult result )
+	{
+		//if (result != VK_SUCCESS)
+			//throw std::runtime_error("failed to acquire swap chain image");
+
+		return result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ? false : true;
+	}
+
+	GfxSwapchainOperationResult QueuePresent( VkQueue presentQueue, const GfxSwapchainImage& swapchainImage, GfxSemaphore* pWaitSemaphores, uint32_t waitSemaphoresCount )
+	{
+		VkPresentInfoKHR presentInfo = {};
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+		presentInfo.waitSemaphoreCount = waitSemaphoresCount;
+		presentInfo.pWaitSemaphores = pWaitSemaphores;
+
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = &swapchainImage.swapchain;
+		presentInfo.pImageIndices = &swapchainImage.imageIndex;
+		presentInfo.pResults = nullptr; // Optional, for multiple swapchains
+
+		return vkQueuePresentKHR( presentQueue, &presentInfo );
+	}
+
+	void CmdBindVertexInputs( GfxCommandBuffer commandBuffer, GfxApiBuffer* pVertexBuffers, uint32_t firstBinding, uint32_t vertexBuffersCount, GfxDeviceSize* pBufferOffsets )
+	{
+		vkCmdBindVertexBuffers( commandBuffer, firstBinding, vertexBuffersCount, pVertexBuffers, pBufferOffsets );
+	}
+
+	void CmdBindIndexBuffer( GfxCommandBuffer commandBuffer, GfxApiBuffer buffer, GfxDeviceSize bufferOffset, GfxIndexType indexType )
+	{
+		vkCmdBindIndexBuffer( commandBuffer, buffer, bufferOffset, ( VkIndexType )indexType );
+	}
+
+	void CmdDrawIndexed( GfxCommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance )
+	{
+		vkCmdDrawIndexed( commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance );
+	}
+
+	bool CreateCommandBuffers( GfxCommandPool commandPool, GfxCommandBuffer* pCommandBuffers, uint32_t count )
+	{
+		VkCommandBufferAllocateInfo allocInfo = {};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.commandPool = commandPool;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandBufferCount = count;
+
+		return (vkAllocateCommandBuffers( g_gfx.device.device, &allocInfo, pCommandBuffers ) == VK_SUCCESS);
+	}
+
+	void DestroyCommandBuffers( GfxCommandPool commandPool, GfxCommandBuffer* pCommandBuffers, uint32_t count )
+	{
+		vkFreeCommandBuffers( g_gfx.device.device, commandPool, count, pCommandBuffers );
+		for( uint32_t i = 0; i < count; ++i )
+			pCommandBuffers[i] = VK_NULL_HANDLE;
+	}
 }

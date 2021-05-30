@@ -51,27 +51,27 @@ enum class eTechniqueDataEntryImageName
 const uint32_t maxModelsCount = 32;
 constexpr VkExtent2D RT_EXTENT_SHADOW = { 1024, 1024 };
 
-inline void SetBuffers( GpuInputData* buffers, eTechniqueDataEntryName id, GpuBuffer* input, uint32_t count )
+inline void SetBuffers( GpuInputData* buffers, eTechniqueDataEntryName id, R_HW::GpuBuffer* input, uint32_t count )
 {
 	SetBuffers( buffers, static_cast< uint32_t >(id), input, count );
 }
 
-inline void SetImages( GpuInputData* buffers, eTechniqueDataEntryImageName id, GfxImageSamplerCombined* input, uint32_t count )
+inline void SetImages( GpuInputData* buffers, eTechniqueDataEntryImageName id, R_HW::GfxImageSamplerCombined* input, uint32_t count )
 {
 	SetImages( buffers, static_cast< uint32_t >(id), input, count );
 }
 
-inline void SetSamplers( GpuInputData* buffers, eTechniqueDataEntryName id, GfxApiSampler* input, uint32_t count )
+inline void SetSamplers( GpuInputData* buffers, eTechniqueDataEntryName id, R_HW::GfxApiSampler* input, uint32_t count )
 {
 	SetSamplers( buffers, static_cast< uint32_t >(id), input, count );
 }
 
-inline GpuBuffer* GetBuffer( const GpuInputData* buffers, eTechniqueDataEntryName id )
+inline R_HW::GpuBuffer* GetBuffer( const GpuInputData* buffers, eTechniqueDataEntryName id )
 {
 	return GetBuffer( buffers, static_cast< uint32_t >(id) );
 }
 
-inline GfxImageSamplerCombined* GetImage( const GpuInputData* buffers, eTechniqueDataEntryImageName id )
+inline R_HW::GfxImageSamplerCombined* GetImage( const GpuInputData* buffers, eTechniqueDataEntryImageName id )
 {
 	return GetImage( buffers, static_cast< uint32_t >(id) );
 }
@@ -84,11 +84,11 @@ static FG::RenderPassCreationData FG_Opaque_CreateGraphNode( FG::fg_handle_t sce
 	{
 		RENDERPASS_SET,
 		{
-			{ sceneData, 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_VERTEX_BIT | GFX_SHADER_STAGE_FRAGMENT_BIT },
-			{ lightData, 1, eDescriptorAccess::READ, GFX_SHADER_STAGE_VERTEX_BIT | GFX_SHADER_STAGE_FRAGMENT_BIT },
-			{ bindlessTextures, 2, eDescriptorAccess::READ, GFX_SHADER_STAGE_FRAGMENT_BIT },
-			{ samplers, 3, eDescriptorAccess::READ, GFX_SHADER_STAGE_FRAGMENT_BIT | GFX_SHADER_STAGE_VERTEX_BIT },
-			{ shadowMap, 4, eDescriptorAccess::READ, GFX_SHADER_STAGE_FRAGMENT_BIT },
+			{ sceneData, 0, R_HW::eDescriptorAccess::READ, R_HW::GFX_SHADER_STAGE_VERTEX_BIT | R_HW::GFX_SHADER_STAGE_FRAGMENT_BIT },
+			{ lightData, 1, R_HW::eDescriptorAccess::READ, R_HW::GFX_SHADER_STAGE_VERTEX_BIT | R_HW::GFX_SHADER_STAGE_FRAGMENT_BIT },
+			{ bindlessTextures, 2, R_HW::eDescriptorAccess::READ, R_HW::GFX_SHADER_STAGE_FRAGMENT_BIT },
+			{ samplers, 3, R_HW::eDescriptorAccess::READ, R_HW::GFX_SHADER_STAGE_FRAGMENT_BIT | R_HW::GFX_SHADER_STAGE_VERTEX_BIT },
+			{ shadowMap, 4, R_HW::eDescriptorAccess::READ, R_HW::GFX_SHADER_STAGE_FRAGMENT_BIT },
 		}
 	};
 
@@ -96,7 +96,7 @@ static FG::RenderPassCreationData FG_Opaque_CreateGraphNode( FG::fg_handle_t sce
 	{
 		INSTANCE_SET,
 		{
-			{ instanceData, 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_VERTEX_BIT | GFX_SHADER_STAGE_FRAGMENT_BIT }
+			{ instanceData, 0, R_HW::eDescriptorAccess::READ, R_HW::GFX_SHADER_STAGE_VERTEX_BIT | R_HW::GFX_SHADER_STAGE_FRAGMENT_BIT }
 		}
 	};
 
@@ -124,7 +124,7 @@ static FG::RenderPassCreationData FG_Shadow_CreateGraphNode( FG::fg_handle_t sha
 	{
 		RENDERPASS_SET,
 		{
-			{ shadowData, 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_VERTEX_BIT }
+			{ shadowData, 0, R_HW::eDescriptorAccess::READ, R_HW::GFX_SHADER_STAGE_VERTEX_BIT }
 		}
 	};
 
@@ -132,7 +132,7 @@ static FG::RenderPassCreationData FG_Shadow_CreateGraphNode( FG::fg_handle_t sha
 	{
 		INSTANCE_SET,
 		{
-			{ instanceData, 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_VERTEX_BIT }
+			{ instanceData, 0, R_HW::eDescriptorAccess::READ, R_HW::GFX_SHADER_STAGE_VERTEX_BIT }
 		}
 	};
 	FG::RenderPassCreationData renderPassCreationData;
@@ -156,8 +156,8 @@ static FG::RenderPassCreationData FG_Skybox_CreateGraphNode( FG::fg_handle_t sce
 	{
 		RENDERPASS_SET,
 		{
-			{ skyboxData, 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_VERTEX_BIT },
-			{ skyboxTexture, 1, eDescriptorAccess::READ, GFX_SHADER_STAGE_FRAGMENT_BIT },
+			{ skyboxData, 0, R_HW::eDescriptorAccess::READ, R_HW::GFX_SHADER_STAGE_VERTEX_BIT },
+			{ skyboxTexture, 1, R_HW::eDescriptorAccess::READ, R_HW::GFX_SHADER_STAGE_FRAGMENT_BIT },
 		}
 	};
 
@@ -182,7 +182,7 @@ static FG::RenderPassCreationData FG_TextOverlay_CreateGraphNode( FG::fg_handle_
 	{
 		RENDERPASS_SET,
 		{
-			{ textTexture, 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_FRAGMENT_BIT }
+			{ textTexture, 0, R_HW::eDescriptorAccess::READ, R_HW::GFX_SHADER_STAGE_FRAGMENT_BIT }
 		}
 	};
 
@@ -207,7 +207,7 @@ static FG::RenderPassCreationData FG_BtDebug_CreateGraphNode( FG::fg_handle_t sc
 	{
 		RENDERPASS_SET,
 		{
-			{ sceneData, 0, eDescriptorAccess::READ, GFX_SHADER_STAGE_VERTEX_BIT | GFX_SHADER_STAGE_FRAGMENT_BIT },
+			{ sceneData, 0, R_HW::eDescriptorAccess::READ, R_HW::GFX_SHADER_STAGE_VERTEX_BIT | R_HW::GFX_SHADER_STAGE_FRAGMENT_BIT },
 		}
 	};
 
@@ -247,11 +247,11 @@ struct RetroFrameGraphParams
 	bool d_btDrawDebug;
 };
 
-FG::FrameGraph InitializeScript( const Swapchain* swapchain, void* user_params )
+FG::FrameGraph InitializeScript( const R_HW::Swapchain* swapchain, void* user_params )
 {
 	RetroFrameGraphParams* params = reinterpret_cast< RetroFrameGraphParams* >(user_params);
 	//Setup resources
-	GfxFormat swapchainFormat = GetFormat( swapchain->surfaceFormat );
+	R_HW::GfxFormat swapchainFormat = R_HW::GetFormat( swapchain->surfaceFormat );
 	VkExtent2D swapchainExtent = swapchain->extent;
 
 	ResourceGatherer resourceGatherer;
@@ -268,8 +268,8 @@ FG::FrameGraph InitializeScript( const Swapchain* swapchain, void* user_params )
 	FG::fg_handle_t samplers_h = resourceGatherer.AddResource( CREATE_SAMPLER_EXTERNAL( eTechniqueDataEntryName::SAMPLERS, SAMPLERS_MAX ) );
 
 	//TODO: I shouldn't have to specify usage such as "sampled" should be implicit
-	FG::fg_handle_t scene_depth_h = resourceGatherer.AddResource( CREATE_IMAGE_DEPTH( eTechniqueDataEntryImageName::SCENE_DEPTH, GfxFormat::D32_SFLOAT, swapchainExtent, 0 ) );
-	FG::fg_handle_t shadow_map_h = resourceGatherer.AddResource( CREATE_IMAGE_DEPTH_SAMPLER( eTechniqueDataEntryImageName::SHADOW_MAP, GfxFormat::D32_SFLOAT, RT_EXTENT_SHADOW, GfxImageUsageFlagBits::SAMPLED, eSamplers::Shadow ) );
+	FG::fg_handle_t scene_depth_h = resourceGatherer.AddResource( CREATE_IMAGE_DEPTH( eTechniqueDataEntryImageName::SCENE_DEPTH, R_HW::GfxFormat::D32_SFLOAT, swapchainExtent, 0 ) );
+	FG::fg_handle_t shadow_map_h = resourceGatherer.AddResource( CREATE_IMAGE_DEPTH_SAMPLER( eTechniqueDataEntryImageName::SHADOW_MAP, R_HW::GfxFormat::D32_SFLOAT, RT_EXTENT_SHADOW, R_HW::GfxImageUsageFlagBits::SAMPLED, eSamplers::Shadow ) );
 	FG::fg_handle_t scene_color_h = resourceGatherer.AddResource( CREATE_IMAGE_COLOR( eTechniqueDataEntryImageName::SCENE_COLOR, swapchainFormat, swapchainExtent, 0, FG::eDataEntryFlags::EXTERNAL ) );
 
 	//Setup passes

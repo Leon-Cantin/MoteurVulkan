@@ -3,7 +3,7 @@
 namespace Engine
 {
 	EngineState _engineState;
-	DisplaySurface _displaySurface;
+	R_HW::DisplaySurface _displaySurface;
 
 	void SetNextScript( const char * scriptName )
 	{
@@ -45,10 +45,10 @@ namespace Engine
 #else
 		const bool useValidationLayer = true;
 #endif
-		g_gfx.instance = CreateInstance( useValidationLayer );
+		g_gfx.instance = R_HW::CreateInstance( useValidationLayer );
 		_displaySurface = WH::VK::create_surface( g_gfx.instance.instance, WH::g_windowState );
 		g_gfx.physicalDevice = PickSuitablePhysicalDevice( _displaySurface, g_gfx.instance );
-		g_gfx.device = create_logical_device( _displaySurface, g_gfx.physicalDevice, useValidationLayer );
+		g_gfx.device = R_HW::create_logical_device( _displaySurface, g_gfx.physicalDevice, useValidationLayer );
 
 		//Init renderer stuff
 		_engineState._initRendererImp( &_displaySurface );
@@ -63,7 +63,7 @@ namespace Engine
 			_engineState._currentSceneScript.updateCallback();
 		}
 
-		DeviceWaitIdle( g_gfx.device.device );
+		R_HW::DeviceWaitIdle( g_gfx.device.device );
 		_engineState._currentSceneScript.destroyCallback();
 		_engineState._destroyRendererImp();
 

@@ -2,11 +2,13 @@
 
 #include "vk_globals.h"
 
-struct SwapChainSupportDetails {
-	VkSurfaceCapabilitiesKHR capabilities;
-	std::vector<GfxSurfaceFormat> formats;
-	std::vector<VkPresentModeKHR> present_modes;
-};
+namespace R_HW
+{
+	struct SwapChainSupportDetails {
+		VkSurfaceCapabilitiesKHR capabilities;
+		std::vector<GfxSurfaceFormat> formats;
+		std::vector<VkPresentModeKHR> present_modes;
+	};
 
-SwapChainSupportDetails query_swap_chain_support( VkPhysicalDevice device, DisplaySurface surface );
-
+	SwapChainSupportDetails query_swap_chain_support( VkPhysicalDevice device, DisplaySurface surface );
+}

@@ -11,10 +11,10 @@ struct LightUniform {
 	float intensity;
 };
 
-void CompileScene( BindlessTexturesState* bindlessTexturesState, const GfxImage* skyboxImage );
+void CompileScene( BindlessTexturesState* bindlessTexturesState, const R_HW::GfxImage* skyboxImage );
 void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<GfxAssetInstance>& drawList );
 
-void InitRendererImp( const DisplaySurface* swapchainSurface );
+void InitRendererImp( const R_HW::DisplaySurface* swapchainSurface );
 void CleanupRendererImp();
 
 void SetBtDebugDraw( bool value );

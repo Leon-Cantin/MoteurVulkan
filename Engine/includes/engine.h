@@ -17,7 +17,7 @@ namespace Engine
 		void( *destroyCallback )(void);
 	};
 
-	typedef void InitRendererCallback_t( const DisplaySurface* );
+	typedef void InitRendererCallback_t( const R_HW::DisplaySurface* );
 	typedef void DestroyRendererCallback_t();
 
 	struct EngineState

@@ -7,9 +7,9 @@ namespace WH
 	namespace VK 
 	{
 #ifdef _WIN32
-		DisplaySurface create_surface( VkInstance vkInstance, const WindowState& windowState )
+		R_HW::DisplaySurface create_surface( VkInstance vkInstance, const WindowState& windowState )
 		{
-			DisplaySurface windowSurface;
+			R_HW::DisplaySurface windowSurface;
 			VkWin32SurfaceCreateInfoKHR surface_create_info = { VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR, nullptr, 0, windowState.instance, windowState.window };
 
 			if (vkCreateWin32SurfaceKHR(vkInstance, &surface_create_info, nullptr, &windowSurface) != VK_SUCCESS)
@@ -19,7 +19,7 @@ namespace WH
 		}
 
 #elif defined __linux__
-		DisplaySurface create_surface( VkInstance vkInstance, const WindowState& windowState )
+		R_HW::DisplaySurface create_surface( VkInstance vkInstance, const WindowState& windowState )
 		{
 			VkXcbSurfaceCreateInfoKHR surface_create_info = {VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR, NULL, 0, windowState.connection, windowState.window };
 			
@@ -28,7 +28,7 @@ namespace WH
 		}
 #endif
 
-		void DestroySurface( DisplaySurface* surface, VkInstance vkInstance )
+		void DestroySurface( R_HW::DisplaySurface* surface, VkInstance vkInstance )
 		{
 			vkDestroySurfaceKHR( vkInstance, *surface, nullptr );
 			*surface = VK_NULL_HANDLE;

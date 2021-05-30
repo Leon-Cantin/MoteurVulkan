@@ -6,7 +6,7 @@
 #include "scene_frame_data.h"
 #include "frame_graph.h"
 
-GpuPipelineLayout GetGeoPipelineLayout();
-GpuPipelineStateDesc GetGeoPipelineState();
+R_HW::GpuPipelineLayout GetGeoPipelineLayout();
+R_HW::GpuPipelineStateDesc GetGeoPipelineState();
 
-void GeometryRecordDrawCommandsBuffer( GfxCommandBuffer graphicsCommandBuffer, const FG::TaskInputData& inputData );
+void GeometryRecordDrawCommandsBuffer( R_HW::GfxCommandBuffer graphicsCommandBuffer, const FG::TaskInputData& inputData );

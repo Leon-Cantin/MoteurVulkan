@@ -11,6 +11,6 @@ enum Timestamp
 
 void CreateTimeStampsQueryPool(uint32_t setCount);
 void DestroyTimeStampsPool();
-void CmdResetTimeStampSet(GfxCommandBuffer commandBuffer, uint32_t set);
-void CmdWriteTimestamp( GfxCommandBuffer commandBuffer, GfxPipelineStageFlagBits stageBits, Timestamp timestamp, uint32_t set );
+void CmdResetTimeStampSet( R_HW::GfxCommandBuffer commandBuffer, uint32_t set);
+void CmdWriteTimestamp( R_HW::GfxCommandBuffer commandBuffer, R_HW::GfxPipelineStageFlagBits stageBits, Timestamp timestamp, uint32_t set );
 float GetTimestampsDelta(Timestamp first, Timestamp last, uint32_t set);

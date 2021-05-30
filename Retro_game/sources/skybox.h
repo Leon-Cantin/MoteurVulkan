@@ -5,9 +5,9 @@
 #include "material.h"
 #include "frame_graph.h"
 
-GpuPipelineLayout GetSkyboxPipelineLayout();
-GpuPipelineStateDesc GetSkyboxPipelineState();
-void SkyboxRecordDrawCommandsBuffer( GfxCommandBuffer graphicsCommandBuffer, const FG::TaskInputData& inputData );
+R_HW::GpuPipelineLayout GetSkyboxPipelineLayout();
+R_HW::GpuPipelineStateDesc GetSkyboxPipelineState();
+void SkyboxRecordDrawCommandsBuffer( R_HW::GfxCommandBuffer graphicsCommandBuffer, const FG::TaskInputData& inputData );
 
 #include "glm/mat4x4.hpp"
 //TODO the .h doesn't need to know about this struct
@@ -18,4 +18,4 @@ struct SkyboxUniformBufferObject {
 	glm::mat4 inv_view_matrix;
 };
 
-void UpdateSkyboxUniformBuffers( GpuBuffer* skyboxUniformBuffer, const glm::mat4& world_view_matrix );
+void UpdateSkyboxUniformBuffers( R_HW::GpuBuffer* skyboxUniformBuffer, const glm::mat4& world_view_matrix );

@@ -368,7 +368,7 @@ namespace glTF_L
 			bufferChunk };
 	}
 
-	static GfxModel LoadMesh( const Mesh& mesh, const std::vector<Accessor>& accessors, const std::vector<BufferView>& buffer_views, const byte* data, I_BufferAllocator* allocator )
+	static GfxModel LoadMesh( const Mesh& mesh, const std::vector<Accessor>& accessors, const std::vector<BufferView>& buffer_views, const byte* data, R_HW::I_BufferAllocator* allocator )
 	{
 		assert( mesh.primitives.size() == 1 );
 
@@ -433,12 +433,12 @@ namespace glTF_L
 			indexes_32[i] = GetType<unsigned short>( indexes, i, 0, SCALAR, UNSIGNED_SHORT );
 		}
 
-		std::vector<VIDesc> modelVIDescs = {
-			{ ( VIDataType )eVIDataType::POSITION, eVIDataElementType::FLOAT, 3 },
-			{ ( VIDataType )eVIDataType::NORMAL, eVIDataElementType::FLOAT, 3 },
-			{ ( VIDataType )eVIDataType::TANGENT, eVIDataElementType::FLOAT, 3 },
-			{ ( VIDataType )eVIDataType::COLOR, eVIDataElementType::FLOAT, 3 },
-			{ ( VIDataType )eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2 },
+		std::vector<R_HW::VIDesc> modelVIDescs = {
+			{ (R_HW::VIDataType )eVIDataType::POSITION, R_HW::eVIDataElementType::FLOAT, 3 },
+			{ (R_HW::VIDataType )eVIDataType::NORMAL, R_HW::eVIDataElementType::FLOAT, 3 },
+			{ (R_HW::VIDataType )eVIDataType::TANGENT, R_HW::eVIDataElementType::FLOAT, 3 },
+			{ (R_HW::VIDataType )eVIDataType::COLOR, R_HW::eVIDataElementType::FLOAT, 3 },
+			{ (R_HW::VIDataType )eVIDataType::TEX_COORD, R_HW::eVIDataElementType::FLOAT, 2 },
 		};
 		std::vector<void*> modelData = {
 			vertPos.data(),
@@ -518,7 +518,7 @@ namespace glTF_L
 		}
 	}
 
-	void LoadMesh( const char* fileName, GfxModel* model, I_BufferAllocator* allocator )
+	void LoadMesh( const char* fileName, GfxModel* model, R_HW::I_BufferAllocator* allocator )
 	{
 		const glTF_Json gltf_json = ReadJson( fileName );
 
@@ -528,7 +528,7 @@ namespace glTF_L
 	}
 
 	void LoadScene( const char* fileName, RegisterGfxModelCallback_t registerGfxModelCallback, RegisterGfxAssetCallback_t registerGfxAssetCallback,
-		RegisterSceneInstanceCallback_t registerSceneInstanceCallback, LoadTextureCallback_t loadTextureCallback, I_BufferAllocator* allocator, I_ImageAlloctor* imageAllocator )
+		RegisterSceneInstanceCallback_t registerSceneInstanceCallback, LoadTextureCallback_t loadTextureCallback, R_HW::I_BufferAllocator* allocator, I_ImageAlloctor* imageAllocator )
 	{
 		const glTF_Json gltf_json = ReadJson( fileName );
 

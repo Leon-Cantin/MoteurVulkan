@@ -1,6 +1,6 @@
 #include "bindless_textures.h"
 
-uint32_t RegisterBindlessTexture( BindlessTexturesState* state, GfxImage* image, eSamplers eSampler )
+uint32_t RegisterBindlessTexture( BindlessTexturesState* state, R_HW::GfxImage* image, eSamplers eSampler )
 {
 	assert( state->_bindlessTexturesCount < BINDLESS_TEXTURES_MAX );
 	VkSampler sampler = eSampler == eSamplers::Count ? VK_NULL_HANDLE : GetSampler( eSampler );
@@ -8,7 +8,7 @@ uint32_t RegisterBindlessTexture( BindlessTexturesState* state, GfxImage* image,
 	return state->_bindlessTexturesCount++;
 }
 
-uint32_t RegisterBindlessTexture( BindlessTexturesState* state, GfxImage* image )
+uint32_t RegisterBindlessTexture( BindlessTexturesState* state, R_HW::GfxImage* image )
 {
 	return RegisterBindlessTexture( state, image, eSamplers::Count );
 }

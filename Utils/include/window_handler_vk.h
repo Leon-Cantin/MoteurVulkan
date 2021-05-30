@@ -5,7 +5,7 @@
 
 namespace WH {
 	namespace VK{
-		DisplaySurface create_surface( VkInstance vkInstance, const WindowState& windowState );
-		void DestroySurface( DisplaySurface* surface, VkInstance vkInstance );
+		R_HW::DisplaySurface create_surface( VkInstance vkInstance, const WindowState& windowState );
+		void DestroySurface( R_HW::DisplaySurface* surface, VkInstance vkInstance );
 	}
 }

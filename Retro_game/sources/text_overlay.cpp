@@ -12,57 +12,57 @@ uint32_t maxTextCharCount = 0;
 uint32_t currentTextCharCount = 0;
 
 stb_fontchar stbFontData[STB_FONT_consolas_24_latin1_NUM_CHARS];
-GfxImage g_fontImage;
+R_HW::GfxImage g_fontImage;
 
 typedef uint32_t Index_t;
 
 const uint32_t verticesPerChar = 4;
 const uint32_t indexesPerChar = 6;
 
-const GfxImage* GetTextImage()
+const R_HW::GfxImage* GetTextImage()
 {
 	return &g_fontImage;
 }
 
-GpuPipelineLayout GetTextPipelineLayout()
+R_HW::GpuPipelineLayout GetTextPipelineLayout()
 {
-	return GpuPipelineLayout();
+	return R_HW::GpuPipelineLayout();
 }
 
-GpuPipelineStateDesc GetTextPipelineState()
+R_HW::GpuPipelineStateDesc GetTextPipelineState()
 {
-	GpuPipelineStateDesc gpuPipelineState = {};
+	R_HW::GpuPipelineStateDesc gpuPipelineState = {};
 	GetBindingDescription( VIBindings_PosColUV, &gpuPipelineState.viState );
 
 	gpuPipelineState.shaders = {
-		{ FS::readFile( "shaders/text.vert.spv" ), "main", GFX_SHADER_STAGE_VERTEX_BIT },
-		{ FS::readFile( "shaders/text.frag.spv" ), "main", GFX_SHADER_STAGE_FRAGMENT_BIT } };
+		{ FS::readFile( "shaders/text.vert.spv" ), "main", R_HW::GFX_SHADER_STAGE_VERTEX_BIT },
+		{ FS::readFile( "shaders/text.frag.spv" ), "main", R_HW::GFX_SHADER_STAGE_FRAGMENT_BIT } };
 
 	gpuPipelineState.rasterizationState.backFaceCulling = false;
 	gpuPipelineState.rasterizationState.depthBiased = false;
 
 	gpuPipelineState.depthStencilState.depthRead = false;
 	gpuPipelineState.depthStencilState.depthWrite = false;
-	gpuPipelineState.depthStencilState.depthCompareOp = GfxCompareOp::LESS;
+	gpuPipelineState.depthStencilState.depthCompareOp = R_HW::GfxCompareOp::LESS;
 
 	gpuPipelineState.blendEnabled = true;
-	gpuPipelineState.primitiveTopology = GfxPrimitiveTopology::TRIANGLE_LIST;
+	gpuPipelineState.primitiveTopology = R_HW::GfxPrimitiveTopology::TRIANGLE_LIST;
 	return gpuPipelineState;
 }
 
-static void CmdDrawText( GfxCommandBuffer commandBuffer, VkExtent2D extent, size_t frameIndex, const RenderPass * renderpass, const Technique * technique )
+static void CmdDrawText( R_HW::GfxCommandBuffer commandBuffer, VkExtent2D extent, size_t frameIndex, const R_HW::RenderPass * renderpass, const Technique * technique )
 {
-	CmdBeginLabel( commandBuffer, "Text overlay Renderpass", glm::vec4( 0.6f, 0.6f, 0.6f, 1.0f ) );
-	const FrameBuffer& frameBuffer = renderpass->outputFrameBuffer[frameIndex];
-	BeginRenderPass( commandBuffer, *renderpass, frameBuffer );
+	R_HW::CmdBeginLabel( commandBuffer, "Text overlay Renderpass", glm::vec4( 0.6f, 0.6f, 0.6f, 1.0f ) );
+	const R_HW::FrameBuffer& frameBuffer = renderpass->outputFrameBuffer[frameIndex];
+	R_HW::BeginRenderPass( commandBuffer, *renderpass, frameBuffer );
 
-	CmdBindPipeline( commandBuffer, GfxPipelineBindPoint::GRAPHICS, technique->pipeline );
-	CmdBindDescriptorTable( commandBuffer, GfxPipelineBindPoint::GRAPHICS, technique->pipelineLayout, RENDERPASS_SET, technique->descriptor_sets[RENDERPASS_SET].hw_descriptorSets[0] );
+	R_HW::CmdBindPipeline( commandBuffer, R_HW::GfxPipelineBindPoint::GRAPHICS, technique->pipeline );
+	R_HW::CmdBindDescriptorTable( commandBuffer, R_HW::GfxPipelineBindPoint::GRAPHICS, technique->pipelineLayout, RENDERPASS_SET, technique->descriptor_sets[RENDERPASS_SET].hw_descriptorSets[0] );
 
 	CmdDrawIndexed( commandBuffer, VIBindings_PosColUV, textModel, currentTextCharCount * indexesPerChar );
 
-	EndRenderPass( commandBuffer );
-	CmdEndLabel( commandBuffer );
+	R_HW::EndRenderPass( commandBuffer );
+	R_HW::CmdEndLabel( commandBuffer );
 }
 
 void UpdateText( const TextZone * textZones, size_t textZonesCount, VkExtent2D surfaceExtent )
@@ -125,7 +125,7 @@ void UpdateText( const TextZone * textZones, size_t textZonesCount, VkExtent2D s
 		}
 	}
 
-	GfxDeviceSize bufferSize = sizeof( text_vertex_positions[0] ) * text_vertex_positions.size();
+	R_HW::GfxDeviceSize bufferSize = sizeof( text_vertex_positions[0] ) * text_vertex_positions.size();
 	UpdateGpuBuffer( &GetVertexInput( textModel, eVIDataType::POSITION )->buffer, text_vertex_positions.data(), bufferSize, 0 );
 
 	bufferSize = sizeof( text_vertex_color[0] ) * text_vertex_color.size();
@@ -147,10 +147,10 @@ void CreateTextVertexBuffer( size_t maxCharCount )
 	uint32_t maxVertices = maxCharCount * verticesPerChar;
 	uint32_t maxIndices = maxCharCount * indexesPerChar;
 
-	std::vector<VIDesc> modelVIDescs = {
-		{ ( VIDataType )eVIDataType::POSITION, eVIDataElementType::FLOAT, 3 },
-		{ ( VIDataType )eVIDataType::COLOR, eVIDataElementType::FLOAT, 3 },
-		{ ( VIDataType )eVIDataType::TEX_COORD, eVIDataElementType::FLOAT, 2 },
+	std::vector<R_HW::VIDesc> modelVIDescs = {
+		{ (R_HW::VIDataType )eVIDataType::POSITION, R_HW::eVIDataElementType::FLOAT, 3 },
+		{ (R_HW::VIDataType )eVIDataType::COLOR, R_HW::eVIDataElementType::FLOAT, 3 },
+		{ (R_HW::VIDataType )eVIDataType::TEX_COORD, R_HW::eVIDataElementType::FLOAT, 2 },
 	};
 
 	textModel = CreateGfxModel( modelVIDescs, maxVertices, maxIndices, sizeof( uint32_t ) );
@@ -166,7 +166,7 @@ void LoadFontTexture()
 
 	GfxHeaps_CommitedResourceAllocator allocator = {};
 	allocator.Prepare();
-	Load2DTexture( &font24pixels[0][0], fontWidth, fontHeight, 1, GfxFormat::R8_UNORM, &g_fontImage, &allocator );
+	Load2DTexture( &font24pixels[0][0], fontWidth, fontHeight, 1, R_HW::GfxFormat::R8_UNORM, &g_fontImage, &allocator );
 	allocator.Commit();
 }
 
@@ -176,7 +176,7 @@ void CleanupTextRenderPass()
 	DestroyGfxModel( textModel );
 }
 
-void TextRecordDrawCommandsBuffer( GfxCommandBuffer graphicsCommandBuffer, const FG::TaskInputData& inputData )
+void TextRecordDrawCommandsBuffer( R_HW::GfxCommandBuffer graphicsCommandBuffer, const FG::TaskInputData& inputData )
 {
 	CmdDrawText( graphicsCommandBuffer, inputData.extent, inputData.currentFrame, inputData.renderpass, inputData.technique );
 }
