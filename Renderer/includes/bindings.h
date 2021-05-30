@@ -63,10 +63,3 @@ inline uint32_t GetDataCount( const GpuInputData* buffers, uint32_t id )
 	assert( id < MAX_DATA_ENTRIES );
 	return buffers->dataCount[id];
 }
-
-inline const GfxImage* GetDummyImage()
-{
-	extern GfxImage dummyImage;//defined by the renderer
-	assert( IsValid( dummyImage ) );
-	return &dummyImage;
-}

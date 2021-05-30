@@ -105,6 +105,7 @@ namespace FG
 	{
 	public:
 		class FrameGraphInternal* imp;
+		GfxImage dummyImage;
 		FrameGraph( class FrameGraphInternal* );
 		FrameGraph();
 		const RenderPass* GetRenderPass( uint32_t id );

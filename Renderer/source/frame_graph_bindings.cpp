@@ -173,13 +173,12 @@ namespace FG
 
 
 	//TODO: Not very efficient, buffers being recreated all of the time because of array descriptors.
-	static void FillWithDummyDescriptors( const FG::FrameGraph* frameGraph, const DescriptorTableDesc& descriptorSetDesc, GfxDescriptorTable* descriptorTable )
+	static void FillWithDummyDescriptors( const FG::FrameGraph* frameGraph, const DescriptorTableDesc& descriptorSetDesc, const GfxImage& dummyImage, GfxDescriptorTable* descriptorTable )
 	{
 		assert( descriptorSetDesc.dataBindings.size() <= MAX_DATA_ENTRIES );
 		BatchDescriptorsUpdater batchDescriptorsUpdater;
 
-		const GfxImage* dummyImage = GetDummyImage();
-		const GfxImageSamplerCombined combinedDummyImage = { const_cast< GfxImage*>(dummyImage), GetSampler( eSamplers::Trilinear ) };
+		const GfxImageSamplerCombined combinedDummyImage = { const_cast< GfxImage*>(&dummyImage), GetSampler( eSamplers::Trilinear ) };
 		const GfxApiSampler dummySampler = GetSampler( eSamplers::Point );
 		constexpr uint32_t maxDescriptors = 16;
 		GfxImageSamplerCombined dummyImageDescriptors[maxDescriptors];
@@ -220,7 +219,7 @@ namespace FG
 		batchDescriptorsUpdater.Submit( *descriptorTable );
 	}
 
-	void UpdateTechniqueDescriptorSets( const FG::FrameGraph* frameGraph, const std::array< GpuInputData, SIMULTANEOUS_FRAMES>& inputBuffers )
+	void UpdateTechniqueDescriptorSets( const FG::FrameGraph* frameGraph, const std::array< GpuInputData, SIMULTANEOUS_FRAMES>& inputBuffers, const GfxImage& dummyImage )
 	{
 		for( uint32_t i = 0; i < frameGraph->imp->_render_passes_count; ++i )
 		{
@@ -233,10 +232,20 @@ namespace FG
 				for( size_t i = 0; i < SIMULTANEOUS_FRAMES; ++i )
 				{
 					GfxDescriptorTable descriptorTable = technique.descriptor_sets[tableDesc.binding].hw_descriptorSets[i];
-					FillWithDummyDescriptors( frameGraph, tableDesc, &descriptorTable );
+					FillWithDummyDescriptors( frameGraph, tableDesc, dummyImage, &descriptorTable );
 					UpdateDescriptorTable( frameGraph, &inputBuffers[i], tableDesc, &descriptorTable );
 				}
 			}
 		}
+	}
+
+	GfxImage CreateDummyImage()
+	{
+		GfxImage image = {};
+		GfxHeaps_CommitedResourceAllocator allocator = {};
+		allocator.Prepare();
+		CreateSolidColorImage( glm::vec4( 0, 0, 0, 0 ), &image, &allocator );
+		allocator.Commit();
+		return image;
 	}
 }

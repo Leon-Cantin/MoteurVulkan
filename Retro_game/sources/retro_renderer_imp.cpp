@@ -14,13 +14,13 @@
 
 GfxDescriptorPool descriptorPool;
 
-extern Swapchain g_swapchain;
 const DisplaySurface* m_swapchainSurface;
 
 std::array< GpuInputData, SIMULTANEOUS_FRAMES> _inputBuffers;
 
 static RetroFrameGraphParams m_fg_params;
 static bool m_fg_need_reconfig;
+static RNDR::R_State* mpr_state;
 
 /*
 	Update Stuff
@@ -73,7 +73,7 @@ static void updateTextOverlayBuffer( uint32_t currentFrame )
 		textZones[1] = { -1.0f, 0.0f, ConCom::GetViewableString() };
 		++textZonesCount;
 	}
-	UpdateText( textZones, textZonesCount, g_swapchain.extent );
+	UpdateText( textZones, textZonesCount, get_backbuffer_size( mpr_state ) );
 }
 
 //TODO seperate the buffer update and computation of frame data
@@ -82,7 +82,7 @@ static void updateUniformBuffer( uint32_t currentFrame, const SceneInstance* cam
 {
 	glm::mat4 world_view_matrix = ComputeCameraSceneInstanceViewMatrix( *cameraSceneInstance );
 
-	VkExtent2D swapChainExtent = g_swapchain.extent;
+	VkExtent2D swapChainExtent = get_backbuffer_size( mpr_state );
 
 	GpuInputData currentGpuInputData = _inputBuffers[currentFrame];
 
@@ -153,7 +153,7 @@ void InitRendererImp( const VkSurfaceKHR* swapchainSurface )
 	WH::GetFramebufferSize( &width, &height );
 	m_swapchainSurface = swapchainSurface;
 
-	InitRenderer( *swapchainSurface, width, height );
+	mpr_state = RNDR::CreateRenderer( *swapchainSurface, width, height );
 
 	LoadFontTexture();
 	CreateTextVertexBuffer( 256 );
@@ -198,36 +198,38 @@ void CompileScene( BindlessTexturesState* bindlessTexturesState, const GfxImage*
 	descriptorPool = CreateDescriptorPool_BAD();
 
 	CreateBuffers( bindlessTexturesState, skyboxImage );
-	FG_Script_SetInputBuffers( &_inputBuffers, descriptorPool );
 
-	CompileFrameGraph( InitializeScript, &m_fg_params );
+	m_fg_params._descriptorPool = descriptorPool;
+	m_fg_params._pInputBuffers = &_inputBuffers;
+
+	CompileFrameGraph( mpr_state, InitializeScript, &m_fg_params );
 }
 
 void CleanupRendererImp()
 {
 	CleanupTextRenderPass();
-	CleanupRenderer();	
+	Destroy( &mpr_state );
 	Destroy( &descriptorPool );
 }
 
 void DrawFrame( uint32_t currentFrame, const SceneInstance* cameraSceneInstance, LightUniform* light, const std::vector<GfxAssetInstance>& drawList )
 {
-	WaitForFrame(currentFrame);
+	WaitForFrame( mpr_state, currentFrame );
 
 	SceneFrameData frameData;
 	PrepareSceneFrameData(&frameData, currentFrame, cameraSceneInstance, light, drawList);
 
 	if( m_fg_need_reconfig )
 	{
-		CompileFrameGraph( InitializeScript, &m_fg_params );
+		CompileFrameGraph( mpr_state, InitializeScript, &m_fg_params );
 		m_fg_need_reconfig = false;
 	}
 	else
-	if( NeedResize() || draw_frame( currentFrame, &frameData ) == eRenderError::NEED_FRAMEBUFFER_RESIZE )
+	if( NeedResize() || draw_frame( mpr_state, currentFrame, &frameData ) == RNDR::eRenderError::NEED_FRAMEBUFFER_RESIZE )
 	{
 		uint64_t frameBufferWidth, frameBufferHeight;
 		WH::GetFramebufferSize( &frameBufferWidth, &frameBufferHeight );
-		recreate_swap_chain( *m_swapchainSurface, frameBufferWidth, frameBufferHeight, InitializeScript, &m_fg_params );
+		recreate_swap_chain( mpr_state, *m_swapchainSurface, frameBufferWidth, frameBufferHeight, InitializeScript, &m_fg_params );
 	}
 }
 

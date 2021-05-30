@@ -300,6 +300,8 @@ namespace FG
 		if( !frameGraphExternal->imp )
 			return;
 
+		DestroyImage( &frameGraphExternal->dummyImage );
+
 		FrameGraphInternal* frameGraph = frameGraphExternal->imp;
 
 		for (uint32_t i = 0; i < frameGraph->_render_targets_count; ++i)

@@ -12,15 +12,6 @@
 
 #include <unordered_map>
 
-std::array< GpuInputData, SIMULTANEOUS_FRAMES>* _pInputBuffers;
-VkDescriptorPool _descriptorPool;
-
-void FG_Script_SetInputBuffers( std::array< GpuInputData, SIMULTANEOUS_FRAMES>* pInputBuffers, VkDescriptorPool descriptorPool )
-{
-	_pInputBuffers = pInputBuffers;
-	_descriptorPool = descriptorPool;
-}
-
 enum class eTechniqueDataEntryName
 {
 	FIRST = 0,
@@ -250,6 +241,9 @@ public:
 
 struct RetroFrameGraphParams
 {
+	std::array< GpuInputData, SIMULTANEOUS_FRAMES>* _pInputBuffers;
+	VkDescriptorPool _descriptorPool;
+
 	bool d_btDrawDebug;
 };
 
@@ -291,9 +285,10 @@ FG::FrameGraph InitializeScript( const Swapchain* swapchain, void* user_params )
 	for( uint32_t frameIndex = 0; frameIndex < SIMULTANEOUS_FRAMES; ++frameIndex )
 		fg.AddExternalImage( scene_color_h, frameIndex, swapchain->images[frameIndex] );
 	FG::CreateRenderPasses( &fg );
-	FG::AddResourcesToInputBuffer( &fg, *_pInputBuffers );
-	FG::CreateTechniques( &fg, _descriptorPool );
-	FG::UpdateTechniqueDescriptorSets( &fg, *_pInputBuffers );
+	FG::AddResourcesToInputBuffer( &fg, *params->_pInputBuffers );
+	FG::CreateTechniques( &fg, params->_descriptorPool );
+	fg.dummyImage = FG::CreateDummyImage();
+	FG::UpdateTechniqueDescriptorSets( &fg, *params->_pInputBuffers, fg.dummyImage );
 
 	return fg;
 }

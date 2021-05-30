@@ -9,20 +9,28 @@
 
 #include <glm/mat4x4.hpp>
 
-enum class eRenderError
+namespace RNDR
 {
-	SUCCESS,
-	NEED_FRAMEBUFFER_RESIZE,
-};
+	enum class eRenderError
+	{
+		SUCCESS,
+		NEED_FRAMEBUFFER_RESIZE,
+	};
 
-typedef FG::FrameGraph FG_CompileScriptCallback_t (const Swapchain*, void* user_params );
+	struct R_State;
 
-void InitRenderer( DisplaySurface swapchainSurface, uint64_t width, uint64_t height );
-void CompileFrameGraph( FG_CompileScriptCallback_t FGScriptInitialize, void* fg_user_params );
-void recreate_swap_chain( DisplaySurface swapchainSurface, uint64_t width, uint64_t height, FG_CompileScriptCallback_t FGScriptInitialize, void* fg_user_params );
-void CleanupRenderer();
-void WaitForFrame(uint32_t currentFrame);
-eRenderError draw_frame(uint32_t currentFrame, const SceneFrameData* frameData);
+	typedef FG::FrameGraph FG_CompileScriptCallback_t( const Swapchain*, void* user_params );
+
+	R_State* CreateRenderer( DisplaySurface swapchainSurface, uint64_t width, uint64_t height );
+	void CompileFrameGraph( R_State* pr_state, FG_CompileScriptCallback_t FGScriptInitialize, void* fg_user_params );
+	void recreate_swap_chain( R_State* pr_state, DisplaySurface swapchainSurface, uint64_t width, uint64_t height, FG_CompileScriptCallback_t FGScriptInitialize, void* fg_user_params );
+	void Destroy( R_State** ppr_state );
+	void WaitForFrame( const R_State* pr_state, uint32_t currentFrame );
+	eRenderError draw_frame( R_State* pr_state, uint32_t currentFrame, const SceneFrameData* frameData );
+	VkExtent2D get_backbuffer_size( const R_State* pr_state );
+}
+
+
 void CmdBindVertexInputs( GfxCommandBuffer commandBuffer, const std::vector<VIBinding>& gpuPipelineVIBindings, const GfxModel& gfxModel );
 void CmdDrawIndexed( GfxCommandBuffer commandBuffer, const std::vector<VIBinding>& gpuPipelineVIBindings, const GfxModel& gfxModel, uint32_t indexCount );
 void CmdDrawIndexed( GfxCommandBuffer commandBuffer, const std::vector<VIBinding>& gpuPipelineVIBindings, const GfxModel& gfxModel );
